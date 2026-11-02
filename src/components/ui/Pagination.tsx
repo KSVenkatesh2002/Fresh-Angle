@@ -15,8 +15,11 @@ export function Pagination({
   if (totalPages <= 1) return null;
 
   const getPageUrl = (page: number): string => {
-    return page === 1 ? basePath : `${basePath}?page=${page}`;
+    // Strip trailing slash if present
+    const cleanBase = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+    return page === 1 ? cleanBase || '/' : `${cleanBase}/page/${page}`;
   };
+
 
   const pages: number[] = [];
   const maxVisiblePages = 5;

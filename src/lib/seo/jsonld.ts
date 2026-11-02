@@ -118,3 +118,27 @@ export function generateFaqJsonLd(faqs: FaqItem[]): Record<string, unknown> | nu
     })),
   };
 }
+
+export function generatePersonJsonLd(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: siteConfig.creator.name,
+    url: siteConfig.creator.url,
+    image: `${siteConfig.url}${siteConfig.creator.image}`,
+    jobTitle: 'Founder & Software Architect',
+    sameAs: [siteConfig.creator.url, siteConfig.social.github].filter(Boolean),
+    description: siteConfig.creator.bio,
+  };
+}
+
+export function generateCollectionJsonLd(title: string, description: string, url: string): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: title,
+    description,
+    url: url.startsWith('http') ? url : `${siteConfig.url}${url}`,
+  };
+}
+

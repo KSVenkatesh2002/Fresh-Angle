@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { siteConfig } from '@/config/site';
 import { Container } from './Container';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { Sparkles, Search, Rss } from 'lucide-react';
+import { HeaderSearch } from './HeaderSearch';
+import { Sparkles, Rss } from 'lucide-react';
+
 
 export function Header(): React.JSX.Element {
   return (
@@ -44,13 +46,8 @@ export function Header(): React.JSX.Element {
 
           {/* Action Tools */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/search"
-              aria-label="Search articles"
-              className="w-9 h-9 rounded-lg border border-border bg-surface hover:bg-surface-muted text-foreground flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Search className="w-4 h-4" />
-            </Link>
+            <HeaderSearch />
+
 
             <Link
               href="/feed.xml"

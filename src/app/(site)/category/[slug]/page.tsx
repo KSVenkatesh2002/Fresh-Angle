@@ -10,8 +10,10 @@ import { constructPageMetadata } from '@/lib/seo/metadata';
 import { siteConfig } from '@/config/site';
 
 export const revalidate = 3600;
+export const dynamicParams = true;
 
 export async function generateMetadata({
+
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -60,11 +62,11 @@ export default async function CategoryPage({
           ]}
         />
 
-        <div className="py-6 border-b border-border mb-8">
-          <span className="text-xs font-semibold uppercase tracking-widest text-primary mb-2 block">
-            Technical Track
+        <div className="py-6 border-b border-border mb-8 space-y-4">
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary block">
+            Technical Track Hub
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground mb-3">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
             {result.category.name}
           </h1>
           {result.category.description && (
@@ -72,7 +74,13 @@ export default async function CategoryPage({
               {result.category.description}
             </p>
           )}
+          {result.category.introText && (
+            <div className="p-4 rounded-xl bg-surface border border-border text-sm text-foreground-muted leading-relaxed">
+              {result.category.introText}
+            </div>
+          )}
         </div>
+
 
         <PostList
           posts={result.posts}

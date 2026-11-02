@@ -9,6 +9,25 @@ export async function getAllCategories(): Promise<Category[]> {
   });
 }
 
+export async function getCategoriesWithCounts(): Promise<Array<Category & { postCount: number }>> {
+  const db = getDb();
+  const cats = await db.query.categories.findMany({
+    orderBy: (c, { asc }) => [asc(c.name)],
+    with: {
+      posts: {
+        where: (p, { eq }) => eq(p.status, 'published'),
+        columns: { id: true },
+      },
+    },
+  });
+
+  return cats.map((c) => ({
+    ...c,
+    postCount: c.posts?.length || 0,
+  }));
+}
+
+
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const db = getDb();
   const category = await db.query.categories.findFirst({

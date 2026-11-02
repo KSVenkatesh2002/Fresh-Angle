@@ -70,14 +70,26 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [`${siteConfig.url}/opengraph-image`],
   },
-  robots: {
-    index: true,
-    follow: true,
-    'max-video-preview': -1,
-    'max-image-preview': 'large',
-    'max-snippet': -1,
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { 'msvalidate.01': [process.env.BING_SITE_VERIFICATION] }
+      : undefined,
   },
+  robots: (!process.env.VERCEL_ENV || process.env.VERCEL_ENV === 'production')
+    ? {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      }
+    : {
+        index: false,
+        follow: false,
+      },
 };
+
 
 export default function RootLayout({
   children,

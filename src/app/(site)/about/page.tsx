@@ -1,9 +1,13 @@
 import React from 'react';
 import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
 import { Container } from '@/components/layout/Container';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { constructPageMetadata } from '@/lib/seo/metadata';
-import { Sparkles, Cpu, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { generatePersonJsonLd } from '@/lib/seo/jsonld';
+import { Sparkles, Cpu, CheckCircle2, ShieldAlert, ExternalLink, Code } from 'lucide-react';
 import { siteConfig } from '@/config/site';
 
 export const metadata: Metadata = constructPageMetadata({
@@ -16,6 +20,7 @@ export const metadata: Metadata = constructPageMetadata({
 export default function AboutPage(): React.JSX.Element {
   return (
     <main className="py-8 sm:py-12">
+      <JsonLd data={generatePersonJsonLd()} />
       <Container size="narrow">
         <Breadcrumbs items={[{ name: 'About', url: '/about' }]} />
 
@@ -45,6 +50,58 @@ export default function AboutPage(): React.JSX.Element {
             </p>
           </section>
 
+          {/* Creator Profile Section */}
+          <section className="p-6 sm:p-8 rounded-2xl bg-surface border border-border space-y-4">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+              <Code className="w-4 h-4" />
+              <span>Architecture & Engineering Leadership</span>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0 border-2 border-border shadow-sm">
+                <Image
+                  src={siteConfig.creator.image}
+                  alt={`Photo of ${siteConfig.creator.name}`}
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
+              </div>
+              <div className="space-y-3 text-center sm:text-left">
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">
+                    {siteConfig.creator.name}
+                  </h3>
+                  <p className="text-xs text-primary font-medium">Founder & Principal Systems Architect</p>
+                </div>
+                <p className="text-sm text-foreground-muted leading-relaxed">
+                  {siteConfig.creator.bio}
+                </p>
+                <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-4">
+                  <a
+                    href={siteConfig.creator.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                  >
+                    <span>Visit Personal Portfolio</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  {siteConfig.social.github && (
+                    <a
+                      href={siteConfig.social.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground-muted hover:text-foreground"
+                    >
+                      <span>GitHub</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section className="space-y-4 p-6 sm:p-8 rounded-2xl bg-surface border border-border">
             <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Cpu className="w-5 h-5 text-primary" />
@@ -63,7 +120,7 @@ export default function AboutPage(): React.JSX.Element {
               <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
                 <span>
-                  <strong>Primary Research Extraction:</strong> Web article text extraction with noise elimination (advertisements, navigation, trackers).
+                  <strong>Primary Research Extraction:</strong> Web article text extraction with noise elimination.
                 </span>
               </li>
               <li className="flex items-start gap-2.5">
@@ -87,7 +144,7 @@ export default function AboutPage(): React.JSX.Element {
               <span>Commitment to Transparency</span>
             </h2>
             <p className="text-foreground-muted leading-7">
-              Every post on Fresh Angle clearly denotes the AI models utilized during drafting, links directly to the original primary research sources, and provides full transparency into our synthesis process. Read our comprehensive <a href="/ai-disclosure" className="text-primary hover:underline underline-offset-4 font-medium">AI Disclosure & Ethics Policy</a>.
+              Every post on Fresh Angle clearly denotes the AI models utilized during drafting, links directly to the original primary research sources, and provides full transparency into our synthesis process. Read our comprehensive <Link href="/ai-disclosure" className="text-primary hover:underline underline-offset-4 font-medium">AI Disclosure & Ethics Policy</Link>.
             </p>
           </section>
         </div>

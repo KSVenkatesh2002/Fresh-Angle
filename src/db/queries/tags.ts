@@ -10,6 +10,25 @@ export async function getAllTags(): Promise<Tag[]> {
   });
 }
 
+export async function getTagsWithCounts(): Promise<Array<Tag & { postCount: number }>> {
+  const db = getDb();
+  const allTags = await db.query.tags.findMany({
+    orderBy: (t, { asc }) => [asc(t.name)],
+    with: {
+      posts: {
+        columns: { postId: true },
+      },
+    },
+  });
+
+  return allTags.map((t) => ({
+    ...t,
+    postCount: t.posts?.length || 0,
+  }));
+}
+
+
+
 export async function getTagBySlug(slug: string): Promise<Tag | null> {
   const db = getDb();
   const tag = await db.query.tags.findFirst({

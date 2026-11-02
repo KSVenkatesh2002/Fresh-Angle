@@ -18,9 +18,13 @@ import { AiDisclosureBadge } from '@/components/blog/AiDisclosureBadge';
 import { constructPostMetadata } from '@/lib/seo/metadata';
 import { generateArticleJsonLd, generateFaqJsonLd } from '@/lib/seo/jsonld';
 import { siteConfig } from '@/config/site';
+import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
+import { PostFeedback } from '@/components/blog/PostFeedback';
+import { SiteCreatedBy } from '@/components/blog/SiteCreatedBy';
 import { Calendar, Clock, ExternalLink, HelpCircle, UserCheck } from 'lucide-react';
 
 export const revalidate = 3600;
+export const dynamicParams = true;
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
   try {
@@ -111,7 +115,8 @@ export default async function BlogPostPage({
     : '/opengraph-image';
 
   return (
-    <main className="py-8 sm:py-12">
+    <main className="py-8 sm:py-12 relative">
+      <ReadingProgressBar />
       <JsonLd data={faqJsonLd ? [articleJsonLd, faqJsonLd] : articleJsonLd} />
 
       <Container size="narrow">
@@ -280,10 +285,17 @@ export default async function BlogPostPage({
             </div>
           )}
 
+          {/* Post Feedback Widget */}
+          <PostFeedback postId={post.id} />
+
+          {/* Site Created By Card */}
+          <SiteCreatedBy />
+
           {/* Related Articles */}
           <RelatedPosts posts={relatedPosts} />
         </article>
       </Container>
     </main>
   );
+
 }

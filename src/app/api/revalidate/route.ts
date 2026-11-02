@@ -33,15 +33,25 @@ export async function POST(request: NextRequest): Promise<Response> {
     const body = await request.json().catch(() => ({}));
     const slug = body.slug as string | undefined;
 
-    // Revalidate listings and feed routes
+    // Revalidate listings, feeds, and archives
     revalidatePath('/', 'page');
     revalidatePath('/blog', 'page');
+    revalidatePath('/categories', 'page');
+    revalidatePath('/tags', 'page');
+    revalidatePath('/archive', 'page');
     revalidatePath('/sitemap.xml');
     revalidatePath('/feed.xml');
 
     if (slug) {
       revalidatePath(`/blog/${slug}`, 'page');
     }
+    if (body.categorySlug) {
+      revalidatePath(`/category/${body.categorySlug}`, 'page');
+    }
+    if (Array.isArray(body.tagSlugs)) {
+      body.tagSlugs.forEach((t: string) => revalidatePath(`/tag/${t}`, 'page'));
+    }
+
 
     return NextResponse.json({
       revalidated: true,

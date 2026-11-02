@@ -2,11 +2,11 @@ import React from 'react';
 import type { Metadata } from 'next';
 import { Container } from '@/components/layout/Container';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { ContactForm } from '@/components/ui/ContactForm';
 import { constructPageMetadata } from '@/lib/seo/metadata';
-import { Mail, MessageSquare, Send } from 'lucide-react';
+import { Mail, MessageSquare } from 'lucide-react';
 import { siteConfig } from '@/config/site';
+
 
 export const metadata: Metadata = constructPageMetadata({
   title: 'Contact Fresh Angle Editorial',
@@ -38,34 +38,9 @@ export default function ContactPage(): React.JSX.Element {
               <MessageSquare className="w-5 h-5 text-primary" />
               <span>Send a Message</span>
             </h2>
-
-            <form
-              onSubmit={undefined}
-              className="space-y-4"
-            >
-              <Input label="Your Name" placeholder="Jane Doe" required />
-              <Input label="Email Address" type="email" placeholder="jane@example.com" required />
-              <Input label="Subject / Paper Title" placeholder="Correction or paper submission" required />
-
-              <div className="space-y-1.5">
-                <label htmlFor="message" className="block text-sm font-medium text-foreground">
-                  Message / Details
-                </label>
-                <textarea
-                  id="message"
-                  rows={5}
-                  required
-                  placeholder="Provide context, URL links, or specific claims you'd like our editorial engine to inspect..."
-                  className="w-full px-3.5 py-2 text-sm rounded-lg bg-surface text-foreground border border-border placeholder:text-foreground-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </div>
-
-              <Button type="button" variant="primary" className="gap-2 w-full sm:w-auto">
-                <Send className="w-4 h-4" />
-                <span>Submit Transmission</span>
-              </Button>
-            </form>
+            <ContactForm />
           </div>
+
 
           <div className="space-y-6">
             <div className="p-6 rounded-2xl bg-surface-muted border border-border">

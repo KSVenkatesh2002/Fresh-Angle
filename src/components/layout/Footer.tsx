@@ -1,8 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { siteConfig } from '@/config/site';
 import { Container } from './Container';
-import { Sparkles, Bot } from 'lucide-react';
+import { Sparkles, Bot, ExternalLink } from 'lucide-react';
 
 export function Footer(): React.JSX.Element {
   const currentYear = new Date().getFullYear();
@@ -11,7 +12,7 @@ export function Footer(): React.JSX.Element {
     <footer className="w-full border-t border-border bg-surface-muted/50 mt-20 transition-colors">
       <Container>
         <div className="py-12 md:py-16 grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand & Mission */}
+          {/* Brand & Creator Profile */}
           <div className="md:col-span-2 space-y-4">
             <Link
               href="/"
@@ -25,9 +26,35 @@ export function Footer(): React.JSX.Element {
             <p className="text-sm text-foreground-muted leading-relaxed max-w-md">
               {siteConfig.description}
             </p>
+
+            {/* Creator Profile Box */}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-surface border border-border max-w-md">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-border">
+                <Image
+                  src={siteConfig.creator.image}
+                  alt={`Photo of ${siteConfig.creator.name}`}
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-foreground-muted">Site Architecture & Engineering</div>
+                <a
+                  href={siteConfig.creator.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
+                >
+                  <span>Created by {siteConfig.creator.name}</span>
+                  <ExternalLink className="w-3 h-3 text-foreground-muted" />
+                </a>
+              </div>
+            </div>
+
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border text-xs text-foreground-muted">
               <Bot className="w-3.5 h-3.5 text-primary" />
-              <span>Automated research engine publishing daily at midnight UTC</span>
+              <span>Automated research engine publishing daily with editorial AI</span>
             </div>
           </div>
 
@@ -74,7 +101,7 @@ export function Footer(): React.JSX.Element {
         <div className="py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-foreground-muted">
           <p>© {currentYear} {siteConfig.name}. All rights reserved.</p>
           <p className="flex items-center gap-1.5">
-            Designed for high-speed indexing & semantic clarity.
+            Designed for high-speed indexing, semantic clarity & zero filler.
           </p>
         </div>
       </Container>
