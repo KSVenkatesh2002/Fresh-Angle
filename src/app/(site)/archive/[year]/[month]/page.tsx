@@ -1,20 +1,30 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { getPostsByArchive } from '@/db/queries/posts';
-import { Container } from '@/components/layout/Container';
-import { PostList } from '@/components/blog/PostList';
-import { Pagination } from '@/components/ui/Pagination';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { constructPageMetadata } from '@/lib/seo/metadata';
-import { siteConfig } from '@/config/site';
+import React from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getPostsByArchive } from "@/db/queries/posts";
+import { Container } from "@/components/layout/Container";
+import { PostList } from "@/components/blog/PostList";
+import { Pagination } from "@/components/ui/Pagination";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { constructPageMetadata } from "@/lib/seo/metadata";
+import { siteConfig } from "@/config/site";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export async function generateMetadata({
@@ -50,7 +60,7 @@ export default async function ArchiveMonthPage({
     notFound();
   }
 
-  const currentPage = parseInt(sParams.page || '1', 10) || 1;
+  const currentPage = parseInt(sParams.page || "1", 10) || 1;
   const result = await getPostsByArchive(y, m, {
     page: currentPage,
     limit: siteConfig.postsPerPage,
@@ -63,7 +73,7 @@ export default async function ArchiveMonthPage({
       <Container>
         <Breadcrumbs
           items={[
-            { name: 'Archive', url: '/archive' },
+            { name: "Archive", url: "/archive" },
             { name: `${monthName} ${y}`, url: `/archive/${year}/${month}` },
           ]}
         />
@@ -76,7 +86,8 @@ export default async function ArchiveMonthPage({
             {monthName} {y} Dispatches
           </h1>
           <p className="text-foreground-muted text-base max-w-2xl">
-            {result.total} {result.total === 1 ? 'dispatch' : 'dispatches'} published during {monthName} {y}.
+            {result.total} {result.total === 1 ? "dispatch" : "dispatches"}{" "}
+            published during {monthName} {y}.
           </p>
         </div>
 

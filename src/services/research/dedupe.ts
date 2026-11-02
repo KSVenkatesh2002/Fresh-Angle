@@ -1,5 +1,5 @@
-import { slugify, generateTopicKey } from '@/lib/utils/slug';
-import { PIPELINE_CONFIG } from '@/config/pipeline';
+import { slugify, generateTopicKey } from "@/lib/utils/slug";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 
 /**
  * Computes Jaccard word similarity between two strings (0.0 to 1.0).
@@ -7,13 +7,13 @@ import { PIPELINE_CONFIG } from '@/config/pipeline';
 export function computeJaccardSimilarity(textA: string, textB: string): number {
   const wordsA = new Set(
     slugify(textA)
-      .split('-')
-      .filter((w) => w.length > 2)
+      .split("-")
+      .filter((w) => w.length > 2),
   );
   const wordsB = new Set(
     slugify(textB)
-      .split('-')
-      .filter((w) => w.length > 2)
+      .split("-")
+      .filter((w) => w.length > 2),
   );
 
   if (wordsA.size === 0 && wordsB.size === 0) return 1.0;
@@ -57,7 +57,7 @@ export function computeLevenshteinSimilarity(s1: string, s2: string): number {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1, // substitution
           matrix[i][j - 1] + 1, // insertion
-          matrix[i - 1][j] + 1 // deletion
+          matrix[i - 1][j] + 1, // deletion
         );
       }
     }
@@ -76,13 +76,16 @@ export function isDuplicateTopic(
   existingTitles: string[],
   existingTopicKeys: string[] = [],
   candidateUrl?: string,
-  existingUrls: string[] = []
+  existingUrls: string[] = [],
 ): { isDuplicate: boolean; matchedWith?: string; score: number } {
   // 1. Exact Source URL match (same article already covered)
   if (candidateUrl && existingUrls.length > 0) {
-    const cleanCandidateUrl = candidateUrl.split('?')[0].replace(/\/+$/, '').toLowerCase();
+    const cleanCandidateUrl = candidateUrl
+      .split("?")[0]
+      .replace(/\/+$/, "")
+      .toLowerCase();
     const urlMatch = existingUrls.find((u) => {
-      const cleanExisting = u.split('?')[0].replace(/\/+$/, '').toLowerCase();
+      const cleanExisting = u.split("?")[0].replace(/\/+$/, "").toLowerCase();
       return cleanExisting === cleanCandidateUrl;
     });
 
@@ -133,4 +136,26 @@ export function isDuplicateTopic(
     matchedWith: highestMatch,
     score: highestScore,
   };
+}
+
+/**
+ * Checks a candidate title against existing database posts.
+ */
+export async function checkDuplicateCandidate(
+  title: string,
+): Promise<{ isDuplicate: boolean; matchedWith?: string; score: number }> {
+  try {
+    const { getDb } = await import("@/db/client");
+    const { posts } = await import("@/db/schema");
+    const past = await getDb()
+      .select({ title: posts.title, topicKey: posts.topicKey })
+      .from(posts);
+    return isDuplicateTopic(
+      title,
+      past.map((p) => p.title),
+      past.map((p) => p.topicKey),
+    );
+  } catch {
+    return { isDuplicate: false, score: 0 };
+  }
 }

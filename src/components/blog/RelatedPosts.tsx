@@ -1,22 +1,30 @@
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { PostWithRelations } from '@/db/queries/posts';
-import { formatDate } from '@/lib/utils/dates';
-import { Sparkles } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { PostWithRelations } from "@/db/queries/posts";
+import { formatDate } from "@/lib/utils/dates";
+import { Sparkles } from "lucide-react";
 
 interface RelatedPostsProps {
   posts: PostWithRelations[];
 }
 
-export function RelatedPosts({ posts }: RelatedPostsProps): React.JSX.Element | null {
+export function RelatedPosts({
+  posts,
+}: RelatedPostsProps): React.JSX.Element | null {
   if (posts.length === 0) return null;
 
   return (
-    <section aria-labelledby="related-posts-heading" className="mt-16 pt-10 border-t border-border">
+    <section
+      aria-labelledby="related-posts-heading"
+      className="mt-16 pt-10 border-t border-border"
+    >
       <div className="flex items-center gap-2 mb-6">
         <Sparkles className="w-5 h-5 text-primary" />
-        <h2 id="related-posts-heading" className="text-xl font-bold tracking-tight text-foreground">
+        <h2
+          id="related-posts-heading"
+          className="text-xl font-bold tracking-tight text-foreground"
+        >
           Related Articles
         </h2>
       </div>
@@ -25,7 +33,7 @@ export function RelatedPosts({ posts }: RelatedPostsProps): React.JSX.Element | 
         {posts.map((post) => {
           const imageUrl = post.coverImageId
             ? `/api/images/${post.coverImageId}`
-            : '/opengraph-image';
+            : "/opengraph-image";
 
           return (
             <article
@@ -49,14 +57,21 @@ export function RelatedPosts({ posts }: RelatedPostsProps): React.JSX.Element | 
 
               <div className="p-4 flex flex-col flex-1">
                 <time
-                  dateTime={post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined}
+                  dateTime={
+                    post.publishedAt
+                      ? new Date(post.publishedAt).toISOString()
+                      : undefined
+                  }
                   className="text-[11px] text-foreground-muted mb-1.5"
                 >
                   {formatDate(post.publishedAt)}
                 </time>
 
                 <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-2">
-                  <Link href={`/blog/${post.slug}`} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                  >
                     {post.title}
                   </Link>
                 </h3>

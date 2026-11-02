@@ -1,19 +1,24 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
-import { Play, LogOut } from 'lucide-react';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { Play, LogOut } from "lucide-react";
 
 export function AdminActions(): React.JSX.Element {
   const router = useRouter();
   const [generating, setGenerating] = useState<boolean>(false);
-  const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(
-    null
-  );
+  const [statusMessage, setStatusMessage] = useState<{
+    text: string;
+    isError: boolean;
+  } | null>(null);
 
   const handleGenerate = async (): Promise<void> => {
-    if (!confirm('Run the full daily publishing pipeline now? This will discover a topic, research, synthesize, and publish a post.')) {
+    if (
+      !confirm(
+        "Run the full daily publishing pipeline now? This will discover a topic, research, synthesize, and publish a post.",
+      )
+    ) {
       return;
     }
 
@@ -21,14 +26,17 @@ export function AdminActions(): React.JSX.Element {
     setStatusMessage(null);
 
     try {
-      const res = await fetch('/api/admin/generate', { method: 'POST' });
+      const res = await fetch("/api/admin/generate", { method: "POST" });
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Generation failed');
+        throw new Error(data.error || "Generation failed");
       }
 
-      setStatusMessage({ text: 'Pipeline finished! Refreshing...', isError: false });
+      setStatusMessage({
+        text: "Pipeline finished! Refreshing...",
+        isError: false,
+      });
       router.refresh();
     } catch (err: unknown) {
       setStatusMessage({ text: (err as Error).message, isError: true });
@@ -38,8 +46,8 @@ export function AdminActions(): React.JSX.Element {
   };
 
   const handleLogout = async (): Promise<void> => {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    router.push('/admin/login');
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/admin/login");
     router.refresh();
   };
 
@@ -49,8 +57,8 @@ export function AdminActions(): React.JSX.Element {
         <span
           className={`text-xs px-2.5 py-1 rounded-md border ${
             statusMessage.isError
-              ? 'bg-danger/10 border-danger/20 text-danger'
-              : 'bg-success/10 border-success/20 text-success'
+              ? "bg-danger/10 border-danger/20 text-danger"
+              : "bg-success/10 border-success/20 text-success"
           }`}
         >
           {statusMessage.text}
@@ -68,7 +76,12 @@ export function AdminActions(): React.JSX.Element {
         <span>Generate Now</span>
       </Button>
 
-      <Button onClick={handleLogout} variant="outline" size="sm" className="gap-1.5">
+      <Button
+        onClick={handleLogout}
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+      >
         <LogOut className="w-3.5 h-3.5" />
         <span>Exit Session</span>
       </Button>

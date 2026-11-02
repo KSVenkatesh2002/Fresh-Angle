@@ -1,25 +1,28 @@
-import React from 'react';
-import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
-import { siteConfig } from '@/config/site';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { generateWebsiteJsonLd, generateOrganizationJsonLd } from '@/lib/seo/jsonld';
-import './globals.css';
+import React from "react";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import { siteConfig } from "@/config/site";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  generateWebsiteJsonLd,
+  generateOrganizationJsonLd,
+} from "@/lib/seo/jsonld";
+import "./globals.css";
 
 const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-sans',
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
 });
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
-    { media: '(prefers-color-scheme: dark)', color: '#090d16' },
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#090d16" },
   ],
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
 };
 
@@ -31,13 +34,13 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: [
-    'Artificial Intelligence',
-    'AI News',
-    'Machine Learning',
-    'Frontier Models',
-    'LLM',
-    'Deep Learning',
-    'Tech News',
+    "Artificial Intelligence",
+    "AI News",
+    "Machine Learning",
+    "Frontier Models",
+    "LLM",
+    "Deep Learning",
+    "Tech News",
   ],
   authors: [{ name: siteConfig.author.name, url: siteConfig.author.url }],
   creator: siteConfig.author.name,
@@ -45,12 +48,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteConfig.url,
     types: {
-      'application/rss+xml': `${siteConfig.url}/feed.xml`,
+      "application/rss+xml": `${siteConfig.url}/feed.xml`,
     },
   },
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
+    type: "website",
+    locale: "en_US",
     url: siteConfig.url,
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
@@ -65,7 +68,7 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: 'summary_large_image',
+    card: "summary_large_image",
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
     images: [`${siteConfig.url}/opengraph-image`],
@@ -73,23 +76,23 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
     other: process.env.BING_SITE_VERIFICATION
-      ? { 'msvalidate.01': [process.env.BING_SITE_VERIFICATION] }
+      ? { "msvalidate.01": [process.env.BING_SITE_VERIFICATION] }
       : undefined,
   },
-  robots: (!process.env.VERCEL_ENV || process.env.VERCEL_ENV === 'production')
-    ? {
-        index: true,
-        follow: true,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-      }
-    : {
-        index: false,
-        follow: false,
-      },
+  robots:
+    !process.env.VERCEL_ENV || process.env.VERCEL_ENV === "production"
+      ? {
+          index: true,
+          follow: true,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        }
+      : {
+          index: false,
+          follow: false,
+        },
 };
-
 
 export default function RootLayout({
   children,

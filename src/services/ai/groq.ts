@@ -1,7 +1,12 @@
-import { AiProvider, AiGenerationResult, AiProviderError, GenerateTextOptions } from './provider';
-import { fetchWithRetry } from '@/lib/utils/http';
-import { PIPELINE_CONFIG } from '@/config/pipeline';
-import { z } from 'zod';
+import {
+  AiProvider,
+  AiGenerationResult,
+  AiProviderError,
+  GenerateTextOptions,
+} from "./provider";
+import { fetchWithRetry } from "@/lib/utils/http";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
+import { z } from "zod";
 
 const groqChatResponseSchema = z.object({
   choices: z.array(
@@ -9,62 +14,70 @@ const groqChatResponseSchema = z.object({
       message: z.object({
         content: z.string().nullable(),
       }),
-    })
+    }),
   ),
 });
 
 export class GroqProvider implements AiProvider {
-  public readonly id = 'groq';
-  public readonly name = 'Groq';
+  public readonly id = "groq";
+  public readonly name = "Groq";
 
-  async generateText(options: GenerateTextOptions): Promise<AiGenerationResult> {
+  async generateText(
+    options: GenerateTextOptions,
+  ): Promise<AiGenerationResult> {
     const apiKey = process.env.GROQ_API_KEY;
     const model = process.env.GROQ_MODEL;
 
     if (!apiKey) {
-      throw new AiProviderError(this.id, 'GROQ_API_KEY is not configured in environment');
+      throw new AiProviderError(
+        this.id,
+        "GROQ_API_KEY is not configured in environment",
+      );
     }
     if (!model) {
-      throw new AiProviderError(this.id, 'GROQ_MODEL is not configured in environment');
+      throw new AiProviderError(
+        this.id,
+        "GROQ_MODEL is not configured in environment",
+      );
     }
 
     const messages = [];
     if (options.system) {
-      messages.push({ role: 'system', content: options.system });
+      messages.push({ role: "system", content: options.system });
     }
-    messages.push({ role: 'user', content: options.prompt });
+    messages.push({ role: "user", content: options.prompt });
 
-    const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+    const endpoint = "https://api.groq.com/openai/v1/chat/completions";
 
     try {
       const response = await fetchWithRetry(
         endpoint,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
             model,
             messages,
             temperature: options.temperature ?? 0.7,
-            response_format: options.json ? { type: 'json_object' } : undefined,
+            response_format: options.json ? { type: "json_object" } : undefined,
           }),
           timeoutMs: PIPELINE_CONFIG.limits.aiTimeoutMs,
         },
         {
           retries: PIPELINE_CONFIG.limits.maxRetries,
           backoffMs: 2000,
-        }
+        },
       );
 
       if (!response.ok) {
-        const errText = await response.text().catch(() => '');
+        const errText = await response.text().catch(() => "");
         throw new AiProviderError(
           this.id,
           `Groq API responded with status ${response.status}: ${errText}`,
-          response.status
+          response.status,
         );
       }
 
@@ -72,7 +85,10 @@ export class GroqProvider implements AiProvider {
       const parsed = groqChatResponseSchema.safeParse(json);
 
       if (!parsed.success || !parsed.data.choices[0]?.message.content) {
-        throw new AiProviderError(this.id, 'Invalid response structure from Groq API');
+        throw new AiProviderError(
+          this.id,
+          "Invalid response structure from Groq API",
+        );
       }
 
       return {
@@ -86,7 +102,7 @@ export class GroqProvider implements AiProvider {
         this.id,
         `Unexpected failure during Groq text generation: ${(err as Error).message}`,
         undefined,
-        err
+        err,
       );
     }
   }

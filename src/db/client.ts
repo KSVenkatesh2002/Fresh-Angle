@@ -1,8 +1,8 @@
-import dns from 'node:dns';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
-import * as schema from './schema';
+import dns from "node:dns";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
+import * as schema from "./schema";
 
 // Configure WebSocket constructor for Neon Serverless in Node.js environments
 if (!neonConfig.webSocketConstructor) {
@@ -10,28 +10,28 @@ if (!neonConfig.webSocketConstructor) {
 }
 
 // Prefer IPv4 and filter out unreachable IPv6 addresses in containerized environments
-if (typeof dns.setDefaultResultOrder === 'function') {
-  dns.setDefaultResultOrder('ipv4first');
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
 }
 const origLookup = dns.lookup.bind(dns);
 type LookupCallback = (
   err: NodeJS.ErrnoException | null,
   address: string | dns.LookupAddress[],
-  family?: number
+  family?: number,
 ) => void;
 
 dns.lookup = function (
   hostname: string,
   options: dns.LookupOptions | number | LookupCallback,
-  callback?: LookupCallback
+  callback?: LookupCallback,
 ): void {
   let cb: LookupCallback;
   let opts: dns.LookupOptions;
 
-  if (typeof options === 'function') {
+  if (typeof options === "function") {
     cb = options;
     opts = { family: 4 };
-  } else if (typeof options === 'object' && options !== null) {
+  } else if (typeof options === "object" && options !== null) {
     opts = { ...options, family: 4 };
     cb = callback as LookupCallback;
   } else {
@@ -46,8 +46,8 @@ dns.lookup = function (
       c: (
         err: NodeJS.ErrnoException | null,
         address: string | dns.LookupAddress[],
-        family: number
-      ) => void
+        family: number,
+      ) => void,
     ) => void
   )(
     hostname,
@@ -55,7 +55,7 @@ dns.lookup = function (
     (
       err: NodeJS.ErrnoException | null,
       address: string | dns.LookupAddress[],
-      family: number
+      family: number,
     ) => {
       if (err) return cb(err, address, family);
       if (Array.isArray(address)) {
@@ -63,7 +63,7 @@ dns.lookup = function (
         return cb(null, v4Only.length > 0 ? v4Only : address, family);
       }
       cb(err, address, family);
-    }
+    },
   );
 } as typeof dns.lookup;
 
@@ -77,7 +77,9 @@ export function getDb(): ReturnType<typeof drizzle<typeof schema>> {
 
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error('❌ [Database Error] DATABASE_URL environment variable is missing.');
+    throw new Error(
+      "❌ [Database Error] DATABASE_URL environment variable is missing.",
+    );
   }
 
   const pool = new Pool({ connectionString });
@@ -98,7 +100,12 @@ export interface ImageStorage {
 
 // Database-backed implementation of ImageStorage
 export const dbImageStorage: ImageStorage = {
-  async saveImage({ data, mime = 'image/webp', width = 1200, height = 630 }): Promise<string> {
+  async saveImage({
+    data,
+    mime = "image/webp",
+    width = 1200,
+    height = 630,
+  }): Promise<string> {
     const db = getDb();
     const [inserted] = await db
       .insert(schema.postImages)
@@ -111,7 +118,7 @@ export const dbImageStorage: ImageStorage = {
       .returning({ id: schema.postImages.id });
 
     if (!inserted) {
-      throw new Error('Failed to insert image into database');
+      throw new Error("Failed to insert image into database");
     }
 
     return inserted.id;

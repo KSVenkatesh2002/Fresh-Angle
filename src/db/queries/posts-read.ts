@@ -1,8 +1,8 @@
-import { eq, desc, and, count, ne, sql } from 'drizzle-orm';
-import { getDb } from '@/db/client';
-import { posts } from '@/db/schema';
-import { siteConfig } from '@/config/site';
-import { PostWithRelations, PaginatedPostsResult } from './posts-types';
+import { eq, desc, and, count, ne, sql } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { posts } from "@/db/schema";
+import { siteConfig } from "@/config/site";
+import { PostWithRelations, PaginatedPostsResult } from "./posts-types";
 
 export async function getPublishedPosts(params: {
   page?: number;
@@ -16,11 +16,11 @@ export async function getPublishedPosts(params: {
   const [totalCount] = await db
     .select({ val: count() })
     .from(posts)
-    .where(eq(posts.status, 'published'));
+    .where(eq(posts.status, "published"));
 
   const total = totalCount?.val ?? 0;
   const items = await db.query.posts.findMany({
-    where: eq(posts.status, 'published'),
+    where: eq(posts.status, "published"),
     orderBy: [desc(posts.publishedAt)],
     limit,
     offset,
@@ -45,7 +45,9 @@ export async function getPublishedPosts(params: {
   };
 }
 
-export async function getPostBySlug(slug: string): Promise<PostWithRelations | null> {
+export async function getPostBySlug(
+  slug: string,
+): Promise<PostWithRelations | null> {
   const db = getDb();
   const post = await db.query.posts.findFirst({
     where: eq(posts.slug, slug),
@@ -68,14 +70,14 @@ export async function getPostBySlug(slug: string): Promise<PostWithRelations | n
 export async function getRelatedPosts(
   postId: string,
   categoryId: string | null,
-  limit = 3
+  limit = 3,
 ): Promise<PostWithRelations[]> {
   const db = getDb();
   const items = await db.query.posts.findMany({
     where: and(
-      eq(posts.status, 'published'),
+      eq(posts.status, "published"),
       ne(posts.id, postId),
-      categoryId ? eq(posts.categoryId, categoryId) : undefined
+      categoryId ? eq(posts.categoryId, categoryId) : undefined,
     ),
     orderBy: [desc(posts.publishedAt)],
     limit,
@@ -99,14 +101,20 @@ export async function getAllPostSlugs(): Promise<string[]> {
   const results = await db
     .select({ slug: posts.slug })
     .from(posts)
-    .where(eq(posts.status, 'published'));
+    .where(eq(posts.status, "published"));
 
   return results.map((r) => r.slug);
 }
 
-export async function getArchiveMonths(): Promise<Array<{ year: number; month: number; count: number }>> {
+export async function getArchiveMonths(): Promise<
+  Array<{ year: number; month: number; count: number }>
+> {
   const db = getDb();
-  const result = await db.execute<{ year: number; month: number; count: number }>(sql`
+  const result = await db.execute<{
+    year: number;
+    month: number;
+    count: number;
+  }>(sql`
     SELECT 
       EXTRACT(YEAR FROM published_at)::int as year,
       EXTRACT(MONTH FROM published_at)::int as month,

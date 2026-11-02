@@ -1,22 +1,25 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import { Container } from '@/components/layout/Container';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { constructPageMetadata } from '@/lib/seo/metadata';
-import { ShieldCheck } from 'lucide-react';
-import { siteConfig } from '@/config/site';
+import React from "react";
+import type { Metadata } from "next";
+import { Container } from "@/components/layout/Container";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { constructPageMetadata } from "@/lib/seo/metadata";
+import { ShieldCheck } from "lucide-react";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = constructPageMetadata({
-  title: 'Privacy Policy',
-  description: 'Understand how Fresh Angle respects reader privacy, data security, and cookies.',
-  path: '/privacy-policy',
+  title: "Privacy Policy",
+  description:
+    "Understand how Fresh Angle respects reader privacy, data security, and cookies.",
+  path: "/privacy-policy",
 });
 
 export default function PrivacyPolicyPage(): React.JSX.Element {
   return (
     <main className="py-8 sm:py-12">
       <Container size="narrow">
-        <Breadcrumbs items={[{ name: 'Privacy Policy', url: '/privacy-policy' }]} />
+        <Breadcrumbs
+          items={[{ name: "Privacy Policy", url: "/privacy-policy" }]}
+        />
 
         <div className="py-6 border-b border-border mb-8">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary mb-2 block">
@@ -37,7 +40,10 @@ export default function PrivacyPolicyPage(): React.JSX.Element {
               <span>1. Zero Intrusive Tracking</span>
             </h2>
             <p className="leading-7">
-              {siteConfig.name} does not employ cross-site tracking scripts, third-party advertising cookies, or fingerprinting pixels. We believe technical journalism should be readable without surveillance.
+              {siteConfig.name} does not employ cross-site tracking scripts,
+              third-party advertising cookies, or fingerprinting pixels. We
+              believe technical journalism should be readable without
+              surveillance.
             </p>
           </section>
 
@@ -46,7 +52,18 @@ export default function PrivacyPolicyPage(): React.JSX.Element {
               2. Technical Cookies & Local Storage
             </h2>
             <p className="leading-7">
-              We utilize browser <code className="text-primary font-mono text-sm">localStorage</code> strictly to persist your preferred color theme (<code className="text-primary font-mono text-sm">light</code> or <code className="text-primary font-mono text-sm">dark</code>). For authenticated administrative users, an encrypted session cookie (<code className="text-primary font-mono text-sm">freshangle_session</code>) is stored with httpOnly and Secure attributes.
+              We utilize browser{" "}
+              <code className="text-primary font-mono text-sm">
+                localStorage
+              </code>{" "}
+              strictly to persist your preferred color theme (
+              <code className="text-primary font-mono text-sm">light</code> or{" "}
+              <code className="text-primary font-mono text-sm">dark</code>). For
+              authenticated administrative users, an encrypted session cookie (
+              <code className="text-primary font-mono text-sm">
+                freshangle_session
+              </code>
+              ) is stored with httpOnly and Secure attributes.
             </p>
           </section>
 
@@ -55,7 +72,11 @@ export default function PrivacyPolicyPage(): React.JSX.Element {
               3. Server Logs and Caching
             </h2>
             <p className="leading-7">
-              Standard edge infrastructure (Vercel) records generic request metadata (IP address, user agent, request path) strictly for operational debugging, DDoS mitigation, and Core Web Vitals telemetry. These logs are routinely cycled and never linked to personal identities.
+              Standard edge infrastructure (Vercel) records generic request
+              metadata (IP address, user agent, request path) strictly for
+              operational debugging, DDoS mitigation, and Core Web Vitals
+              telemetry. These logs are routinely cycled and never linked to
+              personal identities.
             </p>
           </section>
 
@@ -64,7 +85,9 @@ export default function PrivacyPolicyPage(): React.JSX.Element {
               4. Third-Party Links
             </h2>
             <p className="leading-7">
-              Our articles cite primary research papers, preprint archives, and official technical announcements. We are not responsible for the privacy policies of external sites linked in our references.
+              Our articles cite primary research papers, preprint archives, and
+              official technical announcements. We are not responsible for the
+              privacy policies of external sites linked in our references.
             </p>
           </section>
         </div>

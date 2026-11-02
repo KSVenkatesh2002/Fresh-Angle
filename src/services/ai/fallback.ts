@@ -1,8 +1,12 @@
-import { z } from 'zod';
-import { AiProvider, AiGenerationResult, GenerateTextOptions } from './provider';
-import { GeminiProvider } from './gemini';
-import { GroqProvider } from './groq';
-import { OpenRouterProvider } from './openrouter';
+import { z } from "zod";
+import {
+  AiProvider,
+  AiGenerationResult,
+  GenerateTextOptions,
+} from "./provider";
+import { GeminiProvider } from "./gemini";
+import { GroqProvider } from "./groq";
+import { OpenRouterProvider } from "./openrouter";
 
 export class AiFallbackChain {
   private providers: AiProvider[];
@@ -18,24 +22,34 @@ export class AiFallbackChain {
   /**
    * Executes prompt against the provider chain with fallback on failure.
    */
-  async generateText(options: GenerateTextOptions): Promise<AiGenerationResult> {
+  async generateText(
+    options: GenerateTextOptions,
+  ): Promise<AiGenerationResult> {
     const errors: Array<{ provider: string; error: string }> = [];
 
     for (const provider of this.providers) {
       try {
         console.log(`🤖 [AI Chain] Calling provider: ${provider.name}...`);
         const result = await provider.generateText(options);
-        console.log(`✓ [AI Chain] Succeeded with ${provider.name} (${result.model})`);
+        console.log(
+          `✓ [AI Chain] Succeeded with ${provider.name} (${result.model})`,
+        );
         return result;
       } catch (err: unknown) {
         const errorMsg = (err as Error).message;
-        console.warn(`⚠️ [AI Chain] Provider ${provider.name} failed: ${errorMsg}`);
+        console.warn(
+          `⚠️ [AI Chain] Provider ${provider.name} failed: ${errorMsg}`,
+        );
         errors.push({ provider: provider.name, error: errorMsg });
       }
     }
 
-    const failureSummary = errors.map((e) => `  - ${e.provider}: ${e.error}`).join('\n');
-    throw new Error(`❌ All AI providers in fallback chain failed:\n${failureSummary}`);
+    const failureSummary = errors
+      .map((e) => `  - ${e.provider}: ${e.error}`)
+      .join("\n");
+    throw new Error(
+      `❌ All AI providers in fallback chain failed:\n${failureSummary}`,
+    );
   }
 
   /**
@@ -44,7 +58,7 @@ export class AiFallbackChain {
    */
   async generateValidatedJson<T>(
     options: GenerateTextOptions,
-    schema: z.ZodType<T>
+    schema: z.ZodType<T>,
   ): Promise<{ data: T; result: AiGenerationResult }> {
     const jsonOptions: GenerateTextOptions = {
       ...options,
@@ -60,7 +74,7 @@ export class AiFallbackChain {
 
     // Retry once with a targeted JSON-repair prompt
     console.warn(
-      `⚠️ [AI Chain] JSON validation failed (${parsedData.error}). Prompting AI to repair JSON...`
+      `⚠️ [AI Chain] JSON validation failed (${parsedData.error}). Prompting AI to repair JSON...`,
     );
 
     const repairPrompt = `
@@ -84,7 +98,7 @@ Please output ONLY a valid, corrected JSON object complying strictly with the re
 
     if (!parsedData.success) {
       throw new Error(
-        `❌ [AI Chain] Failed to produce valid JSON after repair retry: ${parsedData.error}\nRaw output: ${result.text}`
+        `❌ [AI Chain] Failed to produce valid JSON after repair retry: ${parsedData.error}\nRaw output: ${result.text}`,
       );
     }
 
@@ -93,14 +107,14 @@ Please output ONLY a valid, corrected JSON object complying strictly with the re
 
   private tryParseAndValidate<T>(
     text: string,
-    schema: z.ZodType<T>
+    schema: z.ZodType<T>,
   ): { success: true; data: T } | { success: false; error: string } {
     try {
       // Clean possible markdown code fences (```json ... ```)
       const cleanJson = text
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/, '')
-        .replace(/\s*```$/, '')
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/, "")
+        .replace(/\s*```$/, "")
         .trim();
 
       const parsed = JSON.parse(cleanJson);
@@ -109,7 +123,9 @@ Please output ONLY a valid, corrected JSON object complying strictly with the re
       if (!validated.success) {
         return {
           success: false,
-          error: validated.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', '),
+          error: validated.error.issues
+            .map((i) => `${i.path.join(".")}: ${i.message}`)
+            .join(", "),
         };
       }
 

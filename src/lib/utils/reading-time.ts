@@ -8,10 +8,10 @@ export function calculateReadingTime(content: string): number {
 
   // Remove code blocks, HTML tags, markdown symbols for accurate word count
   const cleanText = content
-    .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-    .replace(/`.*?`/g, '') // Remove inline code
-    .replace(/<[^>]+>/g, '') // Remove HTML tags
-    .replace(/[#*_[\]()~>-]/g, ' ') // Remove markdown syntax
+    .replace(/```[\s\S]*?```/g, "") // Remove code blocks
+    .replace(/`.*?`/g, "") // Remove inline code
+    .replace(/<[^>]+>/g, "") // Remove HTML tags
+    .replace(/[#*_[\]()~>-]/g, " ") // Remove markdown syntax
     .trim();
 
   const words = cleanText.split(/\s+/).filter((w) => w.length > 0);

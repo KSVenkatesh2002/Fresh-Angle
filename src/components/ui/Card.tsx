@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hoverEffect?: boolean;
@@ -6,14 +6,14 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function Card({
   hoverEffect = false,
-  className = '',
+  className = "",
   children,
   ...props
 }: CardProps): React.JSX.Element {
   return (
     <div
       className={`bg-surface border border-border text-foreground rounded-xl overflow-hidden transition-all duration-200 ${
-        hoverEffect ? 'hover:shadow-md hover:border-primary/50' : 'shadow-sm'
+        hoverEffect ? "hover:shadow-md hover:border-primary/50" : "shadow-sm"
       } ${className}`}
       {...props}
     >
@@ -23,7 +23,7 @@ export function Card({
 }
 
 export function CardHeader({
-  className = '',
+  className = "",
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>): React.JSX.Element {
@@ -35,7 +35,7 @@ export function CardHeader({
 }
 
 export function CardContent({
-  className = '',
+  className = "",
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>): React.JSX.Element {
@@ -47,7 +47,7 @@ export function CardContent({
 }
 
 export function CardFooter({
-  className = '',
+  className = "",
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>): React.JSX.Element {

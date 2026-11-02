@@ -1,28 +1,32 @@
-import sharp from 'sharp';
-import { PIPELINE_CONFIG } from '@/config/pipeline';
+import sharp from "sharp";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 
 /**
  * Resizes an image buffer to 1200x630 and converts it into compressed WebP.
  * Adjusts quality iteratively to stay below target size limit (~125KB).
  */
-export async function processImageToWebp(input: Buffer | Uint8Array): Promise<Buffer> {
+export async function processImageToWebp(
+  input: Buffer | Uint8Array,
+): Promise<Buffer> {
   const targetWidth = PIPELINE_CONFIG.limits.coverWidth;
   const targetHeight = PIPELINE_CONFIG.limits.coverHeight;
   const maxSizeBytes = PIPELINE_CONFIG.limits.maxCoverSizeBytes;
 
   const sharpInstance = sharp(input).resize(targetWidth, targetHeight, {
-    fit: 'cover',
-    position: 'center',
+    fit: "cover",
+    position: "center",
   });
 
   let quality = 82;
-  let outputBuffer = await sharpInstance.webp({ quality, effort: 4 }).toBuffer();
+  let outputBuffer = await sharpInstance
+    .webp({ quality, effort: 4 })
+    .toBuffer();
 
   // If size exceeds target, progressively reduce quality
   while (outputBuffer.length > maxSizeBytes && quality > 45) {
     quality -= 8;
     outputBuffer = await sharp(input)
-      .resize(targetWidth, targetHeight, { fit: 'cover', position: 'center' })
+      .resize(targetWidth, targetHeight, { fit: "cover", position: "center" })
       .webp({ quality, effort: 4 })
       .toBuffer();
   }
@@ -35,23 +39,23 @@ export async function processImageToWebp(input: Buffer | Uint8Array): Promise<Bu
  */
 export async function generateDefaultBrandedCover(
   title: string,
-  category: string = 'Artificial Intelligence'
+  category: string = "Artificial Intelligence",
 ): Promise<Buffer> {
   const width = PIPELINE_CONFIG.limits.coverWidth;
   const height = PIPELINE_CONFIG.limits.coverHeight;
 
   // Escape special xml characters
   const safeTitle = title
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 
   const safeCategory = category
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
   // Truncate title if too long for layout
   const displayTitle =
@@ -100,7 +104,5 @@ export async function generateDefaultBrandedCover(
   </svg>
   `;
 
-  return sharp(Buffer.from(svg))
-    .webp({ quality: 85 })
-    .toBuffer();
+  return sharp(Buffer.from(svg)).webp({ quality: 85 }).toBuffer();
 }

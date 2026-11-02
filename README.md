@@ -1,119 +1,173 @@
-# Fresh Angle ✦
+# Fresh Angle ✦ Production Autonomous AI Publication
 
-**Fresh Angle** is a production-quality, SEO-first, fully autonomous AI blog publication dedicated to artificial intelligence and technology intelligence. 
-
-Every day at midnight UTC, an automated 8-step pipeline discovers trending breakthroughs from primary sources (RSS feeds, Hacker News), extracts real article text with Cheerio, synthesizes a fact-grounded post using multi-stage LLM chains (Outline → Draft → Fact-Check Review), generates a 1200x630 WebP cover image (Cloudflare Workers AI Flux-1 / Pexels), stores everything in Neon Postgres via Drizzle ORM, revalidates ISR cache, and dispatches a notification to Telegram.
+**Fresh Angle** is a production-quality, SEO-first, fully automated multi-category AI blog publication engineered with Next.js 15 App Router, TypeScript strict mode, and Neon Serverless Postgres.
 
 ---
 
-## 🛠 Tech Stack
+## 🏛 Architecture Overview
 
-- **Framework**: Next.js 15 (App Router, Server Components by default, TypeScript strict mode)
-- **Styling**: Tailwind CSS with a strict Semantic Color Token system backed by CSS variables (Zero raw colors rule)
-- **Database**: Neon Serverless Postgres (`@neondatabase/serverless`) + Drizzle ORM
-- **Validation**: Zod (environment variables, AI outputs, API endpoints)
-- **Image Processing**: `sharp` (1200x630 WebP compression, target <125KB)
-- **HTML/RSS Parsing**: `cheerio` (noise removal and text extraction) and `fast-xml-parser`
-- **Markdown**: `react-markdown` + `rehype-slug` + `rehype-sanitize` + `remark-gfm`
-- **Authentication**: Signed HTTP-only session cookies via `jose` (HS256)
-- **Testing**: Vitest for pure business logic
-- **Automation Scheduler**: GitHub Actions (`.github/workflows/daily-post.yml`)
+```
+                                      [ GitHub Actions ]
+                                  (Runs tick.ts every 30m)
+                                              │
+                                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           SCHEDULING ENGINE (tick.ts)                       │
+│  1. Advisory Lock  2. Due Scheduled  3. Ensure Slots  4. Run Pipeline Slot  │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             8-STAGE PIPELINE                                │
+│                                                                             │
+│  [1. Discover]   RSS Feeds (Ars, Verge, TechCrunch, VentureBeat) + HN      │
+│         │        Multi-layer Dedupe (URL, Jaccard, Trigram, Levenshtein)   │
+│         ▼                                                                   │
+│  [2. Research]   Cheerio noise stripping, primary fact extraction           │
+│         │                                                                   │
+│  [3. Outline]    AI Call 1: Structured JSON thesis & H2 section breakdown   │
+│         │                                                                   │
+│  [4. Draft]      AI Call 2: Fact-grounded markdown (No fabricated stats)    │
+│         │                                                                   │
+│  [5. Review]     AI Call 3: Fact verification, SEO meta, FAQ, and tags      │
+│         │                                                                   │
+│  [6. Linking]    Link candidate retrieval + DB validation + Graph writing   │
+│         │                                                                   │
+│  [7. Cover Art]  Cloudflare Workers AI (Flux-1) ➔ Pexels ➔ Sharp WebP (<125KB)
+│         │                                                                   │
+│  [8. Publish]    Neon Postgres TX ➔ ISR Revalidation ➔ IndexNow ➔ Telegram  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 👤 Creator Profile & Attribution
+
+The site architecture and engineering is created and maintained by **Venkatesh K S**:
+
+- **Creator Name**: Venkatesh K S
+- **Portfolio Website**: [https://venkatesh-k-s.vercel.app](https://venkatesh-k-s.vercel.app)
+- **Local Photo**: `public/images/creator.png` (verified local asset, never hotlinked)
+- **Schema Attribution**: Sourced in `src/config/site.ts` and referenced in JSON-LD `Person` schemas with `sameAs` links.
+- **Editorial Disclaimer**: All research dispatches are bylined to the autonomous editorial AI engine as AI-assisted; the creator is transparently presented as the system architect.
 
 ---
 
 ## 📋 Environment Variables
 
-Create `.env.local` based on `.env.example`:
+Validated at runtime fail-fast by Zod in `src/lib/env.ts` with `server-only`:
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | Neon Postgres pooled connection string (`?sslmode=require`) |
-| `SITE_URL` | Canonical site URL (default: `https://freshangle.vercel.app`) |
-| `SITE_NAME` | Publication name (default: `Fresh Angle`) |
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `GEMINI_MODEL` | Gemini model name (e.g., `gemini-2.5-flash`) |
-| `GROQ_API_KEY` | Groq Cloud API key (fallback provider) |
-| `GROQ_MODEL` | Groq model name (e.g., `llama-3.3-70b-versatile`) |
-| `OPENROUTER_API_KEY` | (Optional) OpenRouter API key |
-| `OPENROUTER_MODEL` | (Optional) OpenRouter model name |
-| `CF_ACCOUNT_ID` | Cloudflare Account ID for Workers AI |
-| `CF_API_TOKEN` | Cloudflare API Token with Workers AI permissions |
-| `PEXELS_API_KEY` | Pexels API Key for stock photo fallback |
-| `TELEGRAM_BOT_TOKEN`| Telegram Bot Token from @BotFather |
-| `TELEGRAM_CHAT_ID` | Telegram Chat ID for publication alerts |
-| `CRON_SECRET` | Secret token (min 16 chars) for `/api/revalidate` cache calls |
-| `ADMIN_PASSWORD` | Password (min 8 chars) for `/admin` control panel |
-| `SESSION_SECRET` | 32+ character key for signing admin session cookies |
-| `AUTO_PUBLISH` | `true` to publish immediately, `false` to save as draft |
+### Required Variables
+
+| Variable                | Description                         | Example / Notes                                                      |
+| ----------------------- | ----------------------------------- | -------------------------------------------------------------------- |
+| `DATABASE_URL`          | Neon Serverless Postgres pooled URL | `postgresql://user:pass@ep-xyz.aws.neon.tech/neondb?sslmode=require` |
+| `SITE_URL`              | Canonical domain                    | `https://freshangle.vercel.app`                                      |
+| `SITE_NAME`             | Publication Name                    | `Fresh Angle`                                                        |
+| `DEFAULT_TIMEZONE`      | Timezone identifier                 | `Asia/Kolkata`                                                       |
+| `GEMINI_API_KEY`        | Google AI Studio Key                | Gemini 2.5 Flash / Flash Lite                                        |
+| `GEMINI_MODEL`          | Primary Gemini model name           | `gemini-2.5-flash`                                                   |
+| `GROQ_API_KEY`          | Groq Cloud API Key                  | Fallback high-speed inference                                        |
+| `GROQ_MODEL`            | Groq model name                     | `openai/gpt-oss-120b` or `llama-3.3-70b-versatile`                   |
+| `CF_ACCOUNT_ID`         | Cloudflare Account ID               | For Workers AI Flux image generation                                 |
+| `CF_API_TOKEN`          | Cloudflare Workers AI Token         | Read/Execute Workers AI                                              |
+| `CF_IMAGE_MODEL`        | Image model name                    | `@cf/black-forest-labs/flux-1-schnell`                               |
+| `PEXELS_API_KEY`        | Pexels Stock Photo Key              | Image fallback with photographer attribution                         |
+| `CRON_SECRET`           | Secret key (min 16 chars)           | For on-demand revalidation authorization                             |
+| `ADMIN_PASSWORD`        | Mission Control password            | Authentication for `/admin` panel                                    |
+| `SESSION_SECRET`        | 32+ character key                   | Signed HTTP-only session cookie via `jose`                           |
+| `GITHUB_REPO`           | Owner/Repo for dispatches           | `KSVenkatesh2002/Fresh-Angle`                                        |
+| `GITHUB_DISPATCH_TOKEN` | Personal Access Token               | For admin manual generation triggers                                 |
+| `CREATOR_NAME`          | Portfolio creator name              | `Venkatesh K S`                                                      |
+| `CREATOR_URL`           | Creator portfolio URL               | `https://venkatesh-k-s.vercel.app`                                   |
+| `CREATOR_IMAGE`         | Creator profile image path          | `/images/creator.png`                                                |
+
+### Optional Variables
+
+| Variable                   | Description                                       |
+| -------------------------- | ------------------------------------------------- |
+| `OPENROUTER_API_KEY`       | Tertiary AI fallback provider                     |
+| `TELEGRAM_BOT_TOKEN`       | Bot token for publication & failure notifications |
+| `TELEGRAM_CHAT_ID`         | Telegram chat/channel ID                          |
+| `TELEGRAM_THREAD_ID`       | Optional thread/topic ID in forum groups          |
+| `INDEXNOW_KEY`             | Instant Bing/Yandex/Seznam indexing key           |
+| `GOOGLE_SITE_VERIFICATION` | Google Search Console verification code           |
+| `BING_SITE_VERIFICATION`   | Bing Webmaster verification code                  |
 
 ---
 
-## ⚙️ How the Autonomous Pipeline Works
+## 🚀 Local Development Setup
 
-The daily pipeline (`scripts/generate-daily-post.ts` → `src/services/pipeline/run.ts`) executes 8 discrete, resilient steps:
+### 1. Install Dependencies
 
-1. **Pick Topic**: Ingests candidate items from high-signal RSS feeds (Ars Technica, The Verge AI, TechCrunch AI, VentureBeat AI, Hacker News). Filters by niche keywords and runs Jaccard + Levenshtein duplicate detection against existing posts and topic keys.
-2. **Research**: Fetches 3–5 primary source articles, strips noise (ads, scripts, cookie banners) via Cheerio, and extracts clean, grounded text.
-3. **Outline (AI Call 1)**: Generates a structured JSON outline with thesis, target track, and sub-headings.
-4. **Draft (AI Call 2)**: Writes a comprehensive analytical post in Markdown. **Strict Grounding Rule**: The model is forbidden from inventing metrics, quotes, dates, or URLs.
-5. **Review (AI Call 3)**: Fact-checks the draft against primary sources, eliminates filler, crafts SEO metadata (title under 90 chars, meta description under 155 chars), generates FAQ entries, tags, and cover image prompt.
-6. **Cover Image**: Calls Cloudflare Workers AI (`flux-1-schnell`). If unavailable, searches Pexels with the topic keyword and attributes the photographer. If that fails, synthesizes a branded editorial SVG. Converts and compresses to 1200x630 WebP (<125KB) with `sharp`.
-7. **Save & Publish**: Writes the post, image, tags, and source citations in a single database transaction.
-8. **Notify & Revalidate**: Calls `POST /api/revalidate` with `CRON_SECRET` to invalidate Next.js ISR cache and dispatches an HTML briefing to Telegram.
-
----
-
-## 🚀 Local Development
-
-### 1. Install dependencies
 ```bash
 npm install
 ```
 
-### 2. Generate database schema & seed
+### 2. Configure Environment
+
+Copy `.env.example` to `.env.local` and populate the required API keys.
+
+### 3. Generate Schema & Run Seed
+
 ```bash
 npm run db:generate
+npm run db:migrate
 npm run db:seed
 ```
 
-### 3. Run development server
+### 4. Run Development Server
+
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 4. Run tests & code quality verification
+Open [http://localhost:3000](http://localhost:3000) for the public site, or [http://localhost:3000/admin](http://localhost:3000/admin) for the control panel.
+
+---
+
+## 🧪 Verification & Quality Commands
+
+All 12 scripts must pass with zero errors and zero warnings:
+
 ```bash
-npm run test          # Runs Vitest unit test suite
-npm run lint          # Next.js ESLint + Semantic Colors check
-npm run typecheck     # TypeScript strict compilation check
-npm run check:colors  # Verifies ZERO raw Tailwind color classes in src/
+npm run typecheck     # Strict TypeScript type check
+npm run test          # Vitest suite (40+ pure logic tests)
+npm run lint          # Next.js ESLint + zero raw color check
+npm run check:colors  # Verifies strict semantic theme token compliance
+npm run tick          # Executes 30-min scheduler tick logic
+npm run generate:post # Generates a fresh dispatch end-to-end
 ```
 
-### 5. Manually trigger the pipeline
-```bash
-npm run generate:post
-```
+---
+
+## 🎨 Semantic Token Theme System
+
+To guarantee responsive dark mode transitions without visual flash or inconsistent hex codes, components strictly use semantic theme tokens:
+
+- **Surfaces**: `bg-background`, `bg-surface`, `bg-surface-muted`
+- **Typography**: `text-foreground`, `text-foreground-muted`
+- **Borders & Rings**: `border-border`, `ring-ring`
+- **Actions & Feedback**: `bg-primary`, `text-primary-foreground`, `text-success`, `text-warning`, `text-danger`
+
+Direct Tailwind palette classes (`bg-blue-500`, `text-gray-900`) and arbitrary hex codes are strictly prohibited and automatically rejected by `scripts/check-colors.mjs`.
+
+---
+
+## 🔍 Indexing & SEO Architecture
+
+1. **Static Generation with ISR**: `generateStaticParams` with `dynamicParams = true` ensures instantaneous responses while allowing immediate publication without rebuilding.
+2. **On-Demand Revalidation**: When a post publishes, `/api/revalidate` updates the post page, home feed, category hubs, tag archives, date archives, and sitemap.
+3. **IndexNow Instant Ping**: Automatically notifies Bing and partner engines immediately upon publishing; key served dynamically via `/:key.txt`.
+4. **Structured JSON-LD**: Comprehensive `WebSite`, `Organization`, `BlogPosting`, `BreadcrumbList`, `FAQPage`, `Person` (About), and `CollectionPage` schemas validated against schema.org.
+5. **Production Isolation**: When `VERCEL_ENV !== 'production'`, all pages return `noindex, nofollow` and `robots.txt` disallows all crawlers.
 
 ---
 
 ## 🌐 Deploying to Vercel
 
-1. Push this repository to GitHub.
-2. Import the project into [Vercel](https://vercel.com).
-3. Set the Environment Variables in **Project Settings → Environment Variables** (copy values from your `.env.local`).
-4. Set the GitHub Actions Secrets in **GitHub Repository → Settings → Secrets and variables → Actions** with the same keys.
-5. Enable the `.github/workflows/daily-post.yml` workflow for daily automated execution at 04:00 UTC.
-
----
-
-## 🎨 Semantic Token Color System
-
-To guarantee flawless light/dark mode transitions and brand consistency, direct palette colors (`bg-blue-500`, `text-gray-700`, `bg-[#fff]`) are **strictly prohibited** in component code. All UI elements utilize semantic theme tokens:
-
-- `background`, `surface`, `surface-muted`
-- `foreground`, `foreground-muted`
-- `border`, `primary`, `primary-foreground`, `accent`
-- `success`, `warning`, `danger`, `ring`
-
-The automated `npm run check:colors` script enforces this rule in CI.
+1. Push code to your GitHub repository.
+2. Import project into **Vercel**.
+3. Configure all environment variables in **Project Settings → Environment Variables**.
+4. Configure GitHub Actions Secrets in **GitHub Settings → Secrets → Actions**.
+5. Enable GitHub Actions for `.github/workflows/tick.yml` to automate publication every 30 minutes.

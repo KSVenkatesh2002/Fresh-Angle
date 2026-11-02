@@ -1,11 +1,11 @@
-import React from 'react';
-import Link from 'next/link';
-import { getRecentRuns } from '@/db/queries/runs';
-import { Container } from '@/components/layout/Container';
-import { Badge } from '@/components/ui/Badge';
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import { getRecentRuns } from "@/db/queries/runs";
+import { Container } from "@/components/layout/Container";
+import { Badge } from "@/components/ui/Badge";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function AdminRunsPage(): Promise<React.JSX.Element> {
   let runs: Awaited<ReturnType<typeof getRecentRuns>> = [];
@@ -47,7 +47,7 @@ export default async function AdminRunsPage(): Promise<React.JSX.Element> {
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
                   <div className="flex items-center gap-3">
-                    {run.status === 'success' ? (
+                    {run.status === "success" ? (
                       <Badge variant="success" className="gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Success</span>
@@ -68,7 +68,7 @@ export default async function AdminRunsPage(): Promise<React.JSX.Element> {
 
                   <div className="flex items-center gap-3 text-xs text-foreground-muted">
                     <span>
-                      Provider: <strong>{run.providerUsed || 'N/A'}</strong>
+                      Provider: <strong>{run.providerUsed || "N/A"}</strong>
                     </span>
                   </div>
                 </div>
@@ -94,7 +94,7 @@ export default async function AdminRunsPage(): Promise<React.JSX.Element> {
                           <span className="font-mono text-[11px] font-semibold text-foreground">
                             {stepItem.step}
                           </span>
-                          {stepItem.status === 'success' ? (
+                          {stepItem.status === "success" ? (
                             <span className="text-success text-[10px]">✓</span>
                           ) : (
                             <span className="text-danger text-[10px]">✗</span>

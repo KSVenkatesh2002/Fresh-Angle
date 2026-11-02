@@ -1,4 +1,4 @@
-import { siteConfig } from '@/config/site';
+import { siteConfig } from "@/config/site";
 
 export async function GET(): Promise<Response> {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -12,8 +12,8 @@ export async function GET(): Promise<Response> {
 
   return new Response(xml, {
     headers: {
-      'Content-Type': 'application/opensearchdescription+xml',
-      'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+      "Content-Type": "application/opensearchdescription+xml",
+      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
     },
   });
 }

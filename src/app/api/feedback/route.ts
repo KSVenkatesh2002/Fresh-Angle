@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getDb } from '@/db/client';
-import { postFeedback } from '@/db/schema';
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { getDb } from "@/db/client";
+import { postFeedback } from "@/db/schema";
 
 const feedbackSchema = z.object({
   postId: z.string().uuid(),
@@ -15,7 +15,10 @@ export async function POST(req: Request): Promise<NextResponse> {
     const parsed = feedbackSchema.safeParse(json);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid feedback data' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid feedback data" },
+        { status: 400 },
+      );
     }
 
     const db = getDb();
@@ -25,10 +28,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       feedbackText: parsed.data.feedbackText ?? null,
     });
 
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to submit post feedback:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Failed to submit post feedback:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

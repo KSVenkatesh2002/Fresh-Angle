@@ -17,8 +17,8 @@ export interface PipelineLimits {
 }
 
 export const PIPELINE_CONFIG = {
-  version: '1.0.0',
-  promptsVersion: '2026.11.01',
+  version: "1.0.0",
+  promptsVersion: "2026.11.01",
   limits: {
     maxCandidatesToFetch: 20,
     maxArticlesToResearch: 4,
@@ -37,5 +37,5 @@ export const PIPELINE_CONFIG = {
     maxRetries: 3,
   } as PipelineLimits,
   similarityThreshold: 0.45, // Jaccard / Levenshtein duplicate topic rejection threshold
-  defaultCategory: 'Artificial Intelligence',
+  defaultCategory: "Artificial Intelligence",
 } as const;

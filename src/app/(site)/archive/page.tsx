@@ -1,43 +1,53 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { getArchiveMonths } from '@/db/queries/posts';
-import { Container } from '@/components/layout/Container';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { constructPageMetadata } from '@/lib/seo/metadata';
-import { generateCollectionJsonLd } from '@/lib/seo/jsonld';
-import { siteConfig } from '@/config/site';
-import { Calendar, ArrowRight } from 'lucide-react';
+import React from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { getArchiveMonths } from "@/db/queries/posts";
+import { Container } from "@/components/layout/Container";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { constructPageMetadata } from "@/lib/seo/metadata";
+import { generateCollectionJsonLd } from "@/lib/seo/jsonld";
+import { siteConfig } from "@/config/site";
+import { Calendar, ArrowRight } from "lucide-react";
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   return constructPageMetadata({
-    title: 'Dispatches Chronological Archive',
+    title: "Dispatches Chronological Archive",
     description: `Chronological archive of all daily technical dispatches published on ${siteConfig.name}.`,
-    path: '/archive',
+    path: "/archive",
   });
 }
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export default async function ArchiveIndexPage(): Promise<React.JSX.Element> {
   const months = await getArchiveMonths();
   const collectionJsonLd = generateCollectionJsonLd(
-    'Dispatches Chronological Archive',
+    "Dispatches Chronological Archive",
     `Chronological archive of all daily technical dispatches on ${siteConfig.name}.`,
-    '/archive'
+    "/archive",
   );
 
   return (
     <main className="py-8 sm:py-12">
       <JsonLd data={collectionJsonLd} />
       <Container>
-        <Breadcrumbs items={[{ name: 'Archive', url: '/archive' }]} />
+        <Breadcrumbs items={[{ name: "Archive", url: "/archive" }]} />
 
         <div className="py-6 border-b border-border mb-10">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary mb-2 block">
@@ -47,7 +57,8 @@ export default async function ArchiveIndexPage(): Promise<React.JSX.Element> {
             Monthly Publication Archive
           </h1>
           <p className="text-foreground-muted text-base max-w-2xl leading-relaxed">
-            Historical record of all AI intelligence briefings, model breakdowns, and benchmark reviews published by date.
+            Historical record of all AI intelligence briefings, model
+            breakdowns, and benchmark reviews published by date.
           </p>
         </div>
 
@@ -58,7 +69,7 @@ export default async function ArchiveIndexPage(): Promise<React.JSX.Element> {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {months.map(({ year, month, count }) => {
-              const monthStr = String(month).padStart(2, '0');
+              const monthStr = String(month).padStart(2, "0");
               const monthName = MONTH_NAMES[month - 1] || `Month ${month}`;
               return (
                 <Link
@@ -75,7 +86,7 @@ export default async function ArchiveIndexPage(): Promise<React.JSX.Element> {
                         {monthName} {year}
                       </h2>
                       <span className="text-xs text-foreground-muted">
-                        {count} {count === 1 ? 'Dispatch' : 'Dispatches'}
+                        {count} {count === 1 ? "Dispatch" : "Dispatches"}
                       </span>
                     </div>
                   </div>

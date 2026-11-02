@@ -1,7 +1,7 @@
-import React from 'react';
-import Image from 'next/image';
-import { siteConfig } from '@/config/site';
-import { ExternalLink, Code } from 'lucide-react';
+import React from "react";
+import Image from "next/image";
+import { siteConfig } from "@/config/site";
+import { ExternalLink, Code } from "lucide-react";
 
 export function SiteCreatedBy(): React.JSX.Element {
   return (
@@ -21,7 +21,7 @@ export function SiteCreatedBy(): React.JSX.Element {
           <span>Site Architecture & Engineering</span>
         </div>
         <p className="text-sm font-semibold text-foreground">
-          Created by{' '}
+          Created by{" "}
           <a
             href={siteConfig.creator.url}
             target="_blank"
@@ -33,7 +33,9 @@ export function SiteCreatedBy(): React.JSX.Element {
           </a>
         </p>
         <p className="text-xs text-foreground-muted leading-relaxed">
-          This publication is an autonomous AI research demonstration engineered by Venkatesh K S. Dispatches are synthesized by the editorial AI engine based on verified primary sources.
+          This publication is an autonomous AI research demonstration engineered
+          by Venkatesh K S. Dispatches are synthesized by the editorial AI
+          engine based on verified primary sources.
         </p>
       </div>
     </div>

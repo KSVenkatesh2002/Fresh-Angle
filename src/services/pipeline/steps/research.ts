@@ -1,5 +1,8 @@
-import { TopicCandidate } from '@/services/research/topics';
-import { extractArticleContent, ExtractedArticleSource } from '@/services/research/sources';
+import { TopicCandidate } from "@/services/research/topics";
+import {
+  extractArticleContent,
+  ExtractedArticleSource,
+} from "@/services/research/sources";
 
 export interface ResearchResult {
   primarySource: ExtractedArticleSource;
@@ -7,8 +10,12 @@ export interface ResearchResult {
   formattedSourcesText: string;
 }
 
-export async function stepResearch(topic: TopicCandidate): Promise<ResearchResult> {
-  console.log(`🔬 [Step 2/8: Research] Fetching and analyzing article sources for: "${topic.title}"...`);
+export async function stepResearch(
+  topic: TopicCandidate,
+): Promise<ResearchResult> {
+  console.log(
+    `🔬 [Step 2/8: Research] Fetching and analyzing article sources for: "${topic.title}"...`,
+  );
 
   // Extract the primary source first
   const primarySource = await extractArticleContent(topic.url, topic.title);
@@ -25,12 +32,12 @@ URL: ${s.url}
 CONTENT:
 ${s.content}
 -------------------------
-`
+`,
     )
-    .join('\n');
+    .join("\n");
 
   console.log(
-    `✓ [Research] Successfully extracted ${sources.length} source(s) with ${primarySource.content.length} characters of clean text.`
+    `✓ [Research] Successfully extracted ${sources.length} source(s) with ${primarySource.content.length} characters of clean text.`,
   );
 
   return {

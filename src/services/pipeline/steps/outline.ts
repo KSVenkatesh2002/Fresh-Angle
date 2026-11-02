@@ -1,6 +1,9 @@
-import { defaultAiChain } from '@/services/ai/fallback';
-import { outlineSchema, OutlineOutput } from '@/services/pipeline/schemas';
-import { SYSTEM_EDITORIAL_PERSONA, buildOutlinePrompt } from '@/services/pipeline/prompts/templates';
+import { defaultAiChain } from "@/services/ai/fallback";
+import { outlineSchema, OutlineOutput } from "@/services/pipeline/schemas";
+import {
+  SYSTEM_EDITORIAL_PERSONA,
+  buildOutlinePrompt,
+} from "@/services/pipeline/prompts/templates";
 
 export interface OutlineResult {
   outline: OutlineOutput;
@@ -10,9 +13,11 @@ export interface OutlineResult {
 
 export async function stepOutline(
   topicTitle: string,
-  formattedSourcesText: string
+  formattedSourcesText: string,
 ): Promise<OutlineResult> {
-  console.log('📝 [Step 3/8: Outline] Generating structured outline (AI call 1)...');
+  console.log(
+    "📝 [Step 3/8: Outline] Generating structured outline (AI call 1)...",
+  );
 
   const prompt = buildOutlinePrompt(topicTitle, formattedSourcesText);
   const { data: outline, result } = await defaultAiChain.generateValidatedJson(
@@ -21,10 +26,12 @@ export async function stepOutline(
       prompt,
       temperature: 0.3,
     },
-    outlineSchema
+    outlineSchema,
   );
 
-  console.log(`✓ [Outline] Created outline with ${outline.sections.length} sections: "${outline.proposedTitle}"`);
+  console.log(
+    `✓ [Outline] Created outline with ${outline.sections.length} sections: "${outline.proposedTitle}"`,
+  );
 
   return {
     outline,

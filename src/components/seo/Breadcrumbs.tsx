@@ -1,8 +1,8 @@
-import React from 'react';
-import Link from 'next/link';
-import { ChevronRight, Home } from 'lucide-react';
-import { BreadcrumbItem, generateBreadcrumbJsonLd } from '@/lib/seo/jsonld';
-import { JsonLd } from './JsonLd';
+import React from "react";
+import Link from "next/link";
+import { ChevronRight, Home } from "lucide-react";
+import { BreadcrumbItem, generateBreadcrumbJsonLd } from "@/lib/seo/jsonld";
+import { JsonLd } from "./JsonLd";
 
 interface BreadcrumbsProps {
   items: BreadcrumbItem[];
@@ -10,7 +10,7 @@ interface BreadcrumbsProps {
 
 export function Breadcrumbs({ items }: BreadcrumbsProps): React.JSX.Element {
   const jsonLdData = generateBreadcrumbJsonLd([
-    { name: 'Home', url: '/' },
+    { name: "Home", url: "/" },
     ...items,
   ]);
 
@@ -34,7 +34,10 @@ export function Breadcrumbs({ items }: BreadcrumbsProps): React.JSX.Element {
             const isLast = index === items.length - 1;
             return (
               <li key={item.url} className="flex items-center gap-1.5">
-                <ChevronRight className="w-3 h-3 opacity-50" aria-hidden="true" />
+                <ChevronRight
+                  className="w-3 h-3 opacity-50"
+                  aria-hidden="true"
+                />
                 {isLast ? (
                   <span
                     className="font-medium text-foreground max-w-[200px] sm:max-w-xs truncate"

@@ -1,5 +1,5 @@
-import { fetchWithRetry } from '@/lib/utils/http';
-import { siteConfig } from '@/config/site';
+import { fetchWithRetry } from "@/lib/utils/http";
+import { siteConfig } from "@/config/site";
 
 export interface TelegramOptions {
   disableNotification?: boolean;
@@ -7,7 +7,7 @@ export interface TelegramOptions {
 
 export async function sendTelegramMessage(
   text: string,
-  options: TelegramOptions = {}
+  options: TelegramOptions = {},
 ): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -23,7 +23,7 @@ export async function sendTelegramMessage(
     const body: Record<string, unknown> = {
       chat_id: chatId,
       text,
-      parse_mode: 'HTML',
+      parse_mode: "HTML",
       disable_web_page_preview: false,
       disable_notification: options.disableNotification ?? false,
     };
@@ -35,12 +35,12 @@ export async function sendTelegramMessage(
     const res = await fetchWithRetry(
       endpoint,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         timeoutMs: 10000,
       },
-      { retries: 2, backoffMs: 1000 }
+      { retries: 2, backoffMs: 1000 },
     );
 
     return res.ok;
@@ -59,29 +59,33 @@ export async function sendPostPublishedNotification(notif: {
   readingTimeMin?: number;
   warnings?: string[];
 }): Promise<boolean> {
-  let text = `[${siteConfig.name}] ✅ <b>Post Published</b>\n\n` +
+  let text =
+    `[${siteConfig.name}] ✅ <b>Post Published</b>\n\n` +
     `📰 <a href="${notif.url}">${notif.title}</a>\n` +
     `📁 Track: ${notif.category}\n` +
     `🤖 Model: ${notif.provider} (${notif.model})\n` +
-    (notif.readingTimeMin ? `⏱️ Reading Time: ${notif.readingTimeMin} min\n` : '') +
+    (notif.readingTimeMin
+      ? `⏱️ Reading Time: ${notif.readingTimeMin} min\n`
+      : "") +
     `🔗 ${notif.url}`;
 
   if (notif.warnings && notif.warnings.length > 0) {
-    text += `\n\n⚠️ <b>Warnings:</b>\n` + notif.warnings.map((w) => `• ${w}`).join('\n');
+    text +=
+      `\n\n⚠️ <b>Warnings:</b>\n` +
+      notif.warnings.map((w) => `• ${w}`).join("\n");
   }
 
   return sendTelegramMessage(text, { disableNotification: true });
 }
 
-
-
 export async function sendPipelineFailureNotification(
   error: Error | string,
-  step?: string
+  step?: string,
 ): Promise<boolean> {
-  const errorMsg = typeof error === 'string' ? error : error.message;
-  const text = `[${siteConfig.name}] ❌ <b>Pipeline Failure</b>\n\n` +
-    (step ? `📍 Step: ${step}\n` : '') +
+  const errorMsg = typeof error === "string" ? error : error.message;
+  const text =
+    `[${siteConfig.name}] ❌ <b>Pipeline Failure</b>\n\n` +
+    (step ? `📍 Step: ${step}\n` : "") +
     `<code>${errorMsg.slice(0, 1000)}</code>`;
 
   return sendTelegramMessage(text, { disableNotification: false });
@@ -93,7 +97,8 @@ export async function sendContactNotification(contact: {
   subject: string;
   message: string;
 }): Promise<boolean> {
-  const text = `[${siteConfig.name}] 📨 <b>New Contact Transmission</b>\n\n` +
+  const text =
+    `[${siteConfig.name}] 📨 <b>New Contact Transmission</b>\n\n` +
     `👤 <b>From:</b> ${contact.name} (${contact.email})\n` +
     `📌 <b>Subject:</b> ${contact.subject}\n\n` +
     `💬 ${contact.message.slice(0, 500)}`;

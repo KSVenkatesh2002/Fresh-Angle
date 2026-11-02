@@ -1,37 +1,37 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Container } from '@/components/layout/Container';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
-import { Lock, ShieldAlert } from 'lucide-react';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Container } from "@/components/layout/Container";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Lock, ShieldAlert } from "lucide-react";
 
 export default function AdminLoginPage(): React.JSX.Element {
   const router = useRouter();
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed');
+        throw new Error(data.error || "Authentication failed");
       }
 
-      router.push('/admin');
+      router.push("/admin");
       router.refresh();
     } catch (err: unknown) {
       setError((err as Error).message);
@@ -52,7 +52,8 @@ export default function AdminLoginPage(): React.JSX.Element {
               Editorial Administration
             </h1>
             <p className="text-xs text-foreground-muted mt-1">
-              Enter your master administrative key to access pipeline telemetry and post management.
+              Enter your master administrative key to access pipeline telemetry
+              and post management.
             </p>
           </div>
 
@@ -74,7 +75,12 @@ export default function AdminLoginPage(): React.JSX.Element {
               autoFocus
             />
 
-            <Button type="submit" variant="primary" className="w-full" isLoading={loading}>
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full"
+              isLoading={loading}
+            >
               Authenticate Session
             </Button>
           </form>

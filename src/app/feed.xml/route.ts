@@ -1,18 +1,18 @@
-import { NextResponse } from 'next/server';
-import { siteConfig } from '@/config/site';
-import { getDb } from '@/db/client';
-import { posts } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { NextResponse } from "next/server";
+import { siteConfig } from "@/config/site";
+import { getDb } from "@/db/client";
+import { posts } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
-  let itemsXml = '';
+  let itemsXml = "";
 
   try {
     const db = getDb();
     const publishedPosts = await db.query.posts.findMany({
-      where: eq(posts.status, 'published'),
+      where: eq(posts.status, "published"),
       orderBy: [desc(posts.publishedAt)],
       limit: 25,
       with: {
@@ -34,13 +34,15 @@ export async function GET(): Promise<Response> {
       <guid isPermaLink="true">${url}</guid>
       <description><![CDATA[${post.excerpt}]]></description>
       <pubDate>${pubDate}</pubDate>
-      <category><![CDATA[${post.category?.name || 'Technology'}]]></category>
+      <category><![CDATA[${post.category?.name || "Technology"}]]></category>
       <author><![CDATA[editorial@freshangle.ai (${siteConfig.author.name})]]></author>
     </item>`;
       })
-      .join('\n');
+      .join("\n");
   } catch (err) {
-    console.warn(`⚠️ [RSS] Could not fetch posts for feed: ${(err as Error).message}`);
+    console.warn(
+      `⚠️ [RSS] Could not fetch posts for feed: ${(err as Error).message}`,
+    );
   }
 
   const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -59,8 +61,9 @@ ${itemsXml}
   return new NextResponse(rssXml, {
     status: 200,
     headers: {
-      'Content-Type': 'application/rss+xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+      "Content-Type": "application/rss+xml; charset=utf-8",
+      "Cache-Control":
+        "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }

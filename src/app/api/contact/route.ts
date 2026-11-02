@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getDb } from '@/db/client';
-import { contactMessages } from '@/db/schema';
-import { sendContactNotification } from '@/services/notify/telegram';
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { getDb } from "@/db/client";
+import { contactMessages } from "@/db/schema";
+import { sendContactNotification } from "@/services/notify/telegram";
 
 const contactSchema = z.object({
   name: z.string().min(2).max(100),
@@ -18,7 +18,10 @@ export async function POST(req: Request): Promise<NextResponse> {
     const parsed = contactSchema.safeParse(json);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid submission fields' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid submission fields" },
+        { status: 400 },
+      );
     }
 
     // Honeypot check: bot filled out the hidden field
@@ -32,7 +35,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       email: parsed.data.email,
       subject: parsed.data.subject,
       message: parsed.data.message,
-      status: 'new',
+      status: "new",
     });
 
     // Send Telegram alert in background (silent error handling)
@@ -45,7 +48,10 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Failed to save contact message:', err);
-    return NextResponse.json({ error: 'Failed to submit transmission' }, { status: 500 });
+    console.error("Failed to save contact message:", err);
+    return NextResponse.json(
+      { error: "Failed to submit transmission" },
+      { status: 500 },
+    );
   }
 }

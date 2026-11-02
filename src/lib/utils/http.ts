@@ -4,9 +4,14 @@ export class HttpError extends Error {
   public readonly url: string;
   public readonly responseBody?: string;
 
-  constructor(status: number, statusText: string, url: string, responseBody?: string) {
+  constructor(
+    status: number,
+    statusText: string,
+    url: string,
+    responseBody?: string,
+  ) {
     super(`HTTP Request Failed: [${status} ${statusText}] on ${url}`);
-    this.name = 'HttpError';
+    this.name = "HttpError";
     this.status = status;
     this.statusText = statusText;
     this.url = url;
@@ -20,7 +25,7 @@ export class TimeoutError extends Error {
 
   constructor(url: string, timeoutMs: number) {
     super(`HTTP Request Timed Out after ${timeoutMs}ms on ${url}`);
-    this.name = 'TimeoutError';
+    this.name = "TimeoutError";
     this.url = url;
     this.timeoutMs = timeoutMs;
   }
@@ -42,7 +47,7 @@ export interface RetryOptions {
  */
 export async function fetchWithTimeout(
   url: string,
-  options: FetchOptions = {}
+  options: FetchOptions = {},
 ): Promise<Response> {
   const { timeoutMs = 15000, ...fetchInit } = options;
   const controller = new AbortController();
@@ -55,7 +60,7 @@ export async function fetchWithTimeout(
     });
     return response;
   } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') {
+    if (err instanceof Error && err.name === "AbortError") {
       throw new TimeoutError(url, timeoutMs);
     }
     throw err;
@@ -70,7 +75,7 @@ export async function fetchWithTimeout(
 export async function fetchWithRetry(
   url: string,
   options: FetchOptions = {},
-  retryOptions: RetryOptions = {}
+  retryOptions: RetryOptions = {},
 ): Promise<Response> {
   const retries = retryOptions.retries ?? 3;
   const backoffMs = retryOptions.backoffMs ?? 1000;
@@ -84,9 +89,17 @@ export async function fetchWithRetry(
 
       // Only retry 5xx server errors or 429 rate limits automatically
       if (!response.ok) {
-        if (response.status === 429 || (response.status >= 500 && response.status < 600)) {
-          const bodyText = await response.text().catch(() => '');
-          throw new HttpError(response.status, response.statusText, url, bodyText);
+        if (
+          response.status === 429 ||
+          (response.status >= 500 && response.status < 600)
+        ) {
+          const bodyText = await response.text().catch(() => "");
+          throw new HttpError(
+            response.status,
+            response.statusText,
+            url,
+            bodyText,
+          );
         }
       }
 
@@ -101,7 +114,7 @@ export async function fetchWithRetry(
 
       const delay = backoffMs * Math.pow(2, attempt - 1);
       console.warn(
-        `⚠️ [HTTP Retry] Attempt ${attempt}/${retries} failed for ${url}: ${(err as Error).message}. Retrying in ${delay}ms...`
+        `⚠️ [HTTP Retry] Attempt ${attempt}/${retries} failed for ${url}: ${(err as Error).message}. Retrying in ${delay}ms...`,
       );
 
       await new Promise((resolve) => setTimeout(resolve, delay));

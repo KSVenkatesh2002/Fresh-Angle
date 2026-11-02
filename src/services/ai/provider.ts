@@ -26,10 +26,10 @@ export class AiProviderError extends Error {
     provider: string,
     message: string,
     statusCode?: number,
-    originalError?: unknown
+    originalError?: unknown,
   ) {
     super(`[AI Provider: ${provider}] ${message}`);
-    this.name = 'AiProviderError';
+    this.name = "AiProviderError";
     this.provider = provider;
     this.statusCode = statusCode;
     this.originalError = originalError;

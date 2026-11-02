@@ -1,27 +1,37 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { getPostBySlug, getRelatedPosts, getAllPostSlugs } from '@/db/queries/posts';
-import { extractTableOfContents } from '@/lib/markdown/toc';
-import { MarkdownRenderer } from '@/lib/markdown/render';
-import { formatDate } from '@/lib/utils/dates';
-import { Container } from '@/components/layout/Container';
-import { Badge } from '@/components/ui/Badge';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { TableOfContents } from '@/components/blog/TableOfContents';
-import { ShareButtons } from '@/components/blog/ShareButtons';
-import { RelatedPosts } from '@/components/blog/RelatedPosts';
-import { AiDisclosureBadge } from '@/components/blog/AiDisclosureBadge';
-import { constructPostMetadata } from '@/lib/seo/metadata';
-import { generateArticleJsonLd, generateFaqJsonLd } from '@/lib/seo/jsonld';
-import { siteConfig } from '@/config/site';
-import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
-import { PostFeedback } from '@/components/blog/PostFeedback';
-import { SiteCreatedBy } from '@/components/blog/SiteCreatedBy';
-import { Calendar, Clock, ExternalLink, HelpCircle, UserCheck } from 'lucide-react';
+import React from "react";
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  getPostBySlug,
+  getRelatedPosts,
+  getAllPostSlugs,
+} from "@/db/queries/posts";
+import { extractTableOfContents } from "@/lib/markdown/toc";
+import { MarkdownRenderer } from "@/lib/markdown/render";
+import { formatDate } from "@/lib/utils/dates";
+import { Container } from "@/components/layout/Container";
+import { Badge } from "@/components/ui/Badge";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { TableOfContents } from "@/components/blog/TableOfContents";
+import { ShareButtons } from "@/components/blog/ShareButtons";
+import { RelatedPosts } from "@/components/blog/RelatedPosts";
+import { AiDisclosureBadge } from "@/components/blog/AiDisclosureBadge";
+import { constructPostMetadata } from "@/lib/seo/metadata";
+import { generateArticleJsonLd, generateFaqJsonLd } from "@/lib/seo/jsonld";
+import { siteConfig } from "@/config/site";
+import { ReadingProgressBar } from "@/components/blog/ReadingProgressBar";
+import { PostFeedback } from "@/components/blog/PostFeedback";
+import { SiteCreatedBy } from "@/components/blog/SiteCreatedBy";
+import {
+  Calendar,
+  Clock,
+  ExternalLink,
+  HelpCircle,
+  UserCheck,
+} from "lucide-react";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -45,7 +55,7 @@ export async function generateMetadata({
 
   if (!post) {
     return {
-      title: 'Post Not Found',
+      title: "Post Not Found",
     };
   }
 
@@ -84,13 +94,15 @@ export default async function BlogPostPage({
     const match = post.contentMd.match(faqRegex);
     if (match) {
       const qBlocks = match[0].split(/###\s+/).slice(1);
-      faqs = qBlocks.map((block) => {
-        const [q, ...ans] = block.split('\n');
-        return {
-          question: q.trim(),
-          answer: ans.join(' ').trim(),
-        };
-      }).filter((f) => f.question && f.answer);
+      faqs = qBlocks
+        .map((block) => {
+          const [q, ...ans] = block.split("\n");
+          return {
+            question: q.trim(),
+            answer: ans.join(" ").trim(),
+          };
+        })
+        .filter((f) => f.question && f.answer);
     }
   } catch {
     // Safe fallback
@@ -112,7 +124,7 @@ export default async function BlogPostPage({
 
   const imageUrl = post.coverImageId
     ? `/api/images/${post.coverImageId}`
-    : '/opengraph-image';
+    : "/opengraph-image";
 
   return (
     <main className="py-8 sm:py-12 relative">
@@ -122,9 +134,14 @@ export default async function BlogPostPage({
       <Container size="narrow">
         <Breadcrumbs
           items={[
-            { name: 'Blog', url: '/blog' },
+            { name: "Blog", url: "/blog" },
             ...(post.category
-              ? [{ name: post.category.name, url: `/category/${post.category.slug}` }]
+              ? [
+                  {
+                    name: post.category.name,
+                    url: `/category/${post.category.slug}`,
+                  },
+                ]
               : []),
             { name: post.title, url: `/blog/${post.slug}` },
           ]}
@@ -143,7 +160,11 @@ export default async function BlogPostPage({
               )}
               <span className="text-xs text-foreground-muted">•</span>
               <time
-                dateTime={post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined}
+                dateTime={
+                  post.publishedAt
+                    ? new Date(post.publishedAt).toISOString()
+                    : undefined
+                }
                 className="text-xs text-foreground-muted flex items-center gap-1"
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -205,7 +226,10 @@ export default async function BlogPostPage({
 
           {/* AI-Assisted Disclosure Badge */}
           <div className="mb-8">
-            <AiDisclosureBadge provider={post.aiProvider} model={post.aiModel} />
+            <AiDisclosureBadge
+              provider={post.aiProvider}
+              model={post.aiModel}
+            />
           </div>
 
           {/* Table of Contents */}
@@ -218,16 +242,25 @@ export default async function BlogPostPage({
 
           {/* FAQ Section (if present) */}
           {faqs.length > 0 && (
-            <section aria-labelledby="faq-heading" className="my-12 p-6 sm:p-8 rounded-2xl bg-surface border border-border">
+            <section
+              aria-labelledby="faq-heading"
+              className="my-12 p-6 sm:p-8 rounded-2xl bg-surface border border-border"
+            >
               <div className="flex items-center gap-2 mb-6">
                 <HelpCircle className="w-5 h-5 text-primary" />
-                <h2 id="faq-heading" className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                <h2
+                  id="faq-heading"
+                  className="text-xl sm:text-2xl font-bold tracking-tight text-foreground"
+                >
                   Frequently Asked Questions
                 </h2>
               </div>
               <div className="space-y-4">
                 {faqs.map((faq, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-surface-muted border border-border">
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl bg-surface-muted border border-border"
+                  >
                     <h3 className="text-base font-semibold text-foreground mb-2">
                       {faq.question}
                     </h3>
@@ -242,13 +275,22 @@ export default async function BlogPostPage({
 
           {/* Primary Research Sources */}
           {post.sources && post.sources.length > 0 && (
-            <section aria-labelledby="sources-heading" className="my-10 p-6 rounded-2xl bg-surface-muted/50 border border-border">
-              <h2 id="sources-heading" className="text-xs font-semibold uppercase tracking-wider text-foreground-muted mb-3">
+            <section
+              aria-labelledby="sources-heading"
+              className="my-10 p-6 rounded-2xl bg-surface-muted/50 border border-border"
+            >
+              <h2
+                id="sources-heading"
+                className="text-xs font-semibold uppercase tracking-wider text-foreground-muted mb-3"
+              >
                 Primary Research Sources & Dispatches
               </h2>
               <ul className="space-y-2">
                 {post.sources.map((source) => (
-                  <li key={source.id} className="text-sm flex items-start gap-2">
+                  <li
+                    key={source.id}
+                    className="text-sm flex items-start gap-2"
+                  >
                     <ExternalLink className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     <div>
                       <a
@@ -277,7 +319,10 @@ export default async function BlogPostPage({
               </span>
               {post.tags.map((tag) => (
                 <Link key={tag.id} href={`/tag/${tag.slug}`}>
-                  <Badge variant="outline" className="hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                  <Badge
+                    variant="outline"
+                    className="hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                  >
                     #{tag.name}
                   </Badge>
                 </Link>
@@ -297,5 +342,4 @@ export default async function BlogPostPage({
       </Container>
     </main>
   );
-
 }

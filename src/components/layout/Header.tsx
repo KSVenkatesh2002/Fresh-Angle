@@ -1,11 +1,10 @@
-import React from 'react';
-import Link from 'next/link';
-import { siteConfig } from '@/config/site';
-import { Container } from './Container';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { HeaderSearch } from './HeaderSearch';
-import { Sparkles, Rss } from 'lucide-react';
-
+import React from "react";
+import Link from "next/link";
+import { siteConfig } from "@/config/site";
+import { Container } from "./Container";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { HeaderSearch } from "./HeaderSearch";
+import { Sparkles, Rss } from "lucide-react";
 
 export function Header(): React.JSX.Element {
   return (
@@ -47,7 +46,6 @@ export function Header(): React.JSX.Element {
           {/* Action Tools */}
           <div className="flex items-center gap-2">
             <HeaderSearch />
-
 
             <Link
               href="/feed.xml"

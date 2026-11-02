@@ -1,24 +1,30 @@
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { PostWithRelations } from '@/db/queries/posts';
-import { formatDate } from '@/lib/utils/dates';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Clock, Calendar } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { PostWithRelations } from "@/db/queries/posts";
+import { formatDate } from "@/lib/utils/dates";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Clock, Calendar } from "lucide-react";
 
 interface PostCardProps {
   post: PostWithRelations;
   featured?: boolean;
 }
 
-export function PostCard({ post, featured = false }: PostCardProps): React.JSX.Element {
+export function PostCard({
+  post,
+  featured = false,
+}: PostCardProps): React.JSX.Element {
   const imageUrl = post.coverImageId
     ? `/api/images/${post.coverImageId}`
-    : '/opengraph-image';
+    : "/opengraph-image";
 
   return (
-    <Card hoverEffect className={`flex flex-col h-full ${featured ? 'md:grid md:grid-cols-2 md:gap-6' : ''}`}>
+    <Card
+      hoverEffect
+      className={`flex flex-col h-full ${featured ? "md:grid md:grid-cols-2 md:gap-6" : ""}`}
+    >
       {/* Cover Image */}
       <Link
         href={`/blog/${post.slug}`}
@@ -30,7 +36,11 @@ export function PostCard({ post, featured = false }: PostCardProps): React.JSX.E
           src={imageUrl}
           alt={post.coverAlt || post.title}
           fill
-          sizes={featured ? '(max-width: 768px) 100vw, 50vw' : '(max-width: 768px) 100vw, 33vw'}
+          sizes={
+            featured
+              ? "(max-width: 768px) 100vw, 50vw"
+              : "(max-width: 768px) 100vw, 33vw"
+          }
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {post.category && (
@@ -48,7 +58,13 @@ export function PostCard({ post, featured = false }: PostCardProps): React.JSX.E
         <div className="flex items-center gap-3 text-xs text-foreground-muted mb-3">
           <span className="flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5" />
-            <time dateTime={post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined}>
+            <time
+              dateTime={
+                post.publishedAt
+                  ? new Date(post.publishedAt).toISOString()
+                  : undefined
+              }
+            >
               {formatDate(post.publishedAt)}
             </time>
           </span>
@@ -60,8 +76,13 @@ export function PostCard({ post, featured = false }: PostCardProps): React.JSX.E
         </div>
 
         {/* Title */}
-        <h2 className={`font-bold tracking-tight text-foreground hover:text-primary transition-colors line-clamp-2 ${featured ? 'text-2xl sm:text-3xl mb-3' : 'text-lg sm:text-xl mb-2'}`}>
-          <Link href={`/blog/${post.slug}`} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+        <h2
+          className={`font-bold tracking-tight text-foreground hover:text-primary transition-colors line-clamp-2 ${featured ? "text-2xl sm:text-3xl mb-3" : "text-lg sm:text-xl mb-2"}`}
+        >
+          <Link
+            href={`/blog/${post.slug}`}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+          >
             {post.title}
           </Link>
         </h2>

@@ -1,19 +1,18 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { getPostsByTag } from '@/db/queries/posts';
-import { Container } from '@/components/layout/Container';
-import { PostList } from '@/components/blog/PostList';
-import { Pagination } from '@/components/ui/Pagination';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { constructPageMetadata } from '@/lib/seo/metadata';
-import { siteConfig } from '@/config/site';
+import React from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getPostsByTag } from "@/db/queries/posts";
+import { Container } from "@/components/layout/Container";
+import { PostList } from "@/components/blog/PostList";
+import { Pagination } from "@/components/ui/Pagination";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { constructPageMetadata } from "@/lib/seo/metadata";
+import { siteConfig } from "@/config/site";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
 
 export async function generateMetadata({
-
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -22,7 +21,7 @@ export async function generateMetadata({
   const result = await getPostsByTag(slug, { page: 1, limit: 1 });
 
   if (!result.tag) {
-    return { title: 'Tag Not Found' };
+    return { title: "Tag Not Found" };
   }
 
   return constructPageMetadata({
@@ -41,7 +40,7 @@ export default async function TagPage({
 }): Promise<React.JSX.Element> {
   const { slug } = await params;
   const sParams = await searchParams;
-  const currentPage = parseInt(sParams.page || '1', 10) || 1;
+  const currentPage = parseInt(sParams.page || "1", 10) || 1;
 
   const result = await getPostsByTag(slug, {
     page: currentPage,
@@ -57,7 +56,7 @@ export default async function TagPage({
       <Container>
         <Breadcrumbs
           items={[
-            { name: 'Blog', url: '/blog' },
+            { name: "Blog", url: "/blog" },
             { name: `#${result.tag.name}`, url: `/tag/${slug}` },
           ]}
         />
@@ -70,7 +69,8 @@ export default async function TagPage({
             #{result.tag.name}
           </h1>
           <p className="text-foreground-muted text-base max-w-2xl">
-            Technical coverage and model analysis relating to #{result.tag.name}.
+            Technical coverage and model analysis relating to #{result.tag.name}
+            .
           </p>
         </div>
 

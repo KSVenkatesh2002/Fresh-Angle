@@ -2,16 +2,16 @@
  * Converts any arbitrary string into a clean, URL-safe, lowercase slug.
  */
 export function slugify(input: string): string {
-  if (!input) return '';
+  if (!input) return "";
 
   return input
-    .normalize('NFD') // Normalize unicode
-    .replace(/[\u0300-\u036f]/g, '') // Strip accents
+    .normalize("NFD") // Normalize unicode
+    .replace(/[\u0300-\u036f]/g, "") // Strip accents
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
-    .replace(/^-+|-+$/g, '') // Strip leading/trailing hyphens
-    .replace(/-{2,}/g, '-'); // Collapse multiple hyphens
+    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, "") // Strip leading/trailing hyphens
+    .replace(/-{2,}/g, "-"); // Collapse multiple hyphens
 }
 
 /**
@@ -19,42 +19,42 @@ export function slugify(input: string): string {
  */
 export function generateTopicKey(title: string): string {
   const stopWords = new Set([
-    'a',
-    'an',
-    'and',
-    'are',
-    'as',
-    'at',
-    'be',
-    'by',
-    'for',
-    'from',
-    'has',
-    'he',
-    'in',
-    'is',
-    'it',
-    'its',
-    'of',
-    'on',
-    'that',
-    'the',
-    'to',
-    'was',
-    'were',
-    'will',
-    'with',
-    'new',
-    'how',
-    'why',
-    'what',
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "has",
+    "he",
+    "in",
+    "is",
+    "it",
+    "its",
+    "of",
+    "on",
+    "that",
+    "the",
+    "to",
+    "was",
+    "were",
+    "will",
+    "with",
+    "new",
+    "how",
+    "why",
+    "what",
   ]);
 
   const clean = slugify(title);
   const words = clean
-    .split('-')
+    .split("-")
     .filter((w) => w.length > 2 && !stopWords.has(w))
     .sort();
 
-  return words.join('-');
+  return words.join("-");
 }

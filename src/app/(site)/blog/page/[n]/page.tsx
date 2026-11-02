@@ -1,13 +1,13 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import { getPublishedPosts, PaginatedPostsResult } from '@/db/queries/posts';
-import { Container } from '@/components/layout/Container';
-import { PostList } from '@/components/blog/PostList';
-import { Pagination } from '@/components/ui/Pagination';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { constructPageMetadata } from '@/lib/seo/metadata';
-import { siteConfig } from '@/config/site';
+import React from "react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getPublishedPosts, PaginatedPostsResult } from "@/db/queries/posts";
+import { Container } from "@/components/layout/Container";
+import { PostList } from "@/components/blog/PostList";
+import { Pagination } from "@/components/ui/Pagination";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { constructPageMetadata } from "@/lib/seo/metadata";
+import { siteConfig } from "@/config/site";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -36,7 +36,7 @@ export default async function BlogPaginatedPage({
   const pageNumber = parseInt(n, 10);
 
   if (!pageNumber || pageNumber <= 1) {
-    redirect('/blog');
+    redirect("/blog");
   }
 
   const limit = siteConfig.postsPerPage;
@@ -48,15 +48,16 @@ export default async function BlogPaginatedPage({
     totalPages: 1,
   };
 
-
   try {
     postsData = await getPublishedPosts({ page: pageNumber, limit });
   } catch (err) {
-    console.warn(`⚠️ [BlogPage] Error loading posts: ${(err as Error).message}`);
+    console.warn(
+      `⚠️ [BlogPage] Error loading posts: ${(err as Error).message}`,
+    );
   }
 
   if (pageNumber > postsData.totalPages && postsData.totalPages > 0) {
-    redirect('/blog');
+    redirect("/blog");
   }
 
   return (
@@ -64,7 +65,7 @@ export default async function BlogPaginatedPage({
       <Container>
         <Breadcrumbs
           items={[
-            { name: 'Blog', url: '/blog' },
+            { name: "Blog", url: "/blog" },
             { name: `Page ${pageNumber}`, url: `/blog/page/${pageNumber}` },
           ]}
         />
@@ -74,7 +75,8 @@ export default async function BlogPaginatedPage({
             All Technical Dispatches (Page {pageNumber})
           </h1>
           <p className="text-foreground-muted text-base max-w-2xl leading-relaxed">
-            In-depth daily analyses synthesized from primary research papers, hardware disclosures, and engineering announcements.
+            In-depth daily analyses synthesized from primary research papers,
+            hardware disclosures, and engineering announcements.
           </p>
         </div>
 

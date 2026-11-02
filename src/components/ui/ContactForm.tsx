@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Send, CheckCircle2, AlertCircle } from "lucide-react";
 
 export function ContactForm(): React.JSX.Element {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [website, setWebsite] = useState(''); // honeypot
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,19 +20,21 @@ export function ContactForm(): React.JSX.Element {
     setError(null);
 
     try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, subject, message, website }),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to submit message');
+        throw new Error("Failed to submit message");
       }
 
       setSuccess(true);
     } catch {
-      setError('Unable to submit your message. Please try again or email us directly.');
+      setError(
+        "Unable to submit your message. Please try again or email us directly.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -46,7 +48,8 @@ export function ContactForm(): React.JSX.Element {
           <span>Transmission Received</span>
         </div>
         <p className="text-sm text-foreground-muted leading-relaxed">
-          Thank you for reaching out. Our editorial team reviews inbound transmissions daily.
+          Thank you for reaching out. Our editorial team reviews inbound
+          transmissions daily.
         </p>
       </div>
     );
@@ -75,7 +78,10 @@ export function ContactForm(): React.JSX.Element {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="name" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-foreground"
+        >
           Your Name
         </label>
         <input
@@ -90,7 +96,10 @@ export function ContactForm(): React.JSX.Element {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="email" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-foreground"
+        >
           Email Address
         </label>
         <input
@@ -105,7 +114,10 @@ export function ContactForm(): React.JSX.Element {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="subject" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="subject"
+          className="block text-sm font-medium text-foreground"
+        >
           Subject / Paper Title
         </label>
         <input
@@ -120,7 +132,10 @@ export function ContactForm(): React.JSX.Element {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="message" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="message"
+          className="block text-sm font-medium text-foreground"
+        >
           Message / Details
         </label>
         <textarea
@@ -141,7 +156,7 @@ export function ContactForm(): React.JSX.Element {
         className="gap-2 w-full sm:w-auto"
       >
         <Send className="w-4 h-4" />
-        <span>{submitting ? 'Submitting...' : 'Submit Transmission'}</span>
+        <span>{submitting ? "Submitting..." : "Submit Transmission"}</span>
       </Button>
     </form>
   );

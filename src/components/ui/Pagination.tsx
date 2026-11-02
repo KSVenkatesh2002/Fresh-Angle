@@ -1,5 +1,5 @@
-import React from 'react';
-import Link from 'next/link';
+import React from "react";
+import Link from "next/link";
 
 export interface PaginationProps {
   currentPage: number;
@@ -16,10 +16,9 @@ export function Pagination({
 
   const getPageUrl = (page: number): string => {
     // Strip trailing slash if present
-    const cleanBase = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
-    return page === 1 ? cleanBase || '/' : `${cleanBase}/page/${page}`;
+    const cleanBase = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+    return page === 1 ? cleanBase || "/" : `${cleanBase}/page/${page}`;
   };
-
 
   const pages: number[] = [];
   const maxVisiblePages = 5;
@@ -65,10 +64,10 @@ export function Pagination({
             href={getPageUrl(p)}
             className={`min-w-9 h-9 flex items-center justify-center px-3 text-sm font-medium rounded-lg transition-colors ${
               isCurrent
-                ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                : 'bg-surface border border-border text-foreground hover:bg-surface-muted'
+                ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                : "bg-surface border border-border text-foreground hover:bg-surface-muted"
             }`}
-            aria-current={isCurrent ? 'page' : undefined}
+            aria-current={isCurrent ? "page" : undefined}
           >
             {p}
           </Link>

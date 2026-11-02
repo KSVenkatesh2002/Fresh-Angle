@@ -1,13 +1,12 @@
-import { eq, desc, and, count, sql } from 'drizzle-orm';
-import { getDb } from '@/db/client';
-import { posts, categories, tags, postTags, Category, Tag } from '@/db/schema';
-import { siteConfig } from '@/config/site';
-import { PaginatedPostsResult } from './posts-types';
-
+import { eq, desc, and, count, sql } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { posts, categories, tags, postTags, Category, Tag } from "@/db/schema";
+import { siteConfig } from "@/config/site";
+import { PaginatedPostsResult } from "./posts-types";
 
 export async function getPostsByCategory(
   categorySlug: string,
-  params: { page?: number; limit?: number } = {}
+  params: { page?: number; limit?: number } = {},
 ): Promise<PaginatedPostsResult & { category: Category | null }> {
   const page = Math.max(1, params.page || 1);
   const limit = Math.max(1, params.limit || siteConfig.postsPerPage || 12);
@@ -25,11 +24,16 @@ export async function getPostsByCategory(
   const [totalCount] = await db
     .select({ val: count() })
     .from(posts)
-    .where(and(eq(posts.status, 'published'), eq(posts.categoryId, category.id)));
+    .where(
+      and(eq(posts.status, "published"), eq(posts.categoryId, category.id)),
+    );
 
   const total = totalCount?.val ?? 0;
   const items = await db.query.posts.findMany({
-    where: and(eq(posts.status, 'published'), eq(posts.categoryId, category.id)),
+    where: and(
+      eq(posts.status, "published"),
+      eq(posts.categoryId, category.id),
+    ),
     orderBy: [desc(posts.publishedAt)],
     limit,
     offset,
@@ -57,7 +61,7 @@ export async function getPostsByCategory(
 
 export async function getPostsByTag(
   tagSlug: string,
-  params: { page?: number; limit?: number } = {}
+  params: { page?: number; limit?: number } = {},
 ): Promise<PaginatedPostsResult & { tag: Tag | null }> {
   const page = Math.max(1, params.page || 1);
   const limit = Math.max(1, params.limit || siteConfig.postsPerPage || 12);
@@ -82,7 +86,7 @@ export async function getPostsByTag(
   }
 
   const items = await db.query.posts.findMany({
-    where: eq(posts.status, 'published'),
+    where: eq(posts.status, "published"),
     orderBy: [desc(posts.publishedAt)],
     with: {
       category: true,
@@ -113,7 +117,7 @@ export async function getPostsByTag(
 export async function getPostsByArchive(
   year: number,
   month: number,
-  params: { page?: number; limit?: number } = {}
+  params: { page?: number; limit?: number } = {},
 ): Promise<PaginatedPostsResult> {
   const page = Math.max(1, params.page || 1);
   const limit = Math.max(1, params.limit || siteConfig.postsPerPage || 12);
@@ -121,9 +125,9 @@ export async function getPostsByArchive(
 
   const db = getDb();
   const whereClause = and(
-    eq(posts.status, 'published'),
+    eq(posts.status, "published"),
     sql`EXTRACT(YEAR FROM ${posts.publishedAt})::int = ${year}`,
-    sql`EXTRACT(MONTH FROM ${posts.publishedAt})::int = ${month}`
+    sql`EXTRACT(MONTH FROM ${posts.publishedAt})::int = ${month}`,
   );
 
   const [totalCount] = await db

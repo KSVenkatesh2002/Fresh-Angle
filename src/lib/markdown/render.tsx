@@ -1,8 +1,8 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeSlug from 'rehype-slug';
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import React from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSlug from "rehype-slug";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 
 interface MarkdownRendererProps {
   content: string;
@@ -13,14 +13,16 @@ const sanitizeSchema = {
   ...defaultSchema,
   attributes: {
     ...defaultSchema.attributes,
-    h2: [...(defaultSchema.attributes?.h2 || []), 'id'],
-    h3: [...(defaultSchema.attributes?.h3 || []), 'id'],
-    h4: [...(defaultSchema.attributes?.h4 || []), 'id'],
-    code: [...(defaultSchema.attributes?.code || []), 'className'],
+    h2: [...(defaultSchema.attributes?.h2 || []), "id"],
+    h3: [...(defaultSchema.attributes?.h3 || []), "id"],
+    h4: [...(defaultSchema.attributes?.h4 || []), "id"],
+    code: [...(defaultSchema.attributes?.code || []), "className"],
   },
 };
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps): React.JSX.Element {
+export function MarkdownRenderer({
+  content,
+}: MarkdownRendererProps): React.JSX.Element {
   return (
     <article className="prose max-w-none text-foreground leading-relaxed">
       <ReactMarkdown
@@ -40,15 +42,26 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps): React.JSX.
             />
           ),
           p: ({ ...props }) => (
-            <p className="text-foreground text-base leading-7 mb-5" {...props} />
+            <p
+              className="text-foreground text-base leading-7 mb-5"
+              {...props}
+            />
           ),
           ul: ({ ...props }) => (
-            <ul className="list-disc list-inside space-y-2 mb-5 pl-2 text-foreground" {...props} />
+            <ul
+              className="list-disc list-inside space-y-2 mb-5 pl-2 text-foreground"
+              {...props}
+            />
           ),
           ol: ({ ...props }) => (
-            <ol className="list-decimal list-inside space-y-2 mb-5 pl-2 text-foreground" {...props} />
+            <ol
+              className="list-decimal list-inside space-y-2 mb-5 pl-2 text-foreground"
+              {...props}
+            />
           ),
-          li: ({ ...props }) => <li className="text-foreground leading-7" {...props} />,
+          li: ({ ...props }) => (
+            <li className="text-foreground leading-7" {...props} />
+          ),
           blockquote: ({ ...props }) => (
             <blockquote
               className="border-l-4 border-primary pl-4 py-1 my-6 italic text-foreground-muted bg-surface-muted rounded-r"
@@ -56,7 +69,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps): React.JSX.
             />
           ),
           code: ({ className, children, ...props }) => {
-            const isBlock = className?.includes('language-');
+            const isBlock = className?.includes("language-");
             if (isBlock) {
               return (
                 <pre className="p-4 rounded-lg bg-surface-muted border border-border overflow-x-auto my-6 text-sm">
@@ -85,7 +98,10 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps): React.JSX.
           ),
           table: ({ ...props }) => (
             <div className="overflow-x-auto my-6 border border-border rounded-lg">
-              <table className="w-full text-left border-collapse text-sm" {...props} />
+              <table
+                className="w-full text-left border-collapse text-sm"
+                {...props}
+              />
             </div>
           ),
           th: ({ ...props }) => (
@@ -95,7 +111,10 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps): React.JSX.
             />
           ),
           td: ({ ...props }) => (
-            <td className="border-b border-border p-3 text-foreground" {...props} />
+            <td
+              className="border-b border-border p-3 text-foreground"
+              {...props}
+            />
           ),
           hr: () => <hr className="my-8 border-border" />,
         }}

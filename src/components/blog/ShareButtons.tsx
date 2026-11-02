@@ -1,14 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import React, { useState } from "react";
+import { Check, Copy } from "lucide-react";
 
 interface ShareButtonsProps {
   url: string;
   title: string;
 }
 
-export function ShareButtons({ url, title }: ShareButtonsProps): React.JSX.Element {
+export function ShareButtons({
+  url,
+  title,
+}: ShareButtonsProps): React.JSX.Element {
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleCopy = async (): Promise<void> => {
@@ -22,11 +25,11 @@ export function ShareButtons({ url, title }: ShareButtonsProps): React.JSX.Eleme
   };
 
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    title
+    title,
   )}&url=${encodeURIComponent(url)}`;
 
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-    url
+    url,
   )}`;
 
   return (

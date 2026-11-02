@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'node:crypto';
-import { setSessionCookie } from '@/lib/auth/session';
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
+import { setSessionCookie } from "@/lib/auth/session";
 
 // In-memory rate limiting store (IP -> { count, resetTime })
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -34,12 +34,17 @@ function secureCompare(a: string, b: string): boolean {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown-ip';
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    "unknown-ip";
 
   if (!checkRateLimit(ip)) {
     return NextResponse.json(
-      { error: 'Too many login attempts. Please wait 15 minutes before trying again.' },
-      { status: 429 }
+      {
+        error:
+          "Too many login attempts. Please wait 15 minutes before trying again.",
+      },
+      { status: 429 },
     );
   }
 
@@ -50,26 +55,26 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     if (!adminPassword) {
       return NextResponse.json(
-        { error: 'Server misconfiguration: ADMIN_PASSWORD is not set' },
-        { status: 500 }
+        { error: "Server misconfiguration: ADMIN_PASSWORD is not set" },
+        { status: 500 },
       );
     }
 
     if (!password || !secureCompare(password, adminPassword)) {
       return NextResponse.json(
-        { error: 'Invalid administrator credentials' },
-        { status: 401 }
+        { error: "Invalid administrator credentials" },
+        { status: 401 },
       );
     }
 
     // Set signed httpOnly session cookie
     await setSessionCookie();
 
-    return NextResponse.json({ success: true, redirectUrl: '/admin' });
+    return NextResponse.json({ success: true, redirectUrl: "/admin" });
   } catch (error) {
     return NextResponse.json(
       { error: `Login error: ${(error as Error).message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

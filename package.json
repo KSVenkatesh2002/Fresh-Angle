@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
+    "tick": "tsx scripts/tick.ts",
     "generate:post": "tsx scripts/generate-daily-post.ts",
     "check:colors": "node scripts/check-colors.mjs"
   },

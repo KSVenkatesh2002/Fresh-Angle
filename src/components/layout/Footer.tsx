@@ -1,9 +1,9 @@
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { siteConfig } from '@/config/site';
-import { Container } from './Container';
-import { Sparkles, Bot, ExternalLink } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { siteConfig } from "@/config/site";
+import { Container } from "./Container";
+import { Sparkles, Bot, ExternalLink } from "lucide-react";
 
 export function Footer(): React.JSX.Element {
   const currentYear = new Date().getFullYear();
@@ -39,7 +39,9 @@ export function Footer(): React.JSX.Element {
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-foreground-muted">Site Architecture & Engineering</div>
+                <div className="text-xs text-foreground-muted">
+                  Site Architecture & Engineering
+                </div>
                 <a
                   href={siteConfig.creator.url}
                   target="_blank"
@@ -54,7 +56,9 @@ export function Footer(): React.JSX.Element {
 
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border text-xs text-foreground-muted">
               <Bot className="w-3.5 h-3.5 text-primary" />
-              <span>Automated research engine publishing daily with editorial AI</span>
+              <span>
+                Automated research engine publishing daily with editorial AI
+              </span>
             </div>
           </div>
 
@@ -99,7 +103,9 @@ export function Footer(): React.JSX.Element {
 
         {/* Bottom bar */}
         <div className="py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-foreground-muted">
-          <p>© {currentYear} {siteConfig.name}. All rights reserved.</p>
+          <p>
+            © {currentYear} {siteConfig.name}. All rights reserved.
+          </p>
           <p className="flex items-center gap-1.5">
             Designed for high-speed indexing, semantic clarity & zero filler.
           </p>

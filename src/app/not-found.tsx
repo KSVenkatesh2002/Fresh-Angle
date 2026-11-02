@@ -1,8 +1,8 @@
-import React from 'react';
-import Link from 'next/link';
-import { Container } from '@/components/layout/Container';
-import { Button } from '@/components/ui/Button';
-import { FileQuestion, ArrowLeft, Search } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import { Container } from "@/components/layout/Container";
+import { Button } from "@/components/ui/Button";
+import { FileQuestion, ArrowLeft, Search } from "lucide-react";
 
 export default function NotFound(): React.JSX.Element {
   return (
@@ -22,7 +22,8 @@ export default function NotFound(): React.JSX.Element {
           </h1>
 
           <p className="text-foreground-muted text-sm sm:text-base max-w-md mx-auto mb-8 leading-relaxed">
-            The article or resource you are looking for might have been archived, renamed, or is temporarily unavailable.
+            The article or resource you are looking for might have been
+            archived, renamed, or is temporarily unavailable.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">

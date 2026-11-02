@@ -1,19 +1,18 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { getPostsByCategory } from '@/db/queries/posts';
-import { Container } from '@/components/layout/Container';
-import { PostList } from '@/components/blog/PostList';
-import { Pagination } from '@/components/ui/Pagination';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { constructPageMetadata } from '@/lib/seo/metadata';
-import { siteConfig } from '@/config/site';
+import React from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getPostsByCategory } from "@/db/queries/posts";
+import { Container } from "@/components/layout/Container";
+import { PostList } from "@/components/blog/PostList";
+import { Pagination } from "@/components/ui/Pagination";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { constructPageMetadata } from "@/lib/seo/metadata";
+import { siteConfig } from "@/config/site";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
 
 export async function generateMetadata({
-
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -22,12 +21,14 @@ export async function generateMetadata({
   const result = await getPostsByCategory(slug, { page: 1, limit: 1 });
 
   if (!result.category) {
-    return { title: 'Category Not Found' };
+    return { title: "Category Not Found" };
   }
 
   return constructPageMetadata({
     title: `${result.category.name} - Technical Track`,
-    description: result.category.description || `Browse articles in ${result.category.name} on ${siteConfig.name}.`,
+    description:
+      result.category.description ||
+      `Browse articles in ${result.category.name} on ${siteConfig.name}.`,
     path: `/category/${slug}`,
   });
 }
@@ -41,7 +42,7 @@ export default async function CategoryPage({
 }): Promise<React.JSX.Element> {
   const { slug } = await params;
   const sParams = await searchParams;
-  const currentPage = parseInt(sParams.page || '1', 10) || 1;
+  const currentPage = parseInt(sParams.page || "1", 10) || 1;
 
   const result = await getPostsByCategory(slug, {
     page: currentPage,
@@ -57,7 +58,7 @@ export default async function CategoryPage({
       <Container>
         <Breadcrumbs
           items={[
-            { name: 'Blog', url: '/blog' },
+            { name: "Blog", url: "/blog" },
             { name: result.category.name, url: `/category/${slug}` },
           ]}
         />
@@ -80,7 +81,6 @@ export default async function CategoryPage({
             </div>
           )}
         </div>
-
 
         <PostList
           posts={result.posts}

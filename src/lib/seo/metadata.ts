@@ -1,5 +1,5 @@
-import type { Metadata } from 'next';
-import { siteConfig } from '@/config/site';
+import type { Metadata } from "next";
+import { siteConfig } from "@/config/site";
 
 interface PostMetadataProps {
   title: string;
@@ -36,7 +36,7 @@ export function constructPostMetadata({
       canonical: postUrl,
     },
     openGraph: {
-      type: 'article',
+      type: "article",
       title,
       description,
       url: postUrl,
@@ -55,18 +55,18 @@ export function constructPostMetadata({
       ],
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title,
       description,
       images: [imageUrl],
-      creator: '@freshangle_ai',
+      creator: "@freshangle_ai",
     },
     robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   };
 }
@@ -74,7 +74,7 @@ export function constructPostMetadata({
 export function constructPageMetadata({
   title,
   description,
-  path = '',
+  path = "",
   noIndex = false,
 }: {
   title: string;
@@ -92,7 +92,7 @@ export function constructPageMetadata({
       canonical: url,
     },
     openGraph: {
-      type: 'website',
+      type: "website",
       title,
       description,
       url,
@@ -107,7 +107,7 @@ export function constructPageMetadata({
       ],
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title,
       description,
       images: [ogImageUrl],
@@ -120,9 +120,9 @@ export function constructPageMetadata({
       : {
           index: true,
           follow: true,
-          'max-video-preview': -1,
-          'max-image-preview': 'large',
-          'max-snippet': -1,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
         },
   };
 }

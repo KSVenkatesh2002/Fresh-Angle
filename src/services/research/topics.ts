@@ -1,7 +1,7 @@
-import { XMLParser } from 'fast-xml-parser';
-import { fetchWithRetry } from '@/lib/utils/http';
-import { TOPIC_FEEDS, NICHE_KEYWORDS } from '@/config/feeds';
-import { PIPELINE_CONFIG } from '@/config/pipeline';
+import { XMLParser } from "fast-xml-parser";
+import { fetchWithRetry } from "@/lib/utils/http";
+import { TOPIC_FEEDS, NICHE_KEYWORDS } from "@/config/feeds";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 
 export interface TopicCandidate {
   title: string;
@@ -14,7 +14,7 @@ export interface TopicCandidate {
 
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
-  attributeNamePrefix: '@_',
+  attributeNamePrefix: "@_",
 });
 
 /**
@@ -39,35 +39,35 @@ export function scoreTopicRelevance(text: string): number {
 export function parseRssFeedItems(
   xmlData: string,
   feedName: string,
-  category: string
+  category: string,
 ): TopicCandidate[] {
   try {
     const parsed = xmlParser.parse(xmlData);
     const candidates: TopicCandidate[] = [];
 
     // RSS 2.0 structure
-    const items =
-      parsed?.rss?.channel?.item ||
-      parsed?.feed?.entry ||
-      [];
+    const items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
 
     const list = Array.isArray(items) ? items : [items];
 
     for (const item of list) {
       if (!item) continue;
 
-      const title = typeof item.title === 'string' ? item.title : item.title?.['#text'] || '';
-      let url = '';
+      const title =
+        typeof item.title === "string"
+          ? item.title
+          : item.title?.["#text"] || "";
+      let url = "";
 
-      if (typeof item.link === 'string') {
+      if (typeof item.link === "string") {
         url = item.link;
-      } else if (item.link?.['@_href']) {
-        url = item.link['@_href'];
-      } else if (item.guid?.['#text']) {
-        url = item.guid['#text'];
+      } else if (item.link?.["@_href"]) {
+        url = item.link["@_href"];
+      } else if (item.guid?.["#text"]) {
+        url = item.guid["#text"];
       }
 
-      if (!title || !url || !url.startsWith('http')) continue;
+      if (!title || !url || !url.startsWith("http")) continue;
 
       const relevanceScore = scoreTopicRelevance(title);
 
@@ -86,7 +86,9 @@ export function parseRssFeedItems(
 
     return candidates;
   } catch (err: unknown) {
-    console.warn(`⚠️ [Research] Failed to parse XML for feed "${feedName}": ${(err as Error).message}`);
+    console.warn(
+      `⚠️ [Research] Failed to parse XML for feed "${feedName}": ${(err as Error).message}`,
+    );
     return [];
   }
 }
@@ -104,16 +106,18 @@ export async function fetchTopicCandidates(): Promise<TopicCandidate[]> {
         feed.url,
         {
           headers: {
-            'User-Agent': 'FreshAngleBot/1.0 (+https://freshangle.vercel.app)',
-            Accept: 'application/rss+xml, application/xml, text/xml',
+            "User-Agent": "FreshAngleBot/1.0 (+https://freshangle.vercel.app)",
+            Accept: "application/rss+xml, application/xml, text/xml",
           },
           timeoutMs: PIPELINE_CONFIG.limits.httpTimeoutMs,
         },
-        { retries: 2, backoffMs: 1000 }
+        { retries: 2, backoffMs: 1000 },
       );
 
       if (!response.ok) {
-        console.warn(`⚠️ [Research] Feed ${feed.name} returned status ${response.status}`);
+        console.warn(
+          `⚠️ [Research] Feed ${feed.name} returned status ${response.status}`,
+        );
         continue;
       }
 
@@ -122,12 +126,15 @@ export async function fetchTopicCandidates(): Promise<TopicCandidate[]> {
 
       // Apply feed weight
       items.forEach((item) => {
-        item.relevanceScore = Math.round(item.relevanceScore * feed.weight * 10) / 10;
+        item.relevanceScore =
+          Math.round(item.relevanceScore * feed.weight * 10) / 10;
       });
 
       allCandidates.push(...items);
     } catch (err: unknown) {
-      console.warn(`⚠️ [Research] Could not fetch feed ${feed.name}: ${(err as Error).message}`);
+      console.warn(
+        `⚠️ [Research] Could not fetch feed ${feed.name}: ${(err as Error).message}`,
+      );
     }
   }
 

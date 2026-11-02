@@ -1,12 +1,14 @@
-import React from 'react';
-import { TocItem } from '@/lib/markdown/toc';
-import { List } from 'lucide-react';
+import React from "react";
+import { TocItem } from "@/lib/markdown/toc";
+import { List } from "lucide-react";
 
 interface TableOfContentsProps {
   items: TocItem[];
 }
 
-export function TableOfContents({ items }: TableOfContentsProps): React.JSX.Element | null {
+export function TableOfContents({
+  items,
+}: TableOfContentsProps): React.JSX.Element | null {
   if (items.length === 0) return null;
 
   return (
@@ -25,7 +27,7 @@ export function TableOfContents({ items }: TableOfContentsProps): React.JSX.Elem
         {items.map((item) => (
           <li
             key={item.id}
-            className={`${item.level === 3 ? 'pl-4 text-xs' : 'font-medium'}`}
+            className={`${item.level === 3 ? "pl-4 text-xs" : "font-medium"}`}
           >
             <a
               href={`#${item.id}`}

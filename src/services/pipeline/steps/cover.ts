@@ -1,12 +1,15 @@
-import { getCoverImage, GeneratedCoverResult } from '@/services/images/cover';
-import { PostReviewOutput } from '@/services/pipeline/schemas';
+import { getCoverImage, GeneratedCoverResult } from "@/services/images/cover";
+import { PostReviewOutput } from "@/services/pipeline/schemas";
 
 export async function stepCover(
-  reviewedPost: PostReviewOutput
+  reviewedPost: PostReviewOutput,
 ): Promise<GeneratedCoverResult> {
-  console.log('🎨 [Step 6/8: Cover Image] Executing cover image generation pipeline...');
+  console.log(
+    "🎨 [Step 6/8: Cover Image] Executing cover image generation pipeline...",
+  );
 
-  const mainKeyword = reviewedPost.tags[0] || reviewedPost.category || 'Artificial Intelligence';
+  const mainKeyword =
+    reviewedPost.tags[0] || reviewedPost.category || "Artificial Intelligence";
 
   const coverResult = await getCoverImage({
     prompt: reviewedPost.imagePrompt,
@@ -17,7 +20,7 @@ export async function stepCover(
   });
 
   console.log(
-    `✓ [Cover Image] Successfully acquired cover via ${coverResult.source} (${coverResult.buffer.length} bytes)`
+    `✓ [Cover Image] Successfully acquired cover via ${coverResult.source} (${coverResult.buffer.length} bytes)`,
   );
 
   return coverResult;

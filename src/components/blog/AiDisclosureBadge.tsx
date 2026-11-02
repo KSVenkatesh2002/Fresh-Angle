@@ -1,6 +1,6 @@
-import React from 'react';
-import Link from 'next/link';
-import { Bot, HelpCircle } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import { Bot, HelpCircle } from "lucide-react";
 
 interface AiDisclosureBadgeProps {
   provider?: string;
@@ -19,7 +19,9 @@ export function AiDisclosureBadge({
       </div>
       <span>•</span>
       <span>
-        Researched & drafted using {provider ? `${provider} (${model || 'LLM'})` : 'frontier AI'}, fact-checked against real primary sources.
+        Researched & drafted using{" "}
+        {provider ? `${provider} (${model || "LLM"})` : "frontier AI"},
+        fact-checked against real primary sources.
       </span>
       <Link
         href="/ai-disclosure"

@@ -1,38 +1,38 @@
-import React from 'react';
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { getTagsWithCounts } from '@/db/queries/tags';
-import { Container } from '@/components/layout/Container';
-import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { constructPageMetadata } from '@/lib/seo/metadata';
-import { generateCollectionJsonLd } from '@/lib/seo/jsonld';
-import { siteConfig } from '@/config/site';
-import { Hash } from 'lucide-react';
+import React from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { getTagsWithCounts } from "@/db/queries/tags";
+import { Container } from "@/components/layout/Container";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { constructPageMetadata } from "@/lib/seo/metadata";
+import { generateCollectionJsonLd } from "@/lib/seo/jsonld";
+import { siteConfig } from "@/config/site";
+import { Hash } from "lucide-react";
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   return constructPageMetadata({
-    title: 'Topic Tags & Entities',
+    title: "Topic Tags & Entities",
     description: `Explore all indexing tags, technical entities, and research topics tracked across ${siteConfig.name}.`,
-    path: '/tags',
+    path: "/tags",
   });
 }
 
 export default async function TagsIndexPage(): Promise<React.JSX.Element> {
   const tagsList = await getTagsWithCounts();
   const collectionJsonLd = generateCollectionJsonLd(
-    'Topic Tags & Entities',
+    "Topic Tags & Entities",
     `Explore all indexing tags, technical entities, and research topics on ${siteConfig.name}.`,
-    '/tags'
+    "/tags",
   );
 
   return (
     <main className="py-8 sm:py-12">
       <JsonLd data={collectionJsonLd} />
       <Container>
-        <Breadcrumbs items={[{ name: 'Tags', url: '/tags' }]} />
+        <Breadcrumbs items={[{ name: "Tags", url: "/tags" }]} />
 
         <div className="py-6 border-b border-border mb-10">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary mb-2 block">
@@ -42,7 +42,8 @@ export default async function TagsIndexPage(): Promise<React.JSX.Element> {
             All Topic Tags
           </h1>
           <p className="text-foreground-muted text-base max-w-2xl leading-relaxed">
-            Granular technical concepts, benchmark suites, foundation models, and hardware architectures analyzed across our dispatches.
+            Granular technical concepts, benchmark suites, foundation models,
+            and hardware architectures analyzed across our dispatches.
           </p>
         </div>
 

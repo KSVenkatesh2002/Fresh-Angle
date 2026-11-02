@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { PIPELINE_CONFIG } from '@/config/pipeline';
+import { z } from "zod";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 
 // AI Call 1: Structured Outline Schema
 export const outlineSchema = z.object({
@@ -11,7 +11,7 @@ export const outlineSchema = z.object({
       z.object({
         heading: z.string().min(3),
         keyPoints: z.array(z.string().min(5)).min(1),
-      })
+      }),
     )
     .min(3)
     .max(PIPELINE_CONFIG.limits.maxOutlineHeadings),
@@ -24,22 +24,22 @@ export const postReviewSchema = z.object({
   title: z
     .string()
     .min(5)
-    .max(PIPELINE_CONFIG.limits.titleMaxChars, 'Title exceeds character limit'),
+    .max(PIPELINE_CONFIG.limits.titleMaxChars, "Title exceeds character limit"),
   excerpt: z.string().min(30).max(300),
-  contentMd: z.string().min(400, 'Content must be at least 400 characters'),
+  contentMd: z.string().min(400, "Content must be at least 400 characters"),
   metaTitle: z
     .string()
     .min(10)
     .max(
       PIPELINE_CONFIG.limits.metaTitleMaxChars,
-      `metaTitle must not exceed ${PIPELINE_CONFIG.limits.metaTitleMaxChars} chars`
+      `metaTitle must not exceed ${PIPELINE_CONFIG.limits.metaTitleMaxChars} chars`,
     ),
   metaDescription: z
     .string()
     .min(40)
     .max(
       PIPELINE_CONFIG.limits.metaDescMaxChars,
-      `metaDescription must not exceed ${PIPELINE_CONFIG.limits.metaDescMaxChars} chars`
+      `metaDescription must not exceed ${PIPELINE_CONFIG.limits.metaDescMaxChars} chars`,
     ),
   category: z.string().min(2),
   tags: z
@@ -54,7 +54,7 @@ export const postReviewSchema = z.object({
       z.object({
         question: z.string().min(5),
         answer: z.string().min(15),
-      })
+      }),
     )
     .min(2),
 });

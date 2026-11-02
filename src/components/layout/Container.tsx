@@ -1,19 +1,19 @@
-import React from 'react';
+import React from "react";
 
 export interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
-  size?: 'default' | 'narrow' | 'wide';
+  size?: "default" | "narrow" | "wide";
 }
 
 export function Container({
-  size = 'default',
-  className = '',
+  size = "default",
+  className = "",
   children,
   ...props
 }: ContainerProps): React.JSX.Element {
   const sizes = {
-    narrow: 'max-w-4xl',
-    default: 'max-w-6xl',
-    wide: 'max-w-7xl',
+    narrow: "max-w-4xl",
+    default: "max-w-6xl",
+    wide: "max-w-7xl",
   };
 
   return (

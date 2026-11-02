@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
-import crypto from 'node:crypto';
+import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import crypto from "node:crypto";
 
 function secureCompare(a: string, b: string): boolean {
   try {
@@ -17,16 +17,21 @@ export async function POST(request: NextRequest): Promise<Response> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return NextResponse.json(
-      { error: 'CRON_SECRET is not configured on server' },
-      { status: 500 }
+      { error: "CRON_SECRET is not configured on server" },
+      { status: 500 },
     );
   }
 
-  const authHeader = request.headers.get('authorization') || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+  const authHeader = request.headers.get("authorization") || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : authHeader;
 
   if (!token || !secureCompare(token, cronSecret)) {
-    return NextResponse.json({ error: 'Unauthorized: Invalid secret token' }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized: Invalid secret token" },
+      { status: 401 },
+    );
   }
 
   try {
@@ -34,24 +39,23 @@ export async function POST(request: NextRequest): Promise<Response> {
     const slug = body.slug as string | undefined;
 
     // Revalidate listings, feeds, and archives
-    revalidatePath('/', 'page');
-    revalidatePath('/blog', 'page');
-    revalidatePath('/categories', 'page');
-    revalidatePath('/tags', 'page');
-    revalidatePath('/archive', 'page');
-    revalidatePath('/sitemap.xml');
-    revalidatePath('/feed.xml');
+    revalidatePath("/", "page");
+    revalidatePath("/blog", "page");
+    revalidatePath("/categories", "page");
+    revalidatePath("/tags", "page");
+    revalidatePath("/archive", "page");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
 
     if (slug) {
-      revalidatePath(`/blog/${slug}`, 'page');
+      revalidatePath(`/blog/${slug}`, "page");
     }
     if (body.categorySlug) {
-      revalidatePath(`/category/${body.categorySlug}`, 'page');
+      revalidatePath(`/category/${body.categorySlug}`, "page");
     }
     if (Array.isArray(body.tagSlugs)) {
-      body.tagSlugs.forEach((t: string) => revalidatePath(`/tag/${t}`, 'page'));
+      body.tagSlugs.forEach((t: string) => revalidatePath(`/tag/${t}`, "page"));
     }
-
 
     return NextResponse.json({
       revalidated: true,
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   } catch (error) {
     return NextResponse.json(
       { error: `Revalidation failed: ${(error as Error).message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

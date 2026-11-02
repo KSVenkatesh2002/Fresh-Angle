@@ -1,7 +1,10 @@
-import { fetchTopicCandidates, TopicCandidate } from '@/services/research/topics';
-import { isDuplicateTopic } from '@/services/research/dedupe';
-import { getDb } from '@/db/client';
-import { posts } from '@/db/schema';
+import {
+  fetchTopicCandidates,
+  TopicCandidate,
+} from "@/services/research/topics";
+import { isDuplicateTopic } from "@/services/research/dedupe";
+import { getDb } from "@/db/client";
+import { posts } from "@/db/schema";
 
 export interface PickTopicResult {
   topic: TopicCandidate;
@@ -9,11 +12,15 @@ export interface PickTopicResult {
 }
 
 export async function stepPickTopic(): Promise<PickTopicResult> {
-  console.log('🔍 [Step 1/8: Pick Topic] Discovering topics from niche RSS feeds and Hacker News...');
+  console.log(
+    "🔍 [Step 1/8: Pick Topic] Discovering topics from niche RSS feeds and Hacker News...",
+  );
 
   const candidates = await fetchTopicCandidates();
   if (candidates.length === 0) {
-    throw new Error('No candidate topics found in feeds matching the AI/tech niche.');
+    throw new Error(
+      "No candidate topics found in feeds matching the AI/tech niche.",
+    );
   }
 
   console.log(`Found ${candidates.length} candidates matching niche keywords.`);
@@ -37,7 +44,9 @@ export async function stepPickTopic(): Promise<PickTopicResult> {
     });
     existingSourceUrls = pastSources.map((s) => s.url);
   } catch (err) {
-    console.warn(`⚠️ [Pick Topic] Could not fetch past posts for deduplication: ${(err as Error).message}`);
+    console.warn(
+      `⚠️ [Pick Topic] Could not fetch past posts for deduplication: ${(err as Error).message}`,
+    );
   }
 
   // Find the highest-scoring non-duplicate topic
@@ -47,21 +56,27 @@ export async function stepPickTopic(): Promise<PickTopicResult> {
       existingTitles,
       existingTopicKeys,
       candidate.url,
-      existingSourceUrls
+      existingSourceUrls,
     );
     if (!dedupeCheck.isDuplicate) {
-      console.log(`✓ [Pick Topic] Selected: "${candidate.title}" (Score: ${candidate.relevanceScore})`);
+      console.log(
+        `✓ [Pick Topic] Selected: "${candidate.title}" (Score: ${candidate.relevanceScore})`,
+      );
       return {
         topic: candidate,
         candidateCount: candidates.length,
       };
     } else {
-      console.log(`⏩ [Pick Topic] Skipping duplicate topic: "${candidate.title}" (matched: "${dedupeCheck.matchedWith}", score: ${dedupeCheck.score.toFixed(2)})`);
+      console.log(
+        `⏩ [Pick Topic] Skipping duplicate topic: "${candidate.title}" (matched: "${dedupeCheck.matchedWith}", score: ${dedupeCheck.score.toFixed(2)})`,
+      );
     }
   }
 
   // If all were deemed duplicates, pick the top candidate to maintain publishing cadence
-  console.warn('⚠️ [Pick Topic] All candidate topics had similarity to past posts. Falling back to highest relevance candidate.');
+  console.warn(
+    "⚠️ [Pick Topic] All candidate topics had similarity to past posts. Falling back to highest relevance candidate.",
+  );
   return {
     topic: candidates[0],
     candidateCount: candidates.length,

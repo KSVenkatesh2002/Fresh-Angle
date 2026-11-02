@@ -1,19 +1,19 @@
-import React from 'react';
-import Link from 'next/link';
-import { getPublishedPosts } from '@/db/queries/posts';
-import { getAllCategories } from '@/db/queries/categories';
-import { Container } from '@/components/layout/Container';
-import { PostCard } from '@/components/blog/PostCard';
-import { PostList } from '@/components/blog/PostList';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Sparkles, ArrowRight, Rss, Layers } from 'lucide-react';
-import { siteConfig } from '@/config/site';
+import React from "react";
+import Link from "next/link";
+import { getPublishedPosts } from "@/db/queries/posts";
+import { getAllCategories } from "@/db/queries/categories";
+import { Container } from "@/components/layout/Container";
+import { PostCard } from "@/components/blog/PostCard";
+import { PostList } from "@/components/blog/PostList";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Sparkles, ArrowRight, Rss, Layers } from "lucide-react";
+import { siteConfig } from "@/config/site";
 
 export const revalidate = 3600; // 1 hour ISR
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  let initialPosts: Awaited<ReturnType<typeof getPublishedPosts>>['posts'] = [];
+  let initialPosts: Awaited<ReturnType<typeof getPublishedPosts>>["posts"] = [];
   let categories: Awaited<ReturnType<typeof getAllCategories>> = [];
 
   try {
@@ -24,7 +24,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
     initialPosts = postsData.posts;
     categories = categoriesData;
   } catch (err) {
-    console.warn(`⚠️ [HomePage] DB not connected or empty: ${(err as Error).message}`);
+    console.warn(
+      `⚠️ [HomePage] DB not connected or empty: ${(err as Error).message}`,
+    );
   }
 
   const featuredPost = initialPosts[0];
@@ -50,7 +52,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
             </h1>
 
             <p className="text-foreground-muted text-base sm:text-lg leading-relaxed">
-              Every day at midnight UTC, our autonomous research engine scans primary sources, analyzes model releases, and synthesizes verifiable technical briefings for software engineers and technology leaders.
+              Every day at midnight UTC, our autonomous research engine scans
+              primary sources, analyzes model releases, and synthesizes
+              verifiable technical briefings for software engineers and
+              technology leaders.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -60,7 +65,12 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/feed.xml" target="_blank" rel="alternate" type="application/rss+xml">
+              <Link
+                href="/feed.xml"
+                target="_blank"
+                rel="alternate"
+                type="application/rss+xml"
+              >
                 <Button variant="outline" size="md" className="gap-2">
                   <Rss className="w-4 h-4 text-warning" />
                   <span>RSS Subscription</span>
@@ -72,11 +82,17 @@ export default async function HomePage(): Promise<React.JSX.Element> {
 
         {/* Featured Post (if available) */}
         {featuredPost && (
-          <section aria-labelledby="featured-dispatch-heading" className="mb-12 sm:mb-16">
+          <section
+            aria-labelledby="featured-dispatch-heading"
+            className="mb-12 sm:mb-16"
+          >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
-                <h2 id="featured-dispatch-heading" className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                <h2
+                  id="featured-dispatch-heading"
+                  className="text-xl sm:text-2xl font-bold tracking-tight text-foreground"
+                >
                   Today&apos;s Featured Briefing
                 </h2>
               </div>
@@ -96,7 +112,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
                 <Link key={cat.id} href={`/category/${cat.slug}`}>
-                  <Badge variant="outline" className="hover:border-primary hover:text-primary transition-colors py-1 px-3 text-xs cursor-pointer">
+                  <Badge
+                    variant="outline"
+                    className="hover:border-primary hover:text-primary transition-colors py-1 px-3 text-xs cursor-pointer"
+                  >
                     {cat.name}
                   </Badge>
                 </Link>
@@ -108,7 +127,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         {/* Recent Dispatches Grid */}
         <section aria-labelledby="recent-dispatches-heading">
           <div className="flex items-center justify-between mb-6">
-            <h2 id="recent-dispatches-heading" className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            <h2
+              id="recent-dispatches-heading"
+              className="text-xl sm:text-2xl font-bold tracking-tight text-foreground"
+            >
               Recent Dispatches
             </h2>
             <Link

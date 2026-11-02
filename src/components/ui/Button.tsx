@@ -1,35 +1,35 @@
-import React from 'react';
+import React from "react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+  size?: "sm" | "md" | "lg";
   isLoading?: boolean;
 }
 
 export function Button({
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   isLoading = false,
-  className = '',
+  className = "",
   disabled,
   children,
   ...props
 }: ButtonProps): React.JSX.Element {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer';
+    "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer";
 
   const variants = {
-    primary: 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm',
-    secondary: 'bg-surface-muted text-foreground hover:bg-border',
-    outline: 'border border-border text-foreground hover:bg-surface-muted',
-    ghost: 'text-foreground hover:bg-surface-muted',
-    danger: 'bg-danger text-primary-foreground hover:opacity-90',
+    primary: "bg-primary text-primary-foreground hover:opacity-90 shadow-sm",
+    secondary: "bg-surface-muted text-foreground hover:bg-border",
+    outline: "border border-border text-foreground hover:bg-surface-muted",
+    ghost: "text-foreground hover:bg-surface-muted",
+    danger: "bg-danger text-primary-foreground hover:opacity-90",
   };
 
   const sizes = {
-    sm: 'h-8 px-3 text-xs gap-1.5',
-    md: 'h-10 px-4 text-sm gap-2',
-    lg: 'h-12 px-6 text-base gap-2.5',
+    sm: "h-8 px-3 text-xs gap-1.5",
+    md: "h-10 px-4 text-sm gap-2",
+    lg: "h-12 px-6 text-base gap-2.5",
   };
 
   return (

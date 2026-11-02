@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState } from "react";
+import { ThumbsUp, ThumbsDown, CheckCircle, AlertTriangle } from "lucide-react";
 
 interface PostFeedbackProps {
   postId: string;
@@ -11,16 +11,16 @@ export function PostFeedback({ postId }: PostFeedbackProps): React.JSX.Element {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showIssueBox, setShowIssueBox] = useState<boolean>(false);
-  const [feedbackText, setFeedbackText] = useState<string>('');
+  const [feedbackText, setFeedbackText] = useState<string>("");
 
   async function handleVote(wasHelpful: boolean): Promise<void> {
     if (submitting || submitted) return;
     setSubmitting(true);
 
     try {
-      await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           postId,
           wasHelpful,
@@ -40,7 +40,9 @@ export function PostFeedback({ postId }: PostFeedbackProps): React.JSX.Element {
     return (
       <div className="p-4 rounded-xl bg-surface border border-border flex items-center gap-2.5 text-sm text-foreground my-8">
         <CheckCircle className="w-4 h-4 text-success shrink-0" />
-        <span>Thank you for your feedback! It helps improve our research pipeline.</span>
+        <span>
+          Thank you for your feedback! It helps improve our research pipeline.
+        </span>
       </div>
     );
   }

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Container } from '@/components/layout/Container';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+import React, { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { Container } from "@/components/layout/Container";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 
 export default function GlobalError({
   error,
@@ -13,7 +13,7 @@ export default function GlobalError({
   reset: () => void;
 }): React.JSX.Element {
   useEffect(() => {
-    console.error('Unhandled application error:', error);
+    console.error("Unhandled application error:", error);
   }, [error]);
 
   return (
@@ -29,8 +29,8 @@ export default function GlobalError({
           </h1>
 
           <p className="text-foreground-muted text-sm sm:text-base max-w-md mx-auto mb-8">
-            We encountered a temporary issue while rendering this page. Our telemetry has logged
-            the event.
+            We encountered a temporary issue while rendering this page. Our
+            telemetry has logged the event.
           </p>
 
           <div className="flex items-center justify-center gap-3">
@@ -39,7 +39,7 @@ export default function GlobalError({
               <span>Try Again</span>
             </Button>
             <Button
-              onClick={() => (window.location.href = '/')}
+              onClick={() => (window.location.href = "/")}
               variant="outline"
             >
               Go to Home

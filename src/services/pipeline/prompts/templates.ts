@@ -1,4 +1,4 @@
-import { PIPELINE_CONFIG } from '@/config/pipeline';
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 
 export const SYSTEM_EDITORIAL_PERSONA = `
 You are the senior editorial research director at Fresh Angle (https://freshangle.vercel.app), a high-authority publication focusing on artificial intelligence and emerging technology.
@@ -37,7 +37,7 @@ Output a single valid JSON object strictly matching this schema:
 export function buildDraftPrompt(
   topic: string,
   outlineJson: string,
-  sourcesText: string
+  sourcesText: string,
 ): string {
   return `
 Write the full blog post in clean, authoritative Markdown based on the approved outline and sources.
@@ -66,7 +66,7 @@ WRITING INSTRUCTIONS:
 export function buildReviewPrompt(
   topic: string,
   draftMarkdown: string,
-  sourcesText: string
+  sourcesText: string,
 ): string {
   return `
 Perform a rigorous editorial review of the following draft against the primary sources. Correct any unsupported claims, sharpen the prose, eliminate fluff, and construct SEO metadata.

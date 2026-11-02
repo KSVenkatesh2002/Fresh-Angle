@@ -1,8 +1,8 @@
-import { sql, eq, and, desc, asc } from 'drizzle-orm';
-import { getDb } from '@/db/client';
-import { posts, categories } from '@/db/schema';
+import { sql, eq, and, desc, asc } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { posts, categories } from "@/db/schema";
 
-import { PostWithRelations, PaginatedPostsResult } from './posts-types';
+import { PostWithRelations, PaginatedPostsResult } from "./posts-types";
 
 export interface SearchPostsOptions {
   query?: string;
@@ -10,20 +10,20 @@ export interface SearchPostsOptions {
   tags?: string[];
   from?: string;
   to?: string;
-  sort?: 'relevance' | 'newest' | 'oldest' | 'popular';
+  sort?: "relevance" | "newest" | "oldest" | "popular";
   page?: number;
   limit?: number;
 }
 
 export async function advancedSearchPosts(
-  options: SearchPostsOptions
+  options: SearchPostsOptions,
 ): Promise<PaginatedPostsResult> {
   const db = getDb();
   const page = Math.max(1, options.page || 1);
   const limit = Math.max(1, options.limit || 12);
   const offset = (page - 1) * limit;
 
-  const conditions = [eq(posts.status, 'published')];
+  const conditions = [eq(posts.status, "published")];
 
   if (options.category) {
     const cat = await db.query.categories.findFirst({
@@ -53,15 +53,16 @@ export async function advancedSearchPosts(
   }
 
   let orderByClause = [desc(posts.publishedAt)];
-  if (options.sort === 'oldest') {
+  if (options.sort === "oldest") {
     orderByClause = [asc(posts.publishedAt)];
-  } else if (options.sort === 'relevance' && queryText) {
+  } else if (options.sort === "relevance" && queryText) {
     orderByClause = [
-      desc(sql`ts_rank(to_tsvector('english', coalesce(${posts.title}, '') || ' ' || coalesce(${posts.excerpt}, '')), websearch_to_tsquery('english', ${queryText}))`),
+      desc(
+        sql`ts_rank(to_tsvector('english', coalesce(${posts.title}, '') || ' ' || coalesce(${posts.excerpt}, '')), websearch_to_tsquery('english', ${queryText}))`,
+      ),
       desc(posts.publishedAt),
     ];
   }
-
 
   const whereClause = and(...conditions);
 
@@ -100,7 +101,10 @@ export async function advancedSearchPosts(
   };
 }
 
-export async function getSearchSuggestions(query: string, limit = 5): Promise<Array<{ title: string; slug: string }>> {
+export async function getSearchSuggestions(
+  query: string,
+  limit = 5,
+): Promise<Array<{ title: string; slug: string }>> {
   if (!query || query.trim().length < 2) return [];
   const db = getDb();
   const trimmed = query.trim();
@@ -110,9 +114,9 @@ export async function getSearchSuggestions(query: string, limit = 5): Promise<Ar
     .from(posts)
     .where(
       and(
-        eq(posts.status, 'published'),
-        sql`(${posts.title} ILIKE ${`%${trimmed}%`} OR similarity(${posts.title}, ${trimmed}) > 0.2)`
-      )
+        eq(posts.status, "published"),
+        sql`(${posts.title} ILIKE ${`%${trimmed}%`} OR similarity(${posts.title}, ${trimmed}) > 0.2)`,
+      ),
     )
     .orderBy(desc(sql`similarity(${posts.title}, ${trimmed})`))
     .limit(limit);
@@ -120,8 +124,10 @@ export async function getSearchSuggestions(query: string, limit = 5): Promise<Ar
   return results;
 }
 
-export async function searchPosts(query: string, limit = 20): Promise<PostWithRelations[]> {
+export async function searchPosts(
+  query: string,
+  limit = 20,
+): Promise<PostWithRelations[]> {
   const result = await advancedSearchPosts({ query, limit });
   return result.posts;
 }
-

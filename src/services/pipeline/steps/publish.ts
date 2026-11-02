@@ -1,7 +1,7 @@
-import { sendPostPublishedNotification } from '@/services/notify/telegram';
-import { fetchWithRetry } from '@/lib/utils/http';
-import { siteConfig } from '@/config/site';
-import { Post } from '@/db/schema';
+import { sendPostPublishedNotification } from "@/services/notify/telegram";
+import { fetchWithRetry } from "@/lib/utils/http";
+import { siteConfig } from "@/config/site";
+import { Post } from "@/db/schema";
 
 export interface PublishParams {
   post: Post;
@@ -11,8 +11,12 @@ export interface PublishParams {
   warnings?: string[];
 }
 
-export async function stepPublishAndNotify(params: PublishParams): Promise<void> {
-  console.log('📣 [Step 8/8: Notify & Revalidate] Revalidating cache and sending notifications...');
+export async function stepPublishAndNotify(
+  params: PublishParams,
+): Promise<void> {
+  console.log(
+    "📣 [Step 8/8: Notify & Revalidate] Revalidating cache and sending notifications...",
+  );
 
   const postUrl = `${siteConfig.url}/blog/${params.post.slug}`;
 
@@ -26,19 +30,19 @@ export async function stepPublishAndNotify(params: PublishParams): Promise<void>
       const res = await fetchWithRetry(
         revalidateUrl,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${cronSecret}`,
           },
           body: JSON.stringify({ slug: params.post.slug }),
           timeoutMs: 10000,
         },
-        { retries: 2, backoffMs: 1000 }
+        { retries: 2, backoffMs: 1000 },
       );
 
       if (res.ok) {
-        console.log('✓ Cache successfully revalidated for all pages.');
+        console.log("✓ Cache successfully revalidated for all pages.");
       } else {
         console.warn(`⚠️ Revalidation returned status ${res.status}`);
       }
@@ -58,5 +62,7 @@ export async function stepPublishAndNotify(params: PublishParams): Promise<void>
     warnings: params.warnings,
   });
 
-  console.log('🎉 [Pipeline Complete] Daily post workflow finished successfully!');
+  console.log(
+    "🎉 [Pipeline Complete] Daily post workflow finished successfully!",
+  );
 }

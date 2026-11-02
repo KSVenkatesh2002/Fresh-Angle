@@ -1,7 +1,7 @@
-import React from 'react';
-import { PostWithRelations } from '@/db/queries/posts';
-import { PostCard } from './PostCard';
-import { Newspaper } from 'lucide-react';
+import React from "react";
+import { PostWithRelations } from "@/db/queries/posts";
+import { PostCard } from "./PostCard";
+import { Newspaper } from "lucide-react";
 
 interface PostListProps {
   posts: PostWithRelations[];
@@ -10,14 +10,18 @@ interface PostListProps {
 
 export function PostList({
   posts,
-  emptyMessage = 'No articles found in this section yet. Check back tomorrow!',
+  emptyMessage = "No articles found in this section yet. Check back tomorrow!",
 }: PostListProps): React.JSX.Element {
   if (posts.length === 0) {
     return (
       <div className="text-center py-16 px-4 rounded-xl border border-dashed border-border bg-surface/50 my-8">
         <Newspaper className="w-10 h-10 text-foreground-muted mx-auto mb-3 opacity-60" />
-        <h2 className="text-lg font-semibold text-foreground mb-1">No Articles Published</h2>
-        <p className="text-sm text-foreground-muted max-w-sm mx-auto">{emptyMessage}</p>
+        <h2 className="text-lg font-semibold text-foreground mb-1">
+          No Articles Published
+        </h2>
+        <p className="text-sm text-foreground-muted max-w-sm mx-auto">
+          {emptyMessage}
+        </p>
       </div>
     );
   }

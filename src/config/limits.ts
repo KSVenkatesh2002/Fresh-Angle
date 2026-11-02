@@ -26,8 +26,8 @@ export const LIMITS = {
 
   // Similarity & Duplicate Gates
   similarityThreshold: 0.45,
-  contentSimhashMax: 0.30,
-  sourceShingleJaccardMax: 0.20,
+  contentSimhashMax: 0.3,
+  sourceShingleJaccardMax: 0.2,
   entityCooldownDays: 7,
   maxEntityPostsPerPeriod: 2,
   maxConsecutiveCategoryPosts: 2,

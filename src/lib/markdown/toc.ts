@@ -1,4 +1,4 @@
-import { slugify } from '@/lib/utils/slug';
+import { slugify } from "@/lib/utils/slug";
 
 export interface TocItem {
   id: string;
@@ -14,13 +14,13 @@ export function extractTableOfContents(markdown: string): TocItem[] {
 
   const items: TocItem[] = [];
   // Regex matches lines starting with ## or ### (ignoring code fences)
-  const lines = markdown.split('\n');
+  const lines = markdown.split("\n");
   let insideCodeBlock = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
 
-    if (trimmed.startsWith('```')) {
+    if (trimmed.startsWith("```")) {
       insideCodeBlock = !insideCodeBlock;
       continue;
     }
@@ -31,7 +31,7 @@ export function extractTableOfContents(markdown: string): TocItem[] {
 
     const h2Match = trimmed.match(/^##\s+(.+)$/);
     if (h2Match && h2Match[1]) {
-      const text = h2Match[1].replace(/[*_`]/g, '').trim();
+      const text = h2Match[1].replace(/[*_`]/g, "").trim();
       items.push({
         id: slugify(text),
         text,
@@ -42,7 +42,7 @@ export function extractTableOfContents(markdown: string): TocItem[] {
 
     const h3Match = trimmed.match(/^###\s+(.+)$/);
     if (h3Match && h3Match[1]) {
-      const text = h3Match[1].replace(/[*_`]/g, '').trim();
+      const text = h3Match[1].replace(/[*_`]/g, "").trim();
       items.push({
         id: slugify(text),
         text,

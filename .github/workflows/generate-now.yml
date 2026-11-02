@@ -1,0 +1,63 @@
+name: Generate Dispatch Now
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Specific Topic or Headline to research (leave blank for auto-trending)"
+        required: false
+        type: string
+        default: ""
+
+concurrency:
+  group: fresh-angle-generate
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Post
+        run: npm run generate:post
+        env:
+          MANUAL_TOPIC: ${{ inputs.topic }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          SITE_NAME: ${{ secrets.SITE_NAME }}
+          DEFAULT_TIMEZONE: ${{ secrets.DEFAULT_TIMEZONE }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_IMAGE_MODEL: ${{ secrets.CF_IMAGE_MODEL }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
+          GITHUB_DISPATCH_TOKEN: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+          CREATOR_NAME: ${{ secrets.CREATOR_NAME }}
+          CREATOR_URL: ${{ secrets.CREATOR_URL }}
+          CREATOR_IMAGE: ${{ secrets.CREATOR_IMAGE }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
