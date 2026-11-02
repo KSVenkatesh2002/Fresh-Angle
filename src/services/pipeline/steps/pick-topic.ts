@@ -18,9 +18,10 @@ export async function stepPickTopic(): Promise<PickTopicResult> {
 
   console.log(`Found ${candidates.length} candidates matching niche keywords.`);
 
-  // Query existing posts to prevent duplicate coverage
+  // Query existing posts and source URLs to prevent duplicate coverage
   let existingTitles: string[] = [];
   let existingTopicKeys: string[] = [];
+  let existingSourceUrls: string[] = [];
 
   try {
     const db = getDb();
@@ -30,13 +31,24 @@ export async function stepPickTopic(): Promise<PickTopicResult> {
 
     existingTitles = pastPosts.map((p) => p.title);
     existingTopicKeys = pastPosts.map((p) => p.topicKey);
+
+    const pastSources = await db.query.postSources.findMany({
+      columns: { url: true },
+    });
+    existingSourceUrls = pastSources.map((s) => s.url);
   } catch (err) {
     console.warn(`⚠️ [Pick Topic] Could not fetch past posts for deduplication: ${(err as Error).message}`);
   }
 
   // Find the highest-scoring non-duplicate topic
   for (const candidate of candidates) {
-    const dedupeCheck = isDuplicateTopic(candidate.title, existingTitles, existingTopicKeys);
+    const dedupeCheck = isDuplicateTopic(
+      candidate.title,
+      existingTitles,
+      existingTopicKeys,
+      candidate.url,
+      existingSourceUrls
+    );
     if (!dedupeCheck.isDuplicate) {
       console.log(`✓ [Pick Topic] Selected: "${candidate.title}" (Score: ${candidate.relevanceScore})`);
       return {
@@ -44,7 +56,7 @@ export async function stepPickTopic(): Promise<PickTopicResult> {
         candidateCount: candidates.length,
       };
     } else {
-      console.log(`⏩ [Pick Topic] Skipping duplicate topic: "${candidate.title}" (matched: "${dedupeCheck.matchedWith}")`);
+      console.log(`⏩ [Pick Topic] Skipping duplicate topic: "${candidate.title}" (matched: "${dedupeCheck.matchedWith}", score: ${dedupeCheck.score.toFixed(2)})`);
     }
   }
 

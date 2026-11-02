@@ -2,69 +2,64 @@ import 'server-only';
 import { z } from 'zod';
 
 const envSchema = z.object({
-  // Database
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-
-  // Site Info
-  SITE_URL: z.string().url('SITE_URL must be a valid URL').default('https://freshangle.vercel.app'),
-  SITE_NAME: z.string().min(1).default('Fresh Angle'),
+  SITE_URL: z.string().url().default('https://freshangle.vercel.app'),
+  SITE_NAME: z.string().default('Fresh Angle'),
+  DEFAULT_TIMEZONE: z.string().default('Asia/Kolkata'),
 
   // AI Providers
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
-  GEMINI_MODEL: z.string().min(1, 'GEMINI_MODEL is required'),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash-lite'),
   GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY is required'),
-  GROQ_MODEL: z.string().min(1, 'GROQ_MODEL is required'),
-  OPENROUTER_API_KEY: z.string().optional().or(z.literal('')),
-  OPENROUTER_MODEL: z.string().optional().or(z.literal('')),
+  GROQ_MODEL: z.string().default('openai/gpt-oss-120b'),
+  OPENROUTER_API_KEY: z.string().optional(),
+  OPENROUTER_MODEL: z.string().optional(),
 
-  // Cover Image Generation & Stock
+  // Image Generation
   CF_ACCOUNT_ID: z.string().min(1, 'CF_ACCOUNT_ID is required'),
   CF_API_TOKEN: z.string().min(1, 'CF_API_TOKEN is required'),
-  PEXELS_API_KEY: z.string().min(1, 'PEXELS_API_KEY is required'),
+  CF_IMAGE_MODEL: z.string().default('@cf/black-forest-labs/flux-1-schnell'),
+  PEXELS_API_KEY: z.string().default('your_pexels_api_key'),
+  IMAGE_STORAGE: z.enum(['db', 'r2']).default('db'),
 
-  // Notifications
-  TELEGRAM_BOT_TOKEN: z.string().min(1, 'TELEGRAM_BOT_TOKEN is required'),
-  TELEGRAM_CHAT_ID: z.string().min(1, 'TELEGRAM_CHAT_ID is required'),
-
-  // Security
-  CRON_SECRET: z.string().min(16, 'CRON_SECRET must be at least 16 characters'),
-  ADMIN_PASSWORD: z.string().min(8, 'ADMIN_PASSWORD must be at least 8 characters'),
+  // Security & Admin
+  CRON_SECRET: z.string().min(1, 'CRON_SECRET is required'),
+  ADMIN_PASSWORD: z.string().min(1, 'ADMIN_PASSWORD is required'),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
 
-  // Pipeline Settings
-  AUTO_PUBLISH: z
-    .enum(['true', 'false'])
-    .default('true')
-    .transform((val) => val === 'true'),
+  // GitHub Dispatch
+  GITHUB_REPO: z.string().default('KSVenkatesh2002/Fresh-Angle'),
+  GITHUB_DISPATCH_TOKEN: z.string().optional(),
+
+  // Creator
+  CREATOR_NAME: z.string().default('Venkatesh K S'),
+  CREATOR_URL: z.string().default('https://venkatesh-k-s.vercel.app'),
+  CREATOR_IMAGE: z.string().default('/images/creator.png'),
+
+  // Optional External Integrations
+  EMBEDDING_PROVIDER: z.enum(['none', 'gemini']).default('none'),
+  EMBEDDING_MODEL: z.string().optional(),
+  NEWS_API_PROVIDER: z.enum(['gnews', 'newsdata']).optional(),
+  NEWS_API_KEY: z.string().optional(),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
+  TELEGRAM_THREAD_ID: z.string().optional(),
+  GOOGLE_SITE_VERIFICATION: z.string().optional(),
+  BING_SITE_VERIFICATION: z.string().optional(),
+  INDEXNOW_KEY: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  AUTO_PUBLISH: z.string().default('true'),
 });
 
 export type Env = z.infer<typeof envSchema>;
 
-let cachedEnv: Env | null = null;
-
-export function getEnv(): Env {
-  if (cachedEnv) {
-    return cachedEnv;
-  }
-
+function validateEnv(): Env {
   const result = envSchema.safeParse(process.env);
-
   if (!result.success) {
-    const errorDetails = result.error.issues
-      .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
-      .join('\n');
-
-    throw new Error(
-      `❌ [Environment Validation Error] Invalid or missing environment variables:\n${errorDetails}\nPlease check your .env or .env.local file against .env.example.`
-    );
+    console.error('❌ Invalid environment variables:', result.error.format());
+    throw new Error('Environment variable validation failed');
   }
-
-  cachedEnv = result.data;
-  return cachedEnv;
+  return result.data;
 }
 
-// Safe check helper for build time or optional checks
-export function getOptionalEnv(): Partial<Env> {
-  const result = envSchema.partial().safeParse(process.env);
-  return result.success ? result.data : {};
-}
+export const env = validateEnv();

@@ -74,11 +74,30 @@ export function computeLevenshteinSimilarity(s1: string, s2: string): number {
 export function isDuplicateTopic(
   candidateTitle: string,
   existingTitles: string[],
-  existingTopicKeys: string[] = []
+  existingTopicKeys: string[] = [],
+  candidateUrl?: string,
+  existingUrls: string[] = []
 ): { isDuplicate: boolean; matchedWith?: string; score: number } {
+  // 1. Exact Source URL match (same article already covered)
+  if (candidateUrl && existingUrls.length > 0) {
+    const cleanCandidateUrl = candidateUrl.split('?')[0].replace(/\/+$/, '').toLowerCase();
+    const urlMatch = existingUrls.find((u) => {
+      const cleanExisting = u.split('?')[0].replace(/\/+$/, '').toLowerCase();
+      return cleanExisting === cleanCandidateUrl;
+    });
+
+    if (urlMatch) {
+      return {
+        isDuplicate: true,
+        matchedWith: `Source URL: ${urlMatch}`,
+        score: 1.0,
+      };
+    }
+  }
+
   const candidateTopicKey = generateTopicKey(candidateTitle);
 
-  // Exact topic key match
+  // 2. Exact topic key match
   if (existingTopicKeys.includes(candidateTopicKey)) {
     return {
       isDuplicate: true,

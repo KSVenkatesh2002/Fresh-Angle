@@ -36,6 +36,6 @@ export const PIPELINE_CONFIG = {
     aiTimeoutMs: 60000, // 60s timeout for AI generation
     maxRetries: 3,
   } as PipelineLimits,
-  similarityThreshold: 0.65, // Jaccard / Levenshtein duplicate topic rejection threshold
+  similarityThreshold: 0.45, // Jaccard / Levenshtein duplicate topic rejection threshold
   defaultCategory: 'Artificial Intelligence',
 } as const;
