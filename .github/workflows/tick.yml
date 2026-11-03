@@ -46,8 +46,8 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
-          GITHUB_DISPATCH_TOKEN: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+          GH_REPO: ${{ secrets.GH_REPO }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
           CREATOR_NAME: ${{ secrets.CREATOR_NAME }}
           CREATOR_URL: ${{ secrets.CREATOR_URL }}
           CREATOR_IMAGE: ${{ secrets.CREATOR_IMAGE }}

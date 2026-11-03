@@ -34,8 +34,8 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     if (action === "generate_now") {
       // Check GitHub dispatch token if available, or trigger pipeline directly
-      const token = process.env.GITHUB_DISPATCH_TOKEN;
-      const repo = process.env.GITHUB_REPO;
+      const token = process.env.GH_DISPATCH_TOKEN || process.env.GITHUB_DISPATCH_TOKEN;
+      const repo = process.env.GH_REPO || process.env.GITHUB_REPO;
 
       if (token && repo) {
         try {

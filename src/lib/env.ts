@@ -30,8 +30,10 @@ const envSchema = z.object({
     .min(32, "SESSION_SECRET must be at least 32 characters"),
 
   // GitHub Dispatch
-  GITHUB_REPO: z.string().default("KSVenkatesh2002/Fresh-Angle"),
+  GITHUB_REPO: z.string().optional(),
+  GH_REPO: z.string().default("KSVenkatesh2002/Fresh-Angle"),
   GITHUB_DISPATCH_TOKEN: z.string().optional(),
+  GH_DISPATCH_TOKEN: z.string().optional(),
 
   // Creator
   CREATOR_NAME: z.string().optional(),
