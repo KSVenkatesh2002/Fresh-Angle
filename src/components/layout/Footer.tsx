@@ -28,31 +28,33 @@ export function Footer(): React.JSX.Element {
             </p>
 
             {/* Creator Profile Box */}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-surface border border-border max-w-md">
-              <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-border">
-                <Image
-                  src={siteConfig.creator.image}
-                  alt={`Photo of ${siteConfig.creator.name}`}
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs text-foreground-muted">
-                  Site Architecture & Engineering
+            {siteConfig.creator && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-surface border border-border max-w-md">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-border">
+                  <Image
+                    src={siteConfig.creator.image}
+                    alt={`Photo of ${siteConfig.creator.name}`}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
                 </div>
-                <a
-                  href={siteConfig.creator.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-semibold text-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
-                >
-                  <span>Created by {siteConfig.creator.name}</span>
-                  <ExternalLink className="w-3 h-3 text-foreground-muted" />
-                </a>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-foreground-muted">
+                    Site Architecture & Engineering
+                  </div>
+                  <a
+                    href={siteConfig.creator.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-semibold text-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
+                  >
+                    <span>Created by {siteConfig.creator.name}</span>
+                    <ExternalLink className="w-3 h-3 text-foreground-muted" />
+                  </a>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border text-xs text-foreground-muted">
               <Bot className="w-3.5 h-3.5 text-primary" />

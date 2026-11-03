@@ -25,9 +25,12 @@ export const metadata: Metadata = constructPageMetadata({
 });
 
 export default function AboutPage(): React.JSX.Element {
+  const personJsonLd = generatePersonJsonLd();
+  const creator = siteConfig.creator;
+
   return (
     <main className="py-8 sm:py-12">
-      <JsonLd data={generatePersonJsonLd()} />
+      {personJsonLd && <JsonLd data={personJsonLd} />}
       <Container size="narrow">
         <Breadcrumbs items={[{ name: "About", url: "/about" }]} />
 
@@ -65,58 +68,60 @@ export default function AboutPage(): React.JSX.Element {
           </section>
 
           {/* Creator Profile Section */}
-          <section className="p-6 sm:p-8 rounded-2xl bg-surface border border-border space-y-4">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
-              <Code className="w-4 h-4" />
-              <span>Architecture & Engineering Leadership</span>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0 border-2 border-border shadow-sm">
-                <Image
-                  src={siteConfig.creator.image}
-                  alt={`Photo of ${siteConfig.creator.name}`}
-                  fill
-                  sizes="112px"
-                  className="object-cover"
-                />
+          {creator && (
+            <section className="p-6 sm:p-8 rounded-2xl bg-surface border border-border space-y-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+                <Code className="w-4 h-4" />
+                <span>Architecture & Engineering Leadership</span>
               </div>
-              <div className="space-y-3 text-center sm:text-left">
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">
-                    {siteConfig.creator.name}
-                  </h3>
-                  <p className="text-xs text-primary font-medium">
-                    Founder & Principal Systems Architect
-                  </p>
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0 border-2 border-border shadow-sm">
+                  <Image
+                    src={creator.image}
+                    alt={`Photo of ${creator.name}`}
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                  />
                 </div>
-                <p className="text-sm text-foreground-muted leading-relaxed">
-                  {siteConfig.creator.bio}
-                </p>
-                <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-4">
-                  <a
-                    href={siteConfig.creator.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
-                  >
-                    <span>Visit Personal Portfolio</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                  {siteConfig.social.github && (
+                <div className="space-y-3 text-center sm:text-left">
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">
+                      {creator.name}
+                    </h3>
+                    <p className="text-xs text-primary font-medium">
+                      Founder & Principal Systems Architect
+                    </p>
+                  </div>
+                  <p className="text-sm text-foreground-muted leading-relaxed">
+                    {creator.bio}
+                  </p>
+                  <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-4">
                     <a
-                      href={siteConfig.social.github}
+                      href={creator.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground-muted hover:text-foreground"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
                     >
-                      <span>GitHub</span>
+                      <span>Visit Personal Portfolio</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
-                  )}
+                    {siteConfig.social.github && (
+                      <a
+                        href={siteConfig.social.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground-muted hover:text-foreground"
+                      >
+                        <span>GitHub</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           <section className="space-y-4 p-6 sm:p-8 rounded-2xl bg-surface border border-border">
             <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">

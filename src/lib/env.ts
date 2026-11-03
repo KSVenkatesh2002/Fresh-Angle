@@ -34,9 +34,9 @@ const envSchema = z.object({
   GITHUB_DISPATCH_TOKEN: z.string().optional(),
 
   // Creator
-  CREATOR_NAME: z.string().default("Venkatesh K S"),
-  CREATOR_URL: z.string().default("https://venkatesh-k-s.vercel.app"),
-  CREATOR_IMAGE: z.string().default("/images/creator.png"),
+  CREATOR_NAME: z.string().optional(),
+  CREATOR_URL: z.string().optional(),
+  CREATOR_IMAGE: z.string().optional(),
 
   // Optional External Integrations
   EMBEDDING_PROVIDER: z.enum(["none", "gemini"]).default("none"),

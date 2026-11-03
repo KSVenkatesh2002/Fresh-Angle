@@ -127,16 +127,19 @@ export function generateFaqJsonLd(
   };
 }
 
-export function generatePersonJsonLd(): Record<string, unknown> {
+export function generatePersonJsonLd(): Record<string, unknown> | null {
+  if (!siteConfig.creator) return null;
+  const creator = siteConfig.creator;
+
   return {
     "@context": "https://schema.org",
     "@type": "Person",
-    name: siteConfig.creator.name,
-    url: siteConfig.creator.url,
-    image: `${siteConfig.url}${siteConfig.creator.image}`,
+    name: creator.name,
+    url: creator.url,
+    image: `${siteConfig.url}${creator.image}`,
     jobTitle: "Founder & Software Architect",
-    sameAs: [siteConfig.creator.url, siteConfig.social.github].filter(Boolean),
-    description: siteConfig.creator.bio,
+    sameAs: [creator.url, siteConfig.social.github].filter(Boolean),
+    description: creator.bio,
   };
 }
 

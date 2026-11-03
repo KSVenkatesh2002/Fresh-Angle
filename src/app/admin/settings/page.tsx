@@ -29,33 +29,39 @@ export default function AdminSettingsPage(): React.JSX.Element {
             <User className="w-4 h-4 text-primary" />
             <span>Creator Profile Attribution</span>
           </h2>
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-muted border border-border">
-            <div className="relative w-14 h-14 rounded-full overflow-hidden border border-border shrink-0">
-              <Image
-                src={siteConfig.creator.image}
-                alt={siteConfig.creator.name}
-                fill
-                sizes="56px"
-                className="object-cover"
-              />
+          {siteConfig.creator ? (
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-muted border border-border">
+              <div className="relative w-14 h-14 rounded-full overflow-hidden border border-border shrink-0">
+                <Image
+                  src={siteConfig.creator.image}
+                  alt={siteConfig.creator.name}
+                  fill
+                  sizes="56px"
+                  className="object-cover"
+                />
+              </div>
+              <div>
+                <p className="font-bold text-foreground">
+                  {siteConfig.creator.name}
+                </p>
+                <a
+                  href={siteConfig.creator.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline"
+                >
+                  {siteConfig.creator.url}
+                </a>
+                <p className="text-[11px] text-foreground-muted mt-0.5">
+                  Asset: {siteConfig.creator.image}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-foreground">
-                {siteConfig.creator.name}
-              </p>
-              <a
-                href={siteConfig.creator.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline"
-              >
-                {siteConfig.creator.url}
-              </a>
-              <p className="text-[11px] text-foreground-muted mt-0.5">
-                Asset: {siteConfig.creator.image}
-              </p>
+          ) : (
+            <div className="p-4 rounded-xl bg-surface-muted border border-border text-xs text-foreground-muted">
+              No creator profile configured. Provide <code>CREATOR_NAME</code>, <code>CREATOR_URL</code>, and <code>CREATOR_IMAGE</code> in environment variables to display creator attribution.
             </div>
-          </div>
+          )}
           <p className="text-xs text-foreground-muted leading-relaxed">
             Standardized across all portfolio publications. Sourced from
             environment variables and site config.

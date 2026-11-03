@@ -3,6 +3,13 @@ export interface NavLink {
   readonly href: string;
 }
 
+export interface CreatorConfig {
+  readonly name: string;
+  readonly url: string;
+  readonly image: string;
+  readonly bio: string;
+}
+
 export interface SiteConfig {
   readonly name: string;
   readonly tagline: string;
@@ -11,12 +18,7 @@ export interface SiteConfig {
   readonly language: string;
   readonly timezone: string;
   readonly niche: string;
-  readonly creator: {
-    readonly name: string;
-    readonly url: string;
-    readonly image: string;
-    readonly bio: string;
-  };
+  readonly creator: CreatorConfig | null;
   readonly author: {
     readonly name: string;
     readonly role: string;
@@ -46,12 +48,14 @@ export const siteConfig: SiteConfig = {
   language: "en-US",
   timezone: process.env.DEFAULT_TIMEZONE || "Asia/Kolkata",
   niche: "AI & technology news",
-  creator: {
-    name: process.env.CREATOR_NAME || "Venkatesh K S",
-    url: process.env.CREATOR_URL || "https://venkatesh-k-s.vercel.app",
-    image: process.env.CREATOR_IMAGE || "/images/creator.png",
-    bio: "Founder, Software Craftsman & Senior Full-Stack Engineer passionate about autonomous systems and next-generation web intelligence.",
-  },
+  creator: process.env.CREATOR_NAME
+    ? {
+        name: process.env.CREATOR_NAME,
+        url: process.env.CREATOR_URL || "",
+        image: process.env.CREATOR_IMAGE || "/images/creator.png",
+        bio: "Founder, Software Craftsman & Senior Full-Stack Engineer passionate about autonomous systems and next-generation web intelligence.",
+      }
+    : null,
   author: {
     name: "Fresh Angle Editorial AI",
     role: "Automated Research & Synthesis Engine",
