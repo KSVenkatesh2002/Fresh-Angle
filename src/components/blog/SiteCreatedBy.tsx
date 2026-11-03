@@ -8,22 +8,31 @@ export function SiteCreatedBy(): React.JSX.Element | null {
   const creator = siteConfig.creator;
 
   return (
-    <div className="my-10 p-5 rounded-2xl bg-surface border border-border flex flex-col sm:flex-row items-center sm:items-start gap-4">
-      <div className="relative w-14 h-14 rounded-full overflow-hidden shrink-0 border border-border">
+    <div className="my-10 p-5 rounded-2xl bg-surface border border-border flex flex-col sm:flex-row items-center sm:items-start gap-5 shadow-sm hover:border-primary/40 transition-colors">
+      <a
+        href={creator.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 border border-border group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        title={`View ${creator.name}'s profile`}
+      >
         <Image
           src={creator.image}
           alt={`Photo of ${creator.name}`}
           fill
-          sizes="56px"
-          className="object-cover"
+          sizes="96px"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
-      </div>
-      <div className="flex-1 text-center sm:text-left space-y-1">
-        <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-foreground-muted">
-          <Code className="w-3.5 h-3.5 text-primary" />
+        <div className="absolute inset-0 bg-background/0 group-hover:bg-background/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <ExternalLink className="w-4 h-4 text-primary drop-shadow" />
+        </div>
+      </a>
+      <div className="flex-1 text-center sm:text-left space-y-1.5">
+        <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+          <Code className="w-3.5 h-3.5" />
           <span>Site Architecture & Engineering</span>
         </div>
-        <p className="text-sm font-semibold text-foreground">
+        <p className="text-base font-bold text-foreground">
           Created by{" "}
           <a
             href={creator.url}
@@ -32,7 +41,7 @@ export function SiteCreatedBy(): React.JSX.Element | null {
             className="text-primary hover:underline inline-flex items-center gap-1"
           >
             <span>{creator.name}</span>
-            <ExternalLink className="w-3 h-3 text-foreground-muted" />
+            <ExternalLink className="w-3.5 h-3.5 text-foreground-muted" />
           </a>
         </p>
         <p className="text-xs text-foreground-muted leading-relaxed">

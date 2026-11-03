@@ -75,15 +75,24 @@ export default function AboutPage(): React.JSX.Element {
                 <span>Architecture & Engineering Leadership</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden shrink-0 border-2 border-border shadow-sm">
+                <a
+                  href={creator.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shrink-0 border-2 border-border shadow-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  title={`View ${creator.name}'s profile`}
+                >
                   <Image
                     src={creator.image}
                     alt={`Photo of ${creator.name}`}
                     fill
-                    sizes="112px"
-                    className="object-cover"
+                    sizes="128px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                </div>
+                  <div className="absolute inset-0 bg-background/0 group-hover:bg-background/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <ExternalLink className="w-5 h-5 text-primary drop-shadow" />
+                  </div>
+                </a>
                 <div className="space-y-3 text-center sm:text-left">
                   <div>
                     <h3 className="text-xl font-bold text-foreground">

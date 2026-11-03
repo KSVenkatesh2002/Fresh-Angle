@@ -31,12 +31,12 @@ export default function AdminSettingsPage(): React.JSX.Element {
           </h2>
           {siteConfig.creator ? (
             <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-muted border border-border">
-              <div className="relative w-14 h-14 rounded-full overflow-hidden border border-border shrink-0">
+              <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border shrink-0">
                 <Image
                   src={siteConfig.creator.image}
                   alt={siteConfig.creator.name}
                   fill
-                  sizes="56px"
+                  sizes="64px"
                   className="object-cover"
                 />
               </div>
