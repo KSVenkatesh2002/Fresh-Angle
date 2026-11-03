@@ -736,6 +736,13 @@ export const feedsRelations = relations(feeds, ({ one }) => ({
   }),
 }));
 
+export const pipelineRunsRelations = relations(pipelineRuns, ({ one }) => ({
+  post: one(posts, {
+    fields: [pipelineRuns.postId],
+    references: [posts.id],
+  }),
+}));
+
 // Export inferred types
 export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;

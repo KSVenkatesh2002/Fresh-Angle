@@ -30,23 +30,44 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
   let upcomingSlot: typeof postSlots.$inferSelect | null = null;
 
   try {
-    const [recentRuns, allPosts, [settings], nextSlots] = await Promise.all([
-      getRecentRuns(10),
-      getPublishedPosts({ page: 1, limit: 15 }),
-      db.select().from(automationSettings).limit(1),
-      db.query.postSlots.findMany({
-        where: and(
-          eq(postSlots.status, "planned"),
-          gte(postSlots.plannedAt, new Date()),
-        ),
-        orderBy: [asc(postSlots.plannedAt)],
-        limit: 1,
-      }),
-    ]);
-    runs = recentRuns;
-    postsData = allPosts.posts;
-    settingsRecord = settings;
-    upcomingSlot = nextSlots[0];
+    const [recentRunsRes, allPostsRes, settingsRes, nextSlotsRes] =
+      await Promise.allSettled([
+        getRecentRuns(10),
+        getPublishedPosts({ page: 1, limit: 15 }),
+        db.select().from(automationSettings).limit(1),
+        db.query.postSlots.findMany({
+          where: and(
+            eq(postSlots.status, "planned"),
+            gte(postSlots.plannedAt, new Date()),
+          ),
+          orderBy: [asc(postSlots.plannedAt)],
+          limit: 1,
+        }),
+      ]);
+
+    if (recentRunsRes.status === "fulfilled") {
+      runs = recentRunsRes.value;
+    } else {
+      console.warn("⚠️ [Admin] Runs query failed:", recentRunsRes.reason);
+    }
+
+    if (allPostsRes.status === "fulfilled") {
+      postsData = allPostsRes.value.posts;
+    } else {
+      console.warn("⚠️ [Admin] Posts query failed:", allPostsRes.reason);
+    }
+
+    if (settingsRes.status === "fulfilled") {
+      settingsRecord = settingsRes.value[0] ?? null;
+    } else {
+      console.warn("⚠️ [Admin] Settings query failed:", settingsRes.reason);
+    }
+
+    if (nextSlotsRes.status === "fulfilled") {
+      upcomingSlot = nextSlotsRes.value[0] ?? null;
+    } else {
+      console.warn("⚠️ [Admin] Next slots query failed:", nextSlotsRes.reason);
+    }
   } catch (err) {
     console.warn(
       `⚠️ [Admin] Could not fetch records: ${(err as Error).message}`,
