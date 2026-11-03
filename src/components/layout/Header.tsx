@@ -4,6 +4,7 @@ import { siteConfig } from "@/config/site";
 import { Container } from "./Container";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { HeaderSearch } from "./HeaderSearch";
+import { MobileNav } from "./MobileNav";
 import { Sparkles, Rss } from "lucide-react";
 
 export function Header(): React.JSX.Element {
@@ -59,6 +60,8 @@ export function Header(): React.JSX.Element {
             </Link>
 
             <ThemeToggle />
+
+            <MobileNav navLinks={siteConfig.navLinks} />
           </div>
         </div>
       </Container>
