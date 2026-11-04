@@ -75,7 +75,7 @@ export class AiFallbackChain {
    */
   async generateValidatedJson<T>(
     options: GenerateTextOptions,
-    schema: z.ZodType<T, z.ZodTypeDef, any>,
+    schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   ): Promise<{ data: T; result: AiGenerationResult }> {
     const jsonOptions: GenerateTextOptions = {
       ...options,
@@ -124,7 +124,7 @@ Please output ONLY a valid, corrected JSON object complying strictly with the re
 
   private tryParseAndValidate<T>(
     text: string,
-    schema: z.ZodType<T, z.ZodTypeDef, any>,
+    schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   ): { success: true; data: T } | { success: false; error: string } {
     try {
       // Clean possible markdown code fences (```json ... ```)
