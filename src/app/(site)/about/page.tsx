@@ -79,15 +79,16 @@ export default function AboutPage(): React.JSX.Element {
                   href={creator.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shrink-0 border-2 border-border shadow-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shrink-0 border-2 border-border shadow-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring block"
+                  style={{ width: "112px", height: "112px" }}
                   title={`View ${creator.name}'s profile`}
                 >
                   <Image
                     src={creator.image}
                     alt={`Photo of ${creator.name}`}
-                    fill
-                    sizes="128px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-background/0 group-hover:bg-background/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <ExternalLink className="w-5 h-5 text-primary drop-shadow" />
