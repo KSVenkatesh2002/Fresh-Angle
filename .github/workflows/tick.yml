@@ -2,8 +2,8 @@ name: Tick Automation Scheduler
 
 on:
   schedule:
-    # Run every 30 minutes
-    - cron: "*/30 * * * *"
+    # Run twice an hour at off-peak minutes (7 and 37) to bypass GitHub Actions top-of-hour queue delays
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 concurrency:

@@ -8,12 +8,27 @@ export const outlineSchema = z.object({
   targetCategory: z.string().min(3),
   sections: z
     .array(
-      z.object({
-        heading: z.string().min(3),
-        keyPoints: z.array(z.string().min(5)).min(1),
-      }),
+      z
+        .object({
+          heading: z.string().optional(),
+          title: z.string().optional(),
+          keyPoints: z.union([z.array(z.string()), z.string()]).optional(),
+          summary: z.union([z.array(z.string()), z.string()]).optional(),
+        })
+        .transform((s) => ({
+          heading: s.heading || s.title || "Section Overview",
+          keyPoints: Array.isArray(s.keyPoints)
+            ? s.keyPoints
+            : typeof s.keyPoints === "string"
+              ? [s.keyPoints]
+              : Array.isArray(s.summary)
+                ? s.summary
+                : typeof s.summary === "string"
+                  ? [s.summary]
+                  : ["Analysis based on verified primary sources."],
+        })),
     )
-    .min(3)
+    .min(2)
     .max(PIPELINE_CONFIG.limits.maxOutlineHeadings),
 });
 

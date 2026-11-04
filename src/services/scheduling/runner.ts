@@ -94,19 +94,33 @@ export async function runSchedulerTick(): Promise<{
     let generatedCount = 0;
     const maxPerRun = settings.maxPostsPerRun || 1;
 
+    const maxGraceMs = Math.max(graceWindowMs, 240 * 60 * 1000); // Allow at least 4 hours grace window
+
+    // If all due slots exceeded grace period, keep the most recent one so publishing never stops completely
+    const validDueSlots = dueSlots.filter(
+      (s) => now.getTime() - new Date(s.plannedAt).getTime() <= maxGraceMs,
+    );
+    const slotsToProcess =
+      validDueSlots.length > 0 ? validDueSlots : [dueSlots[dueSlots.length - 1]];
+
+    // Mark older expired slots as missed
+    const slotToKeepId = slotsToProcess[0]?.id;
     for (const slot of dueSlots) {
-      // Check if slot has expired beyond the late grace period
-      if (now.getTime() - new Date(slot.plannedAt).getTime() > graceWindowMs) {
+      if (
+        slot.id !== slotToKeepId &&
+        now.getTime() - new Date(slot.plannedAt).getTime() > maxGraceMs
+      ) {
         await db
           .update(postSlots)
           .set({
             status: "missed",
-            error: "Slot exceeded late grace minutes window",
+            error: "Slot exceeded late grace window",
           })
           .where(eq(postSlots.id, slot.id));
-        continue;
       }
+    }
 
+    for (const slot of slotsToProcess) {
       if (generatedCount >= maxPerRun) {
         break; // Respect max_posts_per_run
       }

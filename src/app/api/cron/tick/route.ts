@@ -3,6 +3,7 @@ import { runSchedulerTick } from "@/services/scheduling/runner";
 import { recordAuditLog } from "@/services/audit/logger";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   return handleCronTick(req);
