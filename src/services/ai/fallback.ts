@@ -14,8 +14,8 @@ export class AiFallbackChain {
 
   constructor(customProviders?: AiProvider[]) {
     this.providers = customProviders ?? [
-      new GroqProvider(),
       new GeminiProvider(),
+      new GroqProvider(),
       new OpenRouterProvider(),
     ];
   }

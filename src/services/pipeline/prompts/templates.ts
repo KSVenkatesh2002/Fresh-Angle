@@ -88,7 +88,7 @@ Output a single valid JSON object matching this schema:
   "category": "Artificial Intelligence | Frontier Models & LLMs | Machine Learning | Hardware & Silicon",
   "tags": ["3 to 6 specific lowercase or title-case tags"],
   "slug": "url-friendly-slug-with-hyphens",
-  "imagePrompt": "Detailed visual prompt for an editorial cover image depicting this technical concept",
+  "imagePrompt": "A tangible, concrete physical 3D editorial visual prompt for the cover art depicting a physical hardware/architectural metaphor for this development (e.g. macro shot of a dark monolithic semiconductor chip die with glowing copper circuit bus lanes and subtle amber optical reflections, Octane 3D render, minimalist matte background, dramatic cinematic rim lighting, 8k). STRICT RULES: Focus on physical materials (silicon, titanium, optical glass, ceramic, server racks). Strictly NEVER describe words, text, typography, UI screens, floating binary code, cartoon clipart, or human faces.",
   "imageAlt": "Descriptive, accessible alt text for the cover image",
   "faq": [
     {

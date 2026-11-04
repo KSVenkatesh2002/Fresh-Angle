@@ -21,8 +21,17 @@ export async function generateCloudflareCover(prompt: string): Promise<Buffer> {
 
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
 
+  const sanitizedPrompt = prompt
+    .replace(
+      /(with\s+)?(text|words?|letters?|title|headline|writing|logo|watermark)[^,]*/gi,
+      "",
+    )
+    .trim();
+
+  const refinedPrompt = `${sanitizedPrompt}, modern 3D tech editorial art, tactile premium materials, dark obsidian and matte metallic surfaces, cinematic studio rim lighting, volumetric depth, octane render, 8k resolution, minimalist architectural tech composition, strictly no text, no words, no letters, no logos, no watermarks, no distorted faces`;
+
   console.log(
-    `🎨 [Cloudflare AI] Generating cover image with prompt: "${prompt.slice(0, 80)}..."`,
+    `🎨 [Cloudflare AI] Generating cover image with prompt: "${refinedPrompt.slice(0, 80)}..."`,
   );
 
   const response = await fetchWithRetry(
@@ -34,8 +43,8 @@ export async function generateCloudflareCover(prompt: string): Promise<Buffer> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt: `${prompt}, clean composition, professional tech editorial publication quality, highly detailed, 8k, aspect ratio 16:9`,
-        steps: 4,
+        prompt: refinedPrompt,
+        steps: 8,
       }),
       timeoutMs: 45000,
     },
