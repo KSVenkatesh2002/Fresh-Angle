@@ -5,6 +5,8 @@ import { automationSettings } from "@/db/schema";
 import { calculateDaySlotTimes } from "@/services/scheduling/slots";
 import { AutomationManager } from "@/components/admin/AutomationManager";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Automation & Scheduling Control",
   robots: { index: false, follow: false },

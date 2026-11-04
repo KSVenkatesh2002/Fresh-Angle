@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDb } from "@/db/client";
 import { topicQueue } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { recordAuditLog } from "@/services/audit/logger";
 
 const bulkImportSchema = z.object({
   titles: z.array(z.string().min(3)).min(1),
@@ -33,6 +34,12 @@ export async function POST(req: Request): Promise<NextResponse> {
         })),
       );
 
+      await recordAuditLog({
+        action: "BULK_IMPORT_TOPICS",
+        entityType: "topic_queue",
+        details: { count: parsed.data.titles.length, titles: parsed.data.titles },
+      });
+
       return NextResponse.json({
         success: true,
         count: parsed.data.titles.length,
@@ -45,6 +52,13 @@ export async function POST(req: Request): Promise<NextResponse> {
         .update(topicQueue)
         .set({ status: "cancelled" })
         .where(eq(topicQueue.id, json.id));
+
+      await recordAuditLog({
+        action: "CANCEL_TOPIC",
+        entityType: "topic_queue",
+        entityId: json.id,
+      });
+
       return NextResponse.json({ success: true });
     }
 

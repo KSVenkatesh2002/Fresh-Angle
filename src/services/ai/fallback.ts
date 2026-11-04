@@ -7,6 +7,7 @@ import {
 import { GeminiProvider } from "./gemini";
 import { GroqProvider } from "./groq";
 import { OpenRouterProvider } from "./openrouter";
+import { recordUsage } from "@/services/usage/tracker";
 
 export class AiFallbackChain {
   private providers: AiProvider[];
@@ -34,6 +35,15 @@ export class AiFallbackChain {
         console.log(
           `✓ [AI Chain] Succeeded with ${provider.name} (${result.model})`,
         );
+
+        // Record successful provider usage
+        void recordUsage({
+          provider: provider.name,
+          kind: "text",
+          tokensIn: result.tokensIn,
+          tokensOut: result.tokensOut,
+        });
+
         return result;
       } catch (err: unknown) {
         const errorMsg = (err as Error).message;
@@ -41,6 +51,13 @@ export class AiFallbackChain {
           `⚠️ [AI Chain] Provider ${provider.name} failed: ${errorMsg}`,
         );
         errors.push({ provider: provider.name, error: errorMsg });
+
+        // Record error for provider
+        void recordUsage({
+          provider: provider.name,
+          kind: "text",
+          isError: true,
+        });
       }
     }
 

@@ -4,6 +4,8 @@ import { getDb } from "@/db/client";
 import { automationSettings } from "@/db/schema";
 import { runSchedulerTick } from "@/services/scheduling/runner";
 import { runDailyPipeline } from "@/services/pipeline/run";
+import { syncPostSlotsForDate } from "@/services/scheduling/slots";
+import { recordAuditLog } from "@/services/audit/logger";
 
 const updateSettingsSchema = z.object({
   enabled: z.boolean().optional(),
@@ -29,10 +31,21 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     if (action === "run_tick") {
       const tickResult = await runSchedulerTick();
+      await recordAuditLog({
+        action: "TRIGGER_TICK",
+        entityType: "scheduler",
+        details: { result: tickResult },
+      });
       return NextResponse.json({ success: true, result: tickResult });
     }
 
     if (action === "generate_now") {
+      await recordAuditLog({
+        action: "GENERATE_NOW_REQUESTED",
+        entityType: "pipeline",
+        details: { trigger: "admin_manual" },
+      });
+
       // Check GitHub dispatch token if available, or trigger pipeline directly
       const token = process.env.GH_DISPATCH_TOKEN || process.env.GITHUB_DISPATCH_TOKEN;
       const repo = process.env.GH_REPO || process.env.GITHUB_REPO;
@@ -88,6 +101,21 @@ export async function POST(req: Request): Promise<NextResponse> {
         : null,
       updatedAt: new Date(),
     });
+
+    // Immediately regenerate planned slots for today & tomorrow with new parameters
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    const tomorrowStr = new Date(now.getTime() + 86400000).toISOString().split("T")[0];
+    await syncPostSlotsForDate(todayStr, true);
+    await syncPostSlotsForDate(tomorrowStr, true);
+
+    await recordAuditLog({
+      action: "UPDATE_AUTOMATION_SETTINGS",
+      entityType: "automation_settings",
+      details: parsed.data,
+    });
+
+    return NextResponse.json({ success: true });
 
     return NextResponse.json({ success: true });
   } catch (err) {

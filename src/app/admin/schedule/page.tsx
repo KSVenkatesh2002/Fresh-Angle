@@ -2,8 +2,11 @@ import React from "react";
 import type { Metadata } from "next";
 import { getDb } from "@/db/client";
 import { postSlots, topicQueue, categories } from "@/db/schema";
-import { desc, asc } from "drizzle-orm";
+import { desc, asc, gte } from "drizzle-orm";
+import { ensureUpcomingSlots } from "@/services/scheduling/slots";
 import { ScheduleQueueManager } from "@/components/admin/ScheduleQueueManager";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Publishing Schedule & Topic Queue",
@@ -12,10 +15,14 @@ export const metadata: Metadata = {
 
 export default async function AdminSchedulePage(): Promise<React.JSX.Element> {
   const db = getDb();
+
+  await ensureUpcomingSlots().catch(() => {});
+
   const [slotsList, queueList, categoriesList] = await Promise.all([
     db.query.postSlots.findMany({
+      where: gte(postSlots.plannedAt, new Date(Date.now() - 48 * 3600 * 1000)),
       orderBy: [asc(postSlots.plannedAt)],
-      limit: 25,
+      limit: 50,
     }),
     db.query.topicQueue.findMany({
       orderBy: [desc(topicQueue.priority), desc(topicQueue.createdAt)],

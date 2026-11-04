@@ -1,6 +1,7 @@
 import { generateCloudflareCover } from "./cloudflare";
 import { searchPexelsImage } from "./pexels";
 import { processImageToWebp, generateDefaultBrandedCover } from "./process";
+import { recordUsage } from "@/services/usage/tracker";
 
 export interface CoverGenerationInput {
   prompt: string;
@@ -34,6 +35,7 @@ export async function getCoverImage(
     console.log(
       `✓ [Cover] Generated AI cover via Cloudflare flux-1-schnell (${Math.round(webpBuffer.length / 1024)} KB)`,
     );
+    void recordUsage({ provider: "cloudflare", kind: "image", images: 1 });
     return {
       buffer: webpBuffer,
       source: "ai",
@@ -44,6 +46,7 @@ export async function getCoverImage(
     console.warn(
       `⚠️ [Cover] Cloudflare AI failed: ${(cfErr as Error).message}. Trying Pexels fallback...`,
     );
+    void recordUsage({ provider: "cloudflare", kind: "image", isError: true });
   }
 
   // Step 2: Fallback to Pexels stock search
@@ -53,6 +56,7 @@ export async function getCoverImage(
     console.log(
       `✓ [Cover] Fetched Pexels stock photo (${Math.round(webpBuffer.length / 1024)} KB)`,
     );
+    void recordUsage({ provider: "pexels", kind: "image", images: 1 });
     return {
       buffer: webpBuffer,
       source: "pexels",
@@ -63,6 +67,7 @@ export async function getCoverImage(
     console.warn(
       `⚠️ [Cover] Pexels fallback failed: ${(pexelsErr as Error).message}. Using default branded cover...`,
     );
+    void recordUsage({ provider: "pexels", kind: "image", isError: true });
   }
 
   // Step 3: Default Branded Editorial Image

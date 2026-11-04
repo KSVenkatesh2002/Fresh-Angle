@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { setSessionCookie } from "@/lib/auth/session";
+import { recordAuditLog } from "@/services/audit/logger";
 
 // In-memory rate limiting store (IP -> { count, resetTime })
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -69,6 +70,13 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     // Set signed httpOnly session cookie
     await setSessionCookie();
+
+    await recordAuditLog({
+      action: "ADMIN_LOGIN_SUCCESS",
+      entityType: "session",
+      ipAddress: ip,
+      details: { timestamp: new Date().toISOString() },
+    });
 
     return NextResponse.json({ success: true, redirectUrl: "/admin" });
   } catch (error) {

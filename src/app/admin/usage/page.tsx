@@ -7,6 +7,8 @@ import {
 } from "@/db/queries/usage";
 import { BarChart3, AlertCircle, Info, Zap } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Usage, Quotas & Provider Health",
   robots: { index: false, follow: false },

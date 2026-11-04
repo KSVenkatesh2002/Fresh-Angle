@@ -5,6 +5,8 @@ import { auditLog } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { ShieldCheck } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Audit Log & Security History",
   robots: { index: false, follow: false },

@@ -109,10 +109,12 @@ export function calculateDaySlotTimes(
 }
 
 /**
- * Ensures post slots exist in the database for the given date.
+ * Synchronizes post slots in the database for the given date.
+ * If forceRegenerate is true, unexecuted planned slots for this date are regenerated.
  */
-export async function ensurePostSlotsForDate(
+export async function syncPostSlotsForDate(
   dateStr: string,
+  forceRegenerate: boolean = false,
 ): Promise<PostSlot[]> {
   const db = getDb();
 
@@ -126,18 +128,55 @@ export async function ensurePostSlotsForDate(
   const [year, month, day] = dateStr.split("-").map(Number);
   const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
   const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  const now = new Date();
 
-  // Check if slots already exist for this day
-  const existing = await db.query.postSlots.findMany({
-    where: and(
-      gte(postSlots.plannedAt, startOfDay),
-      lte(postSlots.plannedAt, endOfDay),
-    ),
-    orderBy: [postSlots.plannedAt],
-  });
+  // Mark past unexecuted slots that exceeded grace period as missed
+  const graceMs = (settings.lateSlotGraceMinutes || 60) * 60 * 1000;
+  await db
+    .update(postSlots)
+    .set({ status: "missed", error: "Slot expired before execution" })
+    .where(
+      and(
+        eq(postSlots.status, "planned"),
+        lte(postSlots.plannedAt, new Date(now.getTime() - graceMs)),
+      ),
+    );
 
-  if (existing.length > 0) {
-    return existing;
+  if (forceRegenerate) {
+    // Delete only future unexecuted 'planned' slots for this date
+    await db
+      .delete(postSlots)
+      .where(
+        and(
+          eq(postSlots.status, "planned"),
+          gte(postSlots.plannedAt, startOfDay),
+          lte(postSlots.plannedAt, endOfDay),
+          gte(postSlots.plannedAt, now),
+        ),
+      );
+  } else {
+    // Check if valid planned slots already exist for this day
+    const existing = await db.query.postSlots.findMany({
+      where: and(
+        gte(postSlots.plannedAt, startOfDay),
+        lte(postSlots.plannedAt, endOfDay),
+      ),
+      orderBy: [postSlots.plannedAt],
+    });
+
+    const hasFuturePlanned = existing.some(
+      (s) => s.status === "planned" && new Date(s.plannedAt) >= now,
+    );
+    if (hasFuturePlanned) {
+      return existing;
+    }
+
+    const completedOrRunning = existing.filter(
+      (s) => s.status === "done" || s.status === "running",
+    );
+    if (completedOrRunning.length >= settings.postsPerDay) {
+      return existing;
+    }
   }
 
   const slotTimes = calculateDaySlotTimes(
@@ -147,10 +186,18 @@ export async function ensurePostSlotsForDate(
   );
   if (slotTimes.length === 0) return [];
 
+  // If calculating for today, only schedule future slots
+  const isToday = now.toISOString().split("T")[0] === dateStr;
+  const targetTimes = isToday
+    ? slotTimes.filter((t) => t.getTime() > now.getTime())
+    : slotTimes;
+
+  if (targetTimes.length === 0) return [];
+
   const inserted = await db
     .insert(postSlots)
     .values(
-      slotTimes.map((plannedAt) => ({
+      targetTimes.map((plannedAt) => ({
         plannedAt,
         status: "planned" as const,
         origin: "auto" as const,
@@ -159,4 +206,26 @@ export async function ensurePostSlotsForDate(
     .returning();
 
   return inserted;
+}
+
+/**
+ * Backward-compatible wrapper ensuring slots exist for date.
+ */
+export async function ensurePostSlotsForDate(
+  dateStr: string,
+): Promise<PostSlot[]> {
+  return syncPostSlotsForDate(dateStr, false);
+}
+
+/**
+ * Ensures upcoming slots exist for today and tomorrow.
+ */
+export async function ensureUpcomingSlots(): Promise<void> {
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const tomorrow = new Date(now.getTime() + 86400000);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+  await syncPostSlotsForDate(todayStr, false);
+  await syncPostSlotsForDate(tomorrowStr, false);
 }

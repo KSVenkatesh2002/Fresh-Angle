@@ -1,6 +1,7 @@
 import { createPipelineRun, updatePipelineRun } from "@/db/queries/runs";
 import { PipelineStepRecord } from "@/db/schema";
 import { sendPipelineFailureNotification } from "@/services/notify/telegram";
+import { recordAuditLog } from "@/services/audit/logger";
 import { stepPickTopic } from "./steps/pick-topic";
 import { stepResearch } from "./steps/research";
 import { stepOutline } from "./steps/outline";
@@ -169,6 +170,18 @@ export async function runDailyPipeline(): Promise<string> {
       });
     }
 
+    await recordAuditLog({
+      action: "PIPELINE_PUBLISH_SUCCESS",
+      entityType: "post",
+      entityId: savedPost.id,
+      details: {
+        title: savedPost.title,
+        slug: savedPost.slug,
+        provider: reviewResult.provider,
+        model: reviewResult.model,
+      },
+    });
+
     console.log("\n======================================================");
     console.log(
       `✅ Pipeline executed successfully! Published: "${savedPost.title}"`,
@@ -192,6 +205,13 @@ export async function runDailyPipeline(): Promise<string> {
         error: errorMsg,
       }).catch(() => {});
     }
+
+    await recordAuditLog({
+      action: "PIPELINE_RUN_FAILED",
+      entityType: "pipeline_run",
+      entityId: runId,
+      details: { step: activeStepName, error: errorMsg },
+    });
 
     // Send Telegram failure alert
     await sendPipelineFailureNotification(errorMsg, activeStepName);

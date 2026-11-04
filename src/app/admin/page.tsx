@@ -19,6 +19,7 @@ import {
 import { getDb } from "@/db/client";
 import { automationSettings, postSlots } from "@/db/schema";
 import { eq, and, gte, asc } from "drizzle-orm";
+import { ensureUpcomingSlots } from "@/services/scheduling/slots";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,8 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
   let upcomingSlot: typeof postSlots.$inferSelect | null = null;
 
   try {
+    await ensureUpcomingSlots().catch(() => {});
+
     const [recentRunsRes, allPostsRes, settingsRes, nextSlotsRes] =
       await Promise.allSettled([
         getRecentRuns(10),

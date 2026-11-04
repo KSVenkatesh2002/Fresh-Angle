@@ -9,6 +9,8 @@ export interface AiGenerationResult {
   text: string;
   model: string;
   provider: string;
+  tokensIn?: number;
+  tokensOut?: number;
 }
 
 export interface AiProvider {

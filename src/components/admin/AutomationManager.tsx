@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { AutomationSettings } from "@/db/schema";
 import {
   Play,
@@ -17,11 +18,50 @@ interface AutomationManagerProps {
   tomorrowSlots: string[];
 }
 
+function computeSlotPreview(
+  count: number,
+  windowStart: string,
+  windowEnd: string,
+  jitterMinutes: number,
+  mode: "auto_distribute" | "fixed_times",
+  fixedTimes: string[],
+): string[] {
+  if (count <= 0) return [];
+  if (mode === "fixed_times") {
+    return fixedTimes.map((t) => `${t} UTC`);
+  }
+
+  const [startH, startM] = windowStart.split(":").map(Number);
+  const [endH, endM] = windowEnd.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  const windowSpan = Math.max(1, endMinutes - startMinutes);
+  const step = count > 1 ? windowSpan / (count - 1) : windowSpan / 2;
+
+  const results: string[] = [];
+  for (let i = 0; i < count; i++) {
+    let targetMinute = Math.round(startMinutes + i * step);
+    if (jitterMinutes > 0) {
+      const jitterVal =
+        ((i * 17 + 3) % (jitterMinutes * 2 + 1)) - jitterMinutes;
+      targetMinute = Math.max(
+        startMinutes,
+        Math.min(endMinutes, targetMinute + jitterVal),
+      );
+    }
+    const h = String(Math.floor(targetMinute / 60)).padStart(2, "0");
+    const m = String(targetMinute % 60).padStart(2, "0");
+    results.push(`${h}:${m} UTC`);
+  }
+  return results;
+}
+
 export function AutomationManager({
   initialSettings,
-  todaySlots,
-  tomorrowSlots,
+  todaySlots: _todaySlots,
+  tomorrowSlots: _tomorrowSlots,
 }: AutomationManagerProps): React.JSX.Element {
+  const router = useRouter();
   const [enabled, setEnabled] = useState(initialSettings.enabled);
   const [mode, setMode] = useState(initialSettings.mode);
   const [postsPerDay, setPostsPerDay] = useState(initialSettings.postsPerDay);
@@ -43,6 +83,24 @@ export function AutomationManager({
   } | null>(null);
   const [triggeringTick, setTriggeringTick] = useState(false);
   const [generatingNow, setGeneratingNow] = useState(false);
+
+  const dynamicSlots = useMemo(() => {
+    return computeSlotPreview(
+      postsPerDay,
+      windowStart,
+      windowEnd,
+      jitterMinutes,
+      mode,
+      initialSettings.fixedTimes || [],
+    );
+  }, [
+    postsPerDay,
+    windowStart,
+    windowEnd,
+    jitterMinutes,
+    mode,
+    initialSettings.fixedTimes,
+  ]);
 
   async function handleSave(): Promise<void> {
     setSaving(true);
@@ -70,8 +128,9 @@ export function AutomationManager({
       if (!res.ok) throw new Error("Failed to update settings");
       setStatusMsg({
         type: "success",
-        text: "Automation parameters saved successfully",
+        text: "Automation parameters saved successfully! Slots synchronized.",
       });
+      router.refresh();
     } catch (err) {
       setStatusMsg({ type: "error", text: (err as Error).message });
     } finally {
@@ -344,16 +403,19 @@ export function AutomationManager({
           </h2>
 
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Today&apos;s Planned Slots
-            </h3>
-            {todaySlots.length === 0 ? (
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Configured Daily Slots ({dynamicSlots.length})
+              </h3>
+              <span className="text-[10px] text-foreground-muted">Live Preview</span>
+            </div>
+            {dynamicSlots.length === 0 ? (
               <p className="text-xs text-foreground-muted">
-                No slots active for today
+                No slots configured
               </p>
             ) : (
               <ul className="space-y-1.5">
-                {todaySlots.map((time, idx) => (
+                {dynamicSlots.map((time, idx) => (
                   <li
                     key={idx}
                     className="p-2 rounded-lg bg-surface border border-border text-xs text-foreground flex items-center justify-between"
@@ -368,15 +430,15 @@ export function AutomationManager({
 
           <div className="space-y-3 pt-3 border-t border-border">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-              Tomorrow&apos;s Planned Slots
+              Tomorrow&apos;s Planned Slots ({dynamicSlots.length})
             </h3>
-            {tomorrowSlots.length === 0 ? (
+            {dynamicSlots.length === 0 ? (
               <p className="text-xs text-foreground-muted">
                 No slots scheduled
               </p>
             ) : (
               <ul className="space-y-1.5">
-                {tomorrowSlots.map((time, idx) => (
+                {dynamicSlots.map((time, idx) => (
                   <li
                     key={idx}
                     className="p-2 rounded-lg bg-surface border border-border text-xs text-foreground flex items-center justify-between"

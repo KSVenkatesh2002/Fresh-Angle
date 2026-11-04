@@ -14,8 +14,14 @@ export interface RecordUsageParams {
 }
 
 export async function recordUsage(params: RecordUsageParams): Promise<void> {
-  const db = getDb();
   const today = new Date().toISOString().split("T")[0];
+  let provider = params.provider.toLowerCase().trim();
+  if (provider.includes("gemini")) provider = "gemini";
+  else if (provider.includes("groq")) provider = "groq";
+  else if (provider.includes("openrouter")) provider = "openrouter";
+  else if (provider.includes("cloudflare")) provider = "cloudflare";
+  else if (provider.includes("pexels")) provider = "pexels";
+
   const callsDelta = params.isError ? 0 : 1;
   const errorsDelta = params.isError ? 1 : 0;
   const tokensInDelta = params.tokensIn || 0;
@@ -23,11 +29,12 @@ export async function recordUsage(params: RecordUsageParams): Promise<void> {
   const imagesDelta = params.images || 0;
 
   try {
+    const db = getDb();
     await db
       .insert(usageDaily)
       .values({
         date: today,
-        provider: params.provider,
+        provider,
         kind: params.kind,
         calls: callsDelta,
         tokensIn: tokensInDelta,
@@ -47,7 +54,7 @@ export async function recordUsage(params: RecordUsageParams): Promise<void> {
       });
 
     // Check soft limits and alert if needed
-    await verifyUsageThreshold(params.provider, params.kind, today);
+    await verifyUsageThreshold(provider, params.kind, today);
   } catch (err) {
     console.warn(
       `⚠️ [UsageTracker] Failed to record usage: ${(err as Error).message}`,
