@@ -131,7 +131,7 @@ export default async function BlogPostPage({
       <ReadingProgressBar />
       <JsonLd data={faqJsonLd ? [articleJsonLd, faqJsonLd] : articleJsonLd} />
 
-      <Container size="narrow">
+      <Container size="wide">
         <Breadcrumbs
           items={[
             { name: "Blog", url: "/blog" },
@@ -147,7 +147,9 @@ export default async function BlogPostPage({
           ]}
         />
 
-        <article className="mt-6">
+        <div className="mt-6 flex flex-col xl:flex-row items-start justify-center gap-12">
+          {/* Main Article Content */}
+          <article className="w-full xl:max-w-4xl min-w-0">
           {/* Header metadata */}
           <header className="space-y-4 mb-8">
             <div className="flex flex-wrap items-center gap-2">
@@ -232,8 +234,8 @@ export default async function BlogPostPage({
             />
           </div>
 
-          {/* Table of Contents */}
-          <TableOfContents items={tocItems} />
+            {/* Table of Contents (Mobile & Tablet collapsible) */}
+            <TableOfContents items={tocItems} variant="inline" />
 
           {/* Rendered Markdown Post Body */}
           <section className="mt-8 mb-12">
@@ -339,7 +341,11 @@ export default async function BlogPostPage({
           {/* Related Articles */}
           <RelatedPosts posts={relatedPosts} />
         </article>
-      </Container>
+
+        {/* Desktop Sticky Sidebar Table of Contents */}
+        <TableOfContents items={tocItems} variant="sidebar" />
+      </div>
+    </Container>
     </main>
   );
 }
