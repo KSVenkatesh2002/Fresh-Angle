@@ -57,7 +57,7 @@ export function MobileNav({ navLinks }: MobileNavProps): React.JSX.Element {
           role="dialog"
           aria-modal="true"
           aria-label="Mobile Navigation"
-          className="fixed inset-x-0 top-16 bottom-0 z-50 bg-background/95 backdrop-blur-md border-b border-border p-6 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200"
+          className="fixed inset-x-0 top-16 bottom-0 z-[100] bg-background border-b border-border p-6 overflow-y-auto shadow-2xl"
         >
           <nav aria-label="Mobile Navigation Links" className="space-y-1.5">
             {navLinks.map((link) => {
