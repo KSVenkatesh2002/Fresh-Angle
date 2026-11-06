@@ -204,4 +204,3 @@ export default async function RssHubPage(): Promise<React.JSX.Element> {
     </main>
   );
 }
-
