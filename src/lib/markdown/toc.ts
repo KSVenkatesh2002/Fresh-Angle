@@ -1,4 +1,4 @@
-import { slugify } from "@/lib/utils/slug";
+import GithubSlugger from "github-slugger";
 
 export interface TocItem {
   id: string;
@@ -8,10 +8,12 @@ export interface TocItem {
 
 /**
  * Parses markdown text to extract H2 and H3 headings for the Table of Contents.
+ * Uses GithubSlugger to ensure exact 1:1 ID matching with rehype-slug.
  */
 export function extractTableOfContents(markdown: string): TocItem[] {
   if (!markdown) return [];
 
+  const slugger = new GithubSlugger();
   const items: TocItem[] = [];
   // Regex matches lines starting with ## or ### (ignoring code fences)
   const lines = markdown.split("\n");
@@ -33,7 +35,7 @@ export function extractTableOfContents(markdown: string): TocItem[] {
     if (h2Match && h2Match[1]) {
       const text = h2Match[1].replace(/[*_`]/g, "").trim();
       items.push({
-        id: slugify(text),
+        id: slugger.slug(text),
         text,
         level: 2,
       });
@@ -44,7 +46,7 @@ export function extractTableOfContents(markdown: string): TocItem[] {
     if (h3Match && h3Match[1]) {
       const text = h3Match[1].replace(/[*_`]/g, "").trim();
       items.push({
-        id: slugify(text),
+        id: slugger.slug(text),
         text,
         level: 3,
       });
