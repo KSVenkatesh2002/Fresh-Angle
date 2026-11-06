@@ -78,6 +78,8 @@ export const siteConfig: SiteConfig = {
       { title: "Categories", href: "/categories" },
       { title: "Tags", href: "/tags" },
       { title: "Archive", href: "/archive" },
+      { title: "Sitemap", href: "/sitemap" },
+      { title: "RSS Hub", href: "/rss" },
       { title: "Search", href: "/search" },
       { title: "About", href: "/about" },
       { title: "Contact", href: "/contact" },
