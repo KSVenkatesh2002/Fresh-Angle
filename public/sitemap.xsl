@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="2.0" 
+<xsl:stylesheet version="1.0" 
                 xmlns:html="http://www.w3.org/TR/REC-html40"
                 xmlns:sitemap="http://www.sitemaps.org/schemas/sitemap/0.9"
                 xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
@@ -148,7 +148,7 @@
       <body>
         <div class="container">
           <header>
-            <h1>✦ Fresh Angle XML Sitemap</h1>
+            <h1>&#10022; Fresh Angle XML Sitemap</h1>
             <p class="desc">
               This is a stylized XML sitemap generated for search engines (Google, Bing, Yandex) and crawlers.
             </p>
@@ -157,7 +157,7 @@
             </div>
             <div class="html-sitemap-banner">
               <span>Looking for the human-friendly navigation directory?</span>
-              <a href="/sitemap">Browse Full HTML Sitemap &rarr;</a>
+              <a href="/sitemap">Browse Full HTML Sitemap &#8594;</a>
             </div>
           </header>
 
@@ -200,7 +200,7 @@
           </table>
 
           <footer>
-            Generated automatically by Fresh Angle Autonomous Editorial Engine • RFC 5005 &amp; Sitemaps XML Protocol 0.9
+            Generated automatically by Fresh Angle Autonomous Editorial Engine &#8226; RFC 5005 &amp; Sitemaps XML Protocol 0.9
           </footer>
         </div>
       </body>
