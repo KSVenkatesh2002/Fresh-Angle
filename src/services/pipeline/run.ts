@@ -11,7 +11,14 @@ import { stepCover } from "./steps/cover";
 import { stepSave } from "./steps/save";
 import { stepPublishAndNotify } from "./steps/publish";
 
-export async function runDailyPipeline(): Promise<string> {
+export interface RunDailyPipelineOptions {
+  triggerSource?: "scheduled" | "manual" | "queue" | string;
+  slotTime?: string;
+  slotId?: string;
+}
+
+export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): Promise<string> {
+  const triggerSource = options.triggerSource || "scheduled";
   console.log("\n======================================================");
   console.log("🚀 [Fresh Angle] Initiating Autonomous Publishing Pipeline");
   console.log("======================================================\n");
@@ -156,6 +163,8 @@ export async function runDailyPipeline(): Promise<string> {
       categoryName: reviewResult.post.category,
       provider: reviewResult.provider,
       model: reviewResult.model,
+      triggerSource,
+      slotTime: options.slotTime,
     });
     recordStepTiming("publish_notify", Date.now() - start, true);
 
@@ -179,6 +188,9 @@ export async function runDailyPipeline(): Promise<string> {
         slug: savedPost.slug,
         provider: reviewResult.provider,
         model: reviewResult.model,
+        trigger: triggerSource,
+        slotTime: options.slotTime,
+        slotId: options.slotId,
       },
     });
 
@@ -210,11 +222,11 @@ export async function runDailyPipeline(): Promise<string> {
       action: "PIPELINE_RUN_FAILED",
       entityType: "pipeline_run",
       entityId: runId,
-      details: { step: activeStepName, error: errorMsg },
+      details: { step: activeStepName, error: errorMsg, trigger: triggerSource },
     });
 
     // Send Telegram failure alert
-    await sendPipelineFailureNotification(errorMsg, activeStepName);
+    await sendPipelineFailureNotification(errorMsg, activeStepName, triggerSource);
 
     throw err;
   }

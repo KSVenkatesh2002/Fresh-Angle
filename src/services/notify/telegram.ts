@@ -56,16 +56,25 @@ export async function sendPostPublishedNotification(notif: {
   category: string;
   provider: string;
   model: string;
+  triggerSource?: string;
+  slotTime?: string;
   readingTimeMin?: number;
   warnings?: string[];
 }): Promise<boolean> {
+  const triggerLabel = notif.triggerSource === "scheduled"
+    ? `⏰ Scheduled Slot${notif.slotTime ? ` (${notif.slotTime})` : ""}`
+    : notif.triggerSource === "manual"
+      ? `⚡ Manual Admin Trigger (Generate Now)`
+      : notif.triggerSource || "Autonomous Automation";
+
   let text =
     `[${siteConfig.name}] ✅ <b>Post Published</b>\n\n` +
     `📰 <a href="${notif.url}">${notif.title}</a>\n` +
-    `📁 Track: ${notif.category}\n` +
-    `🤖 Model: ${notif.provider} (${notif.model})\n` +
+    `🎯 <b>Trigger:</b> ${triggerLabel}\n` +
+    `📁 <b>Track:</b> ${notif.category}\n` +
+    `🤖 <b>Model:</b> ${notif.provider} (${notif.model})\n` +
     (notif.readingTimeMin
-      ? `⏱️ Reading Time: ${notif.readingTimeMin} min\n`
+      ? `⏱️ <b>Reading Time:</b> ${notif.readingTimeMin} min\n`
       : "") +
     `🔗 ${notif.url}`;
 
@@ -81,12 +90,20 @@ export async function sendPostPublishedNotification(notif: {
 export async function sendPipelineFailureNotification(
   error: Error | string,
   step?: string,
+  triggerSource?: string,
 ): Promise<boolean> {
   const errorMsg = typeof error === "string" ? error : error.message;
+  const triggerLabel = triggerSource === "scheduled"
+    ? "⏰ Scheduled Slot"
+    : triggerSource === "manual"
+      ? "⚡ Manual Trigger (Generate Now)"
+      : triggerSource || "Autonomous Pipeline";
+
   const text =
     `[${siteConfig.name}] ❌ <b>Pipeline Failure</b>\n\n` +
-    (step ? `📍 Step: ${step}\n` : "") +
-    `<code>${errorMsg.slice(0, 1000)}</code>`;
+    `🎯 <b>Trigger:</b> ${triggerLabel}\n` +
+    (step ? `📍 <b>Failed Step:</b> ${step}\n\n` : "\n") +
+    `<b>Error Details:</b>\n<pre>${errorMsg.slice(0, 3000)}</pre>`;
 
   return sendTelegramMessage(text, { disableNotification: false });
 }

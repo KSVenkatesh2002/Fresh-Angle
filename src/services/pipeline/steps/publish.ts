@@ -8,6 +8,8 @@ export interface PublishParams {
   categoryName: string;
   provider: string;
   model: string;
+  triggerSource?: string;
+  slotTime?: string;
   warnings?: string[];
 }
 
@@ -58,6 +60,8 @@ export async function stepPublishAndNotify(
     category: params.categoryName,
     provider: params.provider,
     model: params.model,
+    triggerSource: params.triggerSource,
+    slotTime: params.slotTime,
     readingTimeMin: params.post.readingTimeMin,
     warnings: params.warnings,
   });

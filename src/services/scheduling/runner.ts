@@ -132,8 +132,20 @@ export async function runSchedulerTick(): Promise<{
         .where(eq(postSlots.id, slot.id));
 
       try {
-        // Execute pipeline
-        const postId = await runDailyPipeline();
+        const slotDate = new Date(slot.plannedAt);
+        // Format slot time in IST and UTC for clear logging and notifications
+        const istTimeStr = new Date(slotDate.getTime() + 5.5 * 3600 * 1000)
+          .toISOString()
+          .replace("T", " ")
+          .substring(11, 16) + " IST";
+        const slotTimeDisplay = `${istTimeStr} (${slotDate.toISOString().substring(11, 16)} UTC)`;
+
+        // Execute pipeline with explicit slot attribution
+        const postId = await runDailyPipeline({
+          triggerSource: "scheduled",
+          slotTime: slotTimeDisplay,
+          slotId: slot.id,
+        });
 
         // Mark slot as done
         await db

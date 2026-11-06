@@ -76,7 +76,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       }
 
       // Execute directly in background / async
-      const postId = await runDailyPipeline();
+      const postId = await runDailyPipeline({ triggerSource: "manual" });
       return NextResponse.json({
         success: true,
         postId,

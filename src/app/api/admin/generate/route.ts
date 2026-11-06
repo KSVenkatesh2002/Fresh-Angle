@@ -12,7 +12,7 @@ export async function POST(): Promise<Response> {
 
   try {
     // Run pipeline asynchronously or inline
-    const postId = await runDailyPipeline();
+    const postId = await runDailyPipeline({ triggerSource: "manual" });
     return NextResponse.json({
       success: true,
       postId,

@@ -28,7 +28,7 @@ export async function generateCloudflareCover(prompt: string): Promise<Buffer> {
     )
     .trim();
 
-  const refinedPrompt = `${sanitizedPrompt}, modern 3D tech editorial art, tactile premium materials, dark obsidian and matte metallic surfaces, cinematic studio rim lighting, volumetric depth, octane render, 8k resolution, minimalist architectural tech composition, strictly no text, no words, no letters, no logos, no watermarks, no distorted faces`;
+  const refinedPrompt = `${sanitizedPrompt}, modern 3D editorial art, tactile premium materials, cinematic studio lighting, volumetric depth, octane render, 8k resolution, minimalist architectural composition, strictly no text, no words, no letters, no logos, no watermarks, no distorted faces`;
 
   console.log(
     `🎨 [Cloudflare AI] Generating cover image with prompt: "${refinedPrompt.slice(0, 80)}..."`,

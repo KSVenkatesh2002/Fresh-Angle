@@ -40,7 +40,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     const db = getDb();
 
     if (action === "generate_now") {
-      const postId = await runDailyPipeline();
+      const postId = await runDailyPipeline({ triggerSource: "manual" });
       return NextResponse.json({
         success: true,
         postId,
