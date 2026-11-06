@@ -30,7 +30,11 @@ export async function getCoverImage(
 ): Promise<GeneratedCoverResult> {
   // Step 1: Try Cloudflare Workers AI
   try {
-    const rawBuffer = await generateCloudflareCover(input.prompt);
+    const rawBuffer = await generateCloudflareCover(input.prompt, {
+      title: input.title,
+      category: input.category,
+      enhanceWithAi: true,
+    });
     const webpBuffer = await processImageToWebp(rawBuffer);
     console.log(
       `✓ [Cover] Generated AI cover via Cloudflare flux-1-schnell (${Math.round(webpBuffer.length / 1024)} KB)`,
