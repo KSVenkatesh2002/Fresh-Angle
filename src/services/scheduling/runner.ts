@@ -9,6 +9,7 @@ import { siteConfig } from "@/config/site";
 import { runDailyDatabaseMaintenance } from "@/services/maintenance/database";
 import { checkTickDisruptionAlert } from "./watchdog";
 import { formatDualTime } from "@/lib/utils/time";
+import { recordSlotEvent } from "./events";
 
 const ADVISORY_LOCK_ID = 827361;
 
@@ -161,6 +162,12 @@ export async function runSchedulerTick(): Promise<{
           error: `Slot expired: exceeded ${graceMinutes}m late grace window (${ageMinutes}m elapsed, planned: ${plannedTimeIso})`,
         })
         .where(eq(postSlots.id, slot.id));
+
+      await recordSlotEvent({
+        slotId: slot.id,
+        eventType: "missed",
+        details: { ageMinutes, graceMinutes, plannedTimeIso },
+      });
     }
 
     if (validDueSlots.length === 0) {
@@ -189,6 +196,12 @@ export async function runSchedulerTick(): Promise<{
         .set({ status: "running", startedAt: now, attempts: slot.attempts + 1 })
         .where(eq(postSlots.id, slot.id));
 
+      await recordSlotEvent({
+        slotId: slot.id,
+        eventType: "claimed",
+        details: { plannedAt: slot.plannedAt, attempt: slot.attempts + 1 },
+      });
+
       try {
         const slotDate = new Date(slot.plannedAt);
         const slotTimeDisplay = formatDualTime(slotDate);
@@ -209,6 +222,12 @@ export async function runSchedulerTick(): Promise<{
           .set({ status: "done", postId, finishedAt: new Date() })
           .where(eq(postSlots.id, slot.id));
 
+        await recordSlotEvent({
+          slotId: slot.id,
+          eventType: "published",
+          details: { postId },
+        });
+
         // Reset consecutive failures
         await db
           .update(automationSettings)
@@ -222,6 +241,12 @@ export async function runSchedulerTick(): Promise<{
           .update(postSlots)
           .set({ status: "failed", error: errorMsg, finishedAt: new Date() })
           .where(eq(postSlots.id, slot.id));
+
+        await recordSlotEvent({
+          slotId: slot.id,
+          eventType: "failed",
+          details: { error: errorMsg },
+        });
 
         const nextFailures = (settings.consecutiveFailures || 0) + 1;
         const shouldPause = nextFailures >= 3;

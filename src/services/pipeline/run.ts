@@ -65,11 +65,18 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
   };
 
   try {
-    // 1. Pick Topic
+    // 1. Pick Topic (Topic Queue prioritized first)
     activeStepName = "pick_topic";
     let start = Date.now();
-    const { topic } = await stepPickTopic();
-    recordStepTiming("pick_topic", Date.now() - start, true, topic.title);
+    const { topic, fromQueue, queueId } = await stepPickTopic({
+      slotId: options.slotId,
+    });
+    recordStepTiming(
+      "pick_topic",
+      Date.now() - start,
+      true,
+      fromQueue ? `[Queue Priority] ${topic.title}` : topic.title,
+    );
 
     // 2. Research
     activeStepName = "research";
@@ -170,6 +177,21 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
       isTest: options.isTest,
     });
     recordStepTiming("publish_notify", Date.now() - start, true);
+
+    // If topic originated from queue, mark queue item as done
+    if (fromQueue && queueId) {
+      try {
+        const db = (await import("@/db/client")).getDb();
+        const { topicQueue } = await import("@/db/schema");
+        const { eq } = await import("drizzle-orm");
+        await db
+          .update(topicQueue)
+          .set({ status: "done", postId: savedPost.id })
+          .where(eq(topicQueue.id, queueId));
+      } catch (qFinalErr) {
+        console.warn("⚠️ Failed to update topicQueue status:", qFinalErr);
+      }
+    }
 
     // Finalize DB Run record
     if (runId) {

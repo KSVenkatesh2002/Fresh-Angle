@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import { postSlots } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { recordAuditLog } from "@/services/audit/logger";
+import { recordSlotEvent } from "@/services/scheduling/events";
 
 const rescheduleSchema = z.object({
   slotId: z.string().uuid(),
@@ -53,6 +54,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       })
       .where(eq(postSlots.id, slotId))
       .returning();
+
+    await recordSlotEvent({
+      slotId: slot.id,
+      eventType: "rescheduled",
+      details: { previousPlannedAt: slot.plannedAt, newPlannedAt },
+    });
 
     await recordAuditLog({
       action: "RESCHEDULE_SLOT",

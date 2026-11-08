@@ -79,6 +79,7 @@ export const categories = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     introText: text("intro_text"),
+    code: text("code").$type<string>(),
     featuredPostId: uuid("featured_post_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -320,6 +321,7 @@ export const postSlots = pgTable(
       .$type<"auto" | "manual" | "queue" | "test">()
       .notNull()
       .default("auto"),
+    slotCode: text("slot_code"),
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
@@ -379,6 +381,39 @@ export const topicQueue = pgTable(
   },
   (table) => [
     index("topic_queue_status_priority_idx").on(table.status, table.priority),
+  ],
+);
+
+// Feeds table
+export const slotEvents = pgTable(
+  "slot_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slotId: uuid("slot_id")
+      .references(() => postSlots.id, { onDelete: "cascade" })
+      .notNull(),
+    eventType: text("event_type")
+      .$type<
+        | "created"
+        | "claimed"
+        | "topic_assigned"
+        | "generation_started"
+        | "generation_completed"
+        | "published"
+        | "missed"
+        | "skipped"
+        | "failed"
+        | "rescheduled"
+      >()
+      .notNull(),
+    details: jsonb("details"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("slot_events_slot_id_idx").on(table.slotId),
+    index("slot_events_created_at_idx").on(table.createdAt),
   ],
 );
 
@@ -789,6 +824,8 @@ export type DateOverride = typeof dateOverrides.$inferSelect;
 export type NewDateOverride = typeof dateOverrides.$inferInsert;
 export type PostSlot = typeof postSlots.$inferSelect;
 export type NewPostSlot = typeof postSlots.$inferInsert;
+export type SlotEvent = typeof slotEvents.$inferSelect;
+export type NewSlotEvent = typeof slotEvents.$inferInsert;
 export type TopicQueueItem = typeof topicQueue.$inferSelect;
 export type TopicQueue = TopicQueueItem;
 export type NewTopicQueueItem = typeof topicQueue.$inferInsert;

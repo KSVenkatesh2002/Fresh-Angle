@@ -1,9 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { formatDualTime } from "@/lib/utils/time";
 import { PostSlot, TopicQueue, Category } from "@/db/schema";
-import { Calendar, Plus, ListPlus, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
+import {
+  Calendar,
+  Plus,
+  ListPlus,
+  Trash2,
+  CheckCircle2,
+  RotateCcw,
+  CheckSquare,
+  Square,
+  Layers,
+} from "lucide-react";
 
 interface ScheduleQueueManagerProps {
   slots: PostSlot[];
@@ -21,6 +31,39 @@ export function ScheduleQueueManager({
   const [importing, setImporting] = useState(false);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [bulkActionRunning, setBulkActionRunning] = useState(false);
+
+  // Group slots by date (YYYY-MM-DD UTC)
+  const groupedSlots = useMemo(() => {
+    const map = new Map<string, PostSlot[]>();
+    for (const slot of slots) {
+      const d = new Date(slot.plannedAt);
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      const dateKey = `${yyyy}-${mm}-${dd}`;
+      if (!map.has(dateKey)) {
+        map.set(dateKey, []);
+      }
+      map.get(dateKey)!.push(slot);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
+  }, [slots]);
+
+  function toggleSlotSelection(id: string): void {
+    setSelectedSlots((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  }
+
+  function toggleSelectAll(): void {
+    if (selectedSlots.length === slots.length) {
+      setSelectedSlots([]);
+    } else {
+      setSelectedSlots(slots.map((s) => s.id));
+    }
+  }
 
   async function handleBulkImport(): Promise<void> {
     const titles = bulkText
@@ -86,6 +129,30 @@ export function ScheduleQueueManager({
     }
   }
 
+  async function handleBulkReschedule(): Promise<void> {
+    if (selectedSlots.length === 0) return;
+    setBulkActionRunning(true);
+    setMsg(null);
+    let successCount = 0;
+
+    for (const slotId of selectedSlots) {
+      try {
+        const res = await fetch("/api/admin/schedule/reschedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slotId }),
+        });
+        if (res.ok) successCount++;
+      } catch {
+        // continue
+      }
+    }
+
+    setBulkActionRunning(false);
+    setSelectedSlots([]);
+    setMsg(`Bulk rescheduled ${successCount} slot(s) for immediate execution! Refresh to see updated list.`);
+  }
+
   return (
     <div className="space-y-8">
       {msg && (
@@ -99,52 +166,59 @@ export function ScheduleQueueManager({
       <div className="p-6 rounded-2xl bg-surface border border-border space-y-4">
         <h2 className="text-base font-bold text-foreground flex items-center gap-2">
           <ListPlus className="w-4 h-4 text-primary" />
-          <span>Bulk Queue Import</span>
+          <span>Bulk Import Topic Queue</span>
         </h2>
         <p className="text-xs text-foreground-muted">
-          Paste multiple article headlines or research prompts (one per line) to
-          schedule them into the publication queue.
+          Add prioritized research themes (one per line). The autonomous pipeline picks from this queue first before fetching trending topics.
         </p>
 
-        <textarea
-          rows={4}
-          value={bulkText}
-          onChange={(e) => setBulkText(e.target.value)}
-          placeholder={`GPT-5 Architecture Rumors and Compute Scaling\nNVIDIA Rubin GPU Architecture Deep Dive\nMamba vs Transformers Benchmarks 2026`}
-          className="w-full px-3.5 py-2.5 rounded-xl bg-surface-muted border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="md:col-span-3">
+            <textarea
+              rows={3}
+              placeholder="DeepSeek V3 Architectural Breakdown&#10;Nvidia Blackwell Ultra NVL72 Benchmark&#10;Autonomous Coding Agent Patterns"
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-surface-muted border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-ring font-mono"
+            />
+          </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-1.5 rounded-lg bg-surface-muted border border-border text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="">Auto-Assign Track</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-2 flex flex-col justify-between">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-surface-muted border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="">Auto-Detect Category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.code ? `[${cat.code}] ` : ""}{cat.name}
+                </option>
+              ))}
+            </select>
 
-          <button
-            type="button"
-            onClick={handleBulkImport}
-            disabled={importing || !bulkText.trim()}
-            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{importing ? "Importing..." : "Add Topics to Queue"}</span>
-          </button>
+            <button
+              type="button"
+              onClick={handleBulkImport}
+              disabled={importing || !bulkText.trim()}
+              className="w-full px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{importing ? "Importing..." : "Add to Queue"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Two Column Layout: Active Queue & Post Slots */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Active Topic Queue */}
         <div className="p-6 rounded-2xl bg-surface border border-border space-y-4">
           <h2 className="text-base font-bold text-foreground flex items-center justify-between">
-            <span>Active Topic Queue</span>
+            <span className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              <span>Priority Topic Queue</span>
+            </span>
             <span className="text-xs px-2 py-0.5 rounded bg-surface-muted border border-border text-foreground-muted">
               {queue.length} items
             </span>
@@ -152,32 +226,30 @@ export function ScheduleQueueManager({
 
           {queue.length === 0 ? (
             <p className="text-xs text-foreground-muted">
-              No topics currently in queue.
+              Queue is currently empty. Next slot will pick from trending research feeds.
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
               {queue.map((item) => (
                 <li
                   key={item.id}
                   className="p-3 rounded-xl bg-surface-muted border border-border flex items-start justify-between gap-3 text-xs"
                 >
                   <div className="space-y-1">
-                    <p className="font-semibold text-foreground">
-                      {item.title}
-                    </p>
+                    <p className="font-semibold text-foreground">{item.title}</p>
                     <div className="flex items-center gap-2 text-[10px] text-foreground-muted">
-                      <span className="uppercase font-mono px-1 rounded bg-surface border border-border">
-                        {item.status}
+                      <span className="px-1.5 py-0.5 rounded bg-surface border border-border font-mono">
+                        Priority: {item.priority}
                       </span>
-                      <span>Priority: {item.priority}</span>
+                      <span className="capitalize">{item.status}</span>
                     </div>
                   </div>
                   {item.status === "queued" && (
                     <button
                       type="button"
                       onClick={() => handleCancelQueueItem(item.id)}
-                      className="text-foreground-muted hover:text-danger transition-colors p-1"
-                      aria-label="Cancel topic"
+                      className="p-1 rounded-lg text-foreground-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                      title="Remove from queue"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -188,95 +260,149 @@ export function ScheduleQueueManager({
           )}
         </div>
 
-        {/* Planned Post Slots */}
+        {/* Planned Post Slots Grouped by Date */}
         <div className="p-6 rounded-2xl bg-surface border border-border space-y-4">
-          <h2 className="text-base font-bold text-foreground flex items-center justify-between">
-            <span className="flex items-center gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary" />
-              <span>Upcoming Publishing Slots</span>
-            </span>
-            <span className="text-xs px-2 py-0.5 rounded bg-surface-muted border border-border text-foreground-muted">
-              {slots.length} slots
-            </span>
-          </h2>
+              <span>Publishing Slots</span>
+            </h2>
+
+            {/* Bulk Selection Actions */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="text-xs text-foreground-muted hover:text-foreground flex items-center gap-1"
+              >
+                {selectedSlots.length === slots.length && slots.length > 0 ? (
+                  <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                ) : (
+                  <Square className="w-3.5 h-3.5" />
+                )}
+                <span>Select All</span>
+              </button>
+
+              {selectedSlots.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBulkReschedule}
+                  disabled={bulkActionRunning}
+                  className="px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-semibold text-[10px] flex items-center gap-1 hover:opacity-90 disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reschedule ({selectedSlots.length})</span>
+                </button>
+              )}
+            </div>
+          </div>
 
           {slots.length === 0 ? (
             <p className="text-xs text-foreground-muted">
               No active slots planned.
             </p>
           ) : (
-            <ul className="space-y-2">
-              {slots.map((slot) => {
-                const date = new Date(slot.plannedAt);
-                return (
-                  <li
-                    key={slot.id}
-                    className="p-3 rounded-xl bg-surface-muted border border-border flex items-center justify-between text-xs"
-                  >
-                    <div className="space-y-0.5 max-w-[65%]">
-                      <p className="font-medium text-foreground">
-                        {date.toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          timeZone: "UTC",
-                        })}{" "}
-                        · {formatDualTime(date)}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {slot.origin === "test" ? (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning">
-                            🧪 TEST
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-foreground-muted capitalize">
-                            Origin: {slot.origin}
-                          </span>
-                        )}
-                        {slot.attempts > 0 && (
-                          <span className="text-[10px] text-foreground-muted">
-                            Attempts: {slot.attempts}
-                          </span>
-                        )}
-                      </div>
-                      {slot.error && (
-                        <p className="text-[10px] text-danger/90 truncate" title={slot.error}>
-                          Reason: {slot.error}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {(slot.status === "missed" || slot.status === "failed") && (
-                        <button
-                          type="button"
-                          onClick={() => handleRescheduleSlot(slot.id)}
-                          disabled={reschedulingId === slot.id}
-                          className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] font-semibold flex items-center gap-1 transition-colors disabled:opacity-50"
-                          title="Reschedule this slot for immediate execution"
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+              {groupedSlots.map(([dateKey, daySlots]) => (
+                <div key={dateKey} className="space-y-2">
+                  <div className="flex items-center justify-between border-b border-border pb-1">
+                    <span className="text-[11px] font-bold text-foreground uppercase tracking-wider font-mono">
+                      📅 {dateKey}
+                    </span>
+                    <span className="text-[10px] text-foreground-muted">
+                      {daySlots.length} slot(s)
+                    </span>
+                  </div>
+
+                  <ul className="space-y-2">
+                    {daySlots.map((slot) => {
+                      const date = new Date(slot.plannedAt);
+                      const isSelected = selectedSlots.includes(slot.id);
+                      return (
+                        <li
+                          key={slot.id}
+                          className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
+                            isSelected
+                              ? "bg-primary/5 border-primary/40"
+                              : "bg-surface-muted border-border"
+                          }`}
                         >
-                          <RotateCcw className={`w-3 h-3 ${reschedulingId === slot.id ? "animate-spin" : ""}`} />
-                          <span>{reschedulingId === slot.id ? "Rescheduling..." : "Reschedule"}</span>
-                        </button>
-                      )}
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono capitalize border ${
-                          slot.status === "done"
-                            ? "bg-success/15 border-success/30 text-success"
-                            : slot.status === "running"
-                              ? "bg-primary/15 border-primary/30 text-primary"
-                              : slot.status === "failed" ||
-                                  slot.status === "missed"
-                                ? "bg-danger/15 border-danger/30 text-danger"
-                                : "bg-surface border-border text-foreground-muted"
-                        }`}
-                      >
-                        {slot.status}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                          <div className="flex items-center gap-2.5 max-w-[70%]">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSlotSelection(slot.id)}
+                              className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                            />
+
+                            <div className="space-y-0.5">
+                              <p className="font-medium text-foreground">
+                                {formatDualTime(date)}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                {slot.origin === "test" ? (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning">
+                                    🧪 TEST
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-foreground-muted capitalize">
+                                    Origin: {slot.origin}
+                                  </span>
+                                )}
+                                {slot.slotCode && (
+                                  <span className="text-[10px] font-mono px-1 py-0.5 rounded bg-surface border border-border text-foreground-muted">
+                                    Code: {slot.slotCode}
+                                  </span>
+                                )}
+                                {slot.attempts > 0 && (
+                                  <span className="text-[10px] text-foreground-muted">
+                                    Attempts: {slot.attempts}
+                                  </span>
+                                )}
+                              </div>
+                              {slot.error && (
+                                <p className="text-[10px] text-danger/90 truncate" title={slot.error}>
+                                  Reason: {slot.error}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {(slot.status === "missed" || slot.status === "failed") && (
+                              <button
+                                type="button"
+                                onClick={() => handleRescheduleSlot(slot.id)}
+                                disabled={reschedulingId === slot.id}
+                                className="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] font-semibold flex items-center gap-1 transition-colors disabled:opacity-50"
+                                title="Reschedule this slot for immediate execution"
+                              >
+                                <RotateCcw className={`w-3 h-3 ${reschedulingId === slot.id ? "animate-spin" : ""}`} />
+                                <span>{reschedulingId === slot.id ? "..." : "Reschedule"}</span>
+                              </button>
+                            )}
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-mono capitalize border ${
+                                slot.status === "done"
+                                  ? "bg-success/15 border-success/30 text-success"
+                                  : slot.status === "running"
+                                    ? "bg-primary/15 border-primary/30 text-primary"
+                                    : slot.status === "failed" ||
+                                        slot.status === "missed"
+                                      ? "bg-danger/15 border-danger/30 text-danger"
+                                      : "bg-surface border-border text-foreground-muted"
+                              }`}
+                            >
+                              {slot.status}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
