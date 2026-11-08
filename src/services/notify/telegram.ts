@@ -1,5 +1,6 @@
 import { fetchWithRetry } from "@/lib/utils/http";
 import { siteConfig } from "@/config/site";
+import { getNotificationSettings } from "@/services/notify/settings";
 
 export interface TelegramOptions {
   disableNotification?: boolean;
@@ -61,6 +62,11 @@ export async function sendPostPublishedNotification(notif: {
   readingTimeMin?: number;
   warnings?: string[];
 }): Promise<boolean> {
+  const settings = await getNotificationSettings();
+  if (settings.postPublished === "disabled") {
+    return true;
+  }
+
   const triggerLabel = notif.triggerSource === "scheduled"
     ? `⏰ Scheduled Slot${notif.slotTime ? ` (${notif.slotTime})` : ""}`
     : notif.triggerSource === "manual"
@@ -84,7 +90,8 @@ export async function sendPostPublishedNotification(notif: {
       notif.warnings.map((w) => `• ${w}`).join("\n");
   }
 
-  return sendTelegramMessage(text, { disableNotification: true });
+  const isSilent = settings.postPublished === "silent";
+  return sendTelegramMessage(text, { disableNotification: isSilent });
 }
 
 export async function sendPipelineFailureNotification(
@@ -92,6 +99,11 @@ export async function sendPipelineFailureNotification(
   step?: string,
   triggerSource?: string,
 ): Promise<boolean> {
+  const settings = await getNotificationSettings();
+  if (settings.pipelineFailure === "disabled") {
+    return true;
+  }
+
   const errorMsg = typeof error === "string" ? error : error.message;
   const triggerLabel = triggerSource === "scheduled"
     ? "⏰ Scheduled Slot"
@@ -105,7 +117,8 @@ export async function sendPipelineFailureNotification(
     (step ? `📍 <b>Failed Step:</b> ${step}\n\n` : "\n") +
     `<b>Error Details:</b>\n<pre>${errorMsg.slice(0, 3000)}</pre>`;
 
-  return sendTelegramMessage(text, { disableNotification: false });
+  const isSilent = settings.pipelineFailure === "silent";
+  return sendTelegramMessage(text, { disableNotification: isSilent });
 }
 
 export async function sendContactNotification(contact: {
@@ -114,13 +127,19 @@ export async function sendContactNotification(contact: {
   subject: string;
   message: string;
 }): Promise<boolean> {
+  const settings = await getNotificationSettings();
+  if (settings.contactFormAlerts === "disabled") {
+    return true;
+  }
+
   const text =
     `[${siteConfig.name}] 📨 <b>New Contact Transmission</b>\n\n` +
     `👤 <b>From:</b> ${contact.name} (${contact.email})\n` +
     `📌 <b>Subject:</b> ${contact.subject}\n\n` +
     `💬 ${contact.message.slice(0, 500)}`;
 
-  return sendTelegramMessage(text);
+  const isSilent = settings.contactFormAlerts === "silent";
+  return sendTelegramMessage(text, { disableNotification: isSilent });
 }
 
 export async function sendDatabaseStorageAlert(params: {
@@ -130,6 +149,11 @@ export async function sendDatabaseStorageAlert(params: {
   threshold: 70 | 90;
   topTables: Array<{ tableName: string; totalSize: string }>;
 }): Promise<boolean> {
+  const settings = await getNotificationSettings();
+  if (settings.dbStorageAlerts === "disabled") {
+    return true;
+  }
+
   const usedMb = (params.usedBytes / (1024 * 1024)).toFixed(1);
   const limitMb = (params.limitBytes / (1024 * 1024)).toFixed(0);
   const levelEmoji = params.threshold >= 90 ? "🚨" : "⚠️";
@@ -144,5 +168,6 @@ export async function sendDatabaseStorageAlert(params: {
     text += `• <code>${t.tableName}</code>: ${t.totalSize}\n`;
   });
 
-  return sendTelegramMessage(text, { disableNotification: params.threshold < 90 });
+  const isSilent = settings.dbStorageAlerts === "silent";
+  return sendTelegramMessage(text, { disableNotification: isSilent });
 }

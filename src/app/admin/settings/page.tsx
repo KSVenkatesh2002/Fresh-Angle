@@ -3,13 +3,19 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { siteConfig } from "@/config/site";
 import { User, Globe, Image as ImageIcon, ShieldCheck } from "lucide-react";
+import { getNotificationSettings } from "@/services/notify/settings";
+import { NotificationSettingsManager } from "@/components/admin/NotificationSettingsManager";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "System Settings & Architecture Profiles",
   robots: { index: false, follow: false },
 };
 
-export default function AdminSettingsPage(): React.JSX.Element {
+export default async function AdminSettingsPage(): Promise<React.JSX.Element> {
+  const notificationSettings = await getNotificationSettings();
+
   return (
     <div className="space-y-6">
       <div>
@@ -17,10 +23,12 @@ export default function AdminSettingsPage(): React.JSX.Element {
           System & Creator Configuration
         </h1>
         <p className="text-sm text-foreground-muted">
-          Global runtime variables, creator profile attribution, and search
-          indexing properties.
+          Global runtime variables, creator profile attribution, and Telegram notification controls.
         </p>
       </div>
+
+      {/* Telegram Notification Controls */}
+      <NotificationSettingsManager initialSettings={notificationSettings} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Creator Attribution */}
