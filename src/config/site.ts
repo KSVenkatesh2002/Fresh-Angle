@@ -100,7 +100,6 @@ export const siteConfig: SiteConfig = {
       { title: "Privacy Policy", href: "/privacy-policy" },
       { title: "Terms of Service", href: "/terms" },
       { title: "Editorial Policy", href: "/editorial-policy" },
-      { title: "AI Disclosure", href: "/ai-disclosure" },
       { title: "RSS Feed", href: "/feed.xml" },
     ],
   },

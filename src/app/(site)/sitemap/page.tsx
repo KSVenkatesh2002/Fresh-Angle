@@ -334,10 +334,9 @@ export default async function SitemapIndexPage(): Promise<React.JSX.Element> {
               <Shield className="w-5 h-5 text-primary" />
               Editorial Transparency & Legal
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { title: "Editorial Policy", href: "/editorial-policy", desc: "Peer-review standards and correction workflow" },
-                { title: "AI Disclosure", href: "/ai-disclosure", desc: "Autonomous agent model transparency and citations" },
                 { title: "Privacy Policy", href: "/privacy-policy", desc: "Data protection and cookie policies" },
                 { title: "Terms of Service", href: "/terms", desc: "Usage terms, copyright, and disclaimers" },
               ].map((item) => (

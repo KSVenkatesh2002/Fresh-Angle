@@ -19,7 +19,6 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { ShareButtons } from "@/components/blog/ShareButtons";
 import { RelatedPosts } from "@/components/blog/RelatedPosts";
-import { AiDisclosureBadge } from "@/components/blog/AiDisclosureBadge";
 import { constructPostMetadata } from "@/lib/seo/metadata";
 import { generateArticleJsonLd, generateFaqJsonLd } from "@/lib/seo/jsonld";
 import { siteConfig } from "@/config/site";
@@ -227,16 +226,8 @@ export default async function BlogPostPage({
             )}
           </figure>
 
-          {/* AI-Assisted Disclosure Badge */}
-          <div className="mb-8">
-            <AiDisclosureBadge
-              provider={post.aiProvider}
-              model={post.aiModel}
-            />
-          </div>
-
-            {/* Table of Contents (Mobile & Tablet collapsible) */}
-            <TableOfContents items={tocItems} variant="inline" />
+          {/* Table of Contents (Mobile & Tablet collapsible) */}
+          <TableOfContents items={tocItems} variant="inline" />
 
           {/* Rendered Markdown Post Body */}
           <section className="mt-8 mb-12">

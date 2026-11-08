@@ -32,7 +32,6 @@ export async function GET(): Promise<Response> {
     { url: `${siteConfig.url}/about`, lastmod: nowIso, changefreq: "monthly", priority: 0.7 },
     { url: `${siteConfig.url}/contact`, lastmod: nowIso, changefreq: "monthly", priority: 0.5 },
     { url: `${siteConfig.url}/editorial-policy`, lastmod: nowIso, changefreq: "monthly", priority: 0.5 },
-    { url: `${siteConfig.url}/ai-disclosure`, lastmod: nowIso, changefreq: "monthly", priority: 0.6 },
     { url: `${siteConfig.url}/privacy-policy`, lastmod: nowIso, changefreq: "yearly", priority: 0.3 },
     { url: `${siteConfig.url}/terms`, lastmod: nowIso, changefreq: "yearly", priority: 0.3 },
   ];

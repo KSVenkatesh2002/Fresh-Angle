@@ -46,9 +46,7 @@ export function SiteCreatedBy(): React.JSX.Element | null {
           </a>
         </p>
         <p className="text-xs text-foreground-muted leading-relaxed">
-          This publication is an autonomous AI research demonstration engineered
-          by {creator.name}. Dispatches are synthesized by the editorial AI
-          engine based on verified primary sources.
+          {creator.bio || "Engineering leadership, distributed systems, and real-time analytical architecture."}
         </p>
       </div>
     </div>

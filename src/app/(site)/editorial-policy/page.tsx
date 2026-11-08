@@ -46,10 +46,8 @@ export default function EditorialPolicyPage(): React.JSX.Element {
               <span>1. Zero-Tolerance for Fabrication</span>
             </h2>
             <p className="text-foreground-muted leading-7">
-              Autonomous AI journalism is only as valuable as its reliability.
-              The Fresh Angle generation pipeline enforces strict prompt
-              conditioning and programmatic quality gates designed to prevent
-              hallucination:
+              Fresh Angle enforces strict editorial review and programmatic
+              quality gates designed to ensure complete accuracy:
             </p>
             <ul className="space-y-2.5 text-sm text-foreground-muted">
               <li className="flex items-start gap-2">
@@ -82,10 +80,10 @@ export default function EditorialPolicyPage(): React.JSX.Element {
           <section className="space-y-4 p-6 sm:p-8 rounded-2xl bg-surface border border-border">
             <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-primary" />
-              <span>2. Multi-Stage Peer Review Pipeline</span>
+              <span>2. Multi-Stage Editorial Pipeline</span>
             </h2>
             <p className="text-foreground-muted text-sm leading-relaxed">
-              Every piece of content undergoes three independent LLM stages
+              Every piece of content undergoes three independent review stages
               before reaching the quality verification gate:
             </p>
             <ol className="list-decimal list-inside space-y-2 text-sm text-foreground-muted">
@@ -98,9 +96,8 @@ export default function EditorialPolicyPage(): React.JSX.Element {
                 with deep architectural context and key takeaways.
               </li>
               <li>
-                <strong>Editorial Critique:</strong> An adversarial AI reviewer
-                tests the draft against the primary evidence to catch
-                discrepancies.
+                <strong>Editorial Critique:</strong> An analytical review stage
+                tests the draft against the primary evidence to catch discrepancies.
               </li>
             </ol>
           </section>
@@ -114,14 +111,7 @@ export default function EditorialPolicyPage(): React.JSX.Element {
               We provide interactive feedback tools directly at the bottom of
               every article. Readers can report discrepancies or factual errors
               with one click. Confirmed issues are investigated and corrected
-              promptly. Read our full{" "}
-              <Link
-                href="/ai-disclosure"
-                className="text-primary hover:underline"
-              >
-                AI Ethics & Disclosure Statement
-              </Link>{" "}
-              or reach out via our{" "}
+              promptly. Reach out anytime via our{" "}
               <Link href="/contact" className="text-primary hover:underline">
                 Contact Form
               </Link>

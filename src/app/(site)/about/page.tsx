@@ -18,9 +18,9 @@ import {
 import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = constructPageMetadata({
-  title: "About Fresh Angle - Autonomous AI Journalism",
+  title: "About Fresh Angle - Technical Insights & Systems Architecture",
   description:
-    "Learn how Fresh Angle autonomously discovers, fact-checks, and publishes daily analytical briefings on artificial intelligence.",
+    "Learn about Fresh Angle's mission, technical research coverage, and systems architecture briefings.",
   path: "/about",
 });
 
@@ -39,7 +39,7 @@ export default function AboutPage(): React.JSX.Element {
             Our Mission & Architecture
           </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground mb-4">
-            Autonomous, Fact-Grounded AI Journalism
+            Independent, Fact-Grounded Technical Journalism
           </h1>
           <p className="text-foreground-muted text-lg leading-relaxed">
             {siteConfig.description}
@@ -53,14 +53,14 @@ export default function AboutPage(): React.JSX.Element {
               <span>Why Fresh Angle Exists</span>
             </h2>
             <p className="text-foreground-muted leading-7">
-              The velocity of artificial intelligence development has outpaced
+              The velocity of technology and artificial intelligence development has outpaced
               traditional newsrooms. Between ArXiv preprints, benchmark
               evaluations, model releases, and corporate announcements,
               discovering what truly matters requires continuous, systematic
               analysis.
             </p>
             <p className="text-foreground-muted leading-7">
-              Fresh Angle was engineered as an autonomous editorial publication
+              Fresh Angle was created as an analytical publication
               that monitors real industry dispatches every hour, selects
               high-impact developments, extracts verifiable evidence, and
               synthesizes balanced technical briefings.
@@ -136,34 +136,31 @@ export default function AboutPage(): React.JSX.Element {
           <section className="space-y-4 p-6 sm:p-8 rounded-2xl bg-surface border border-border">
             <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Cpu className="w-5 h-5 text-primary" />
-              <span>The Autonomous Editorial Engine</span>
+              <span>Editorial & Verification Process</span>
             </h2>
             <p className="text-foreground-muted leading-7">
-              Our publication operates entirely via an automated, multi-stage
-              pipeline:
+              Our publication operates through a rigorous, multi-stage analytical process:
             </p>
             <ul className="space-y-3 pl-2 text-foreground">
               <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
                 <span>
-                  <strong>Topic Discovery:</strong> Continuous RSS and Hacker
-                  News ingestion filtered through strict niche domain relevance
-                  algorithms.
+                  <strong>Topic Discovery:</strong> Continuous RSS and engineering
+                  feed ingestion filtered through domain relevance benchmarks.
                 </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
                 <span>
                   <strong>Primary Research Extraction:</strong> Web article text
-                  extraction with noise elimination.
+                  extraction with noise elimination and verifiable source preservation.
                 </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
                 <span>
-                  <strong>Multi-Phase LLM Pipeline:</strong> Independent
-                  Outline, Drafting, and Editorial Review stages using strict
-                  persona constraints and fallback chains.
+                  <strong>Multi-Phase Editorial Synthesis:</strong> Independent
+                  outline, comprehensive drafting, and technical review stages.
                 </span>
               </li>
               <li className="flex items-start gap-2.5">
@@ -171,7 +168,7 @@ export default function AboutPage(): React.JSX.Element {
                 <span>
                   <strong>Strict Fact Grounding:</strong> No statistics or
                   quotes may be fabricated. Every metric must be directly
-                  anchored in the verified primary sources.
+                  anchored in verified primary sources.
                 </span>
               </li>
             </ul>
@@ -183,15 +180,13 @@ export default function AboutPage(): React.JSX.Element {
               <span>Commitment to Transparency</span>
             </h2>
             <p className="text-foreground-muted leading-7">
-              Every post on Fresh Angle clearly denotes the AI models utilized
-              during drafting, links directly to the original primary research
-              sources, and provides full transparency into our synthesis
-              process. Read our comprehensive{" "}
+              Every post on Fresh Angle links directly to original primary research sources
+              and provides complete references for citations and benchmarks. Read our{" "}
               <Link
-                href="/ai-disclosure"
+                href="/editorial-policy"
                 className="text-primary hover:underline underline-offset-4 font-medium"
               >
-                AI Disclosure & Ethics Policy
+                Editorial Policy & Fact-Grounding Standards
               </Link>
               .
             </p>
