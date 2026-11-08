@@ -19,7 +19,7 @@ const updateSettingsSchema = z.object({
   contentMode: z
     .enum(["trending", "evergreen", "queue_only", "mixed"])
     .optional(),
-  maxPostsPerRun: z.number().int().min(1).max(5).optional(),
+  maxPostsPerRun: z.number().int().min(1).max(3).optional(),
   lateSlotGraceMinutes: z.number().int().min(15).max(360).optional(),
   pausedUntil: z.string().nullable().optional(),
 });
@@ -88,12 +88,44 @@ export async function POST(req: Request): Promise<NextResponse> {
     const parsed = updateSettingsSchema.safeParse(json.settings);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid settings format" },
+        { error: "Invalid settings format: " + parsed.error.issues.map((i) => i.message).join(", ") },
         { status: 400 },
       );
     }
 
     const db = getDb();
+    const [current] = await db.select().from(automationSettings).limit(1);
+
+    // Validate window vs postsPerDay spacing if auto_distribute is active
+    const targetMode = parsed.data.mode || current?.mode || "auto_distribute";
+    if (targetMode === "auto_distribute") {
+      const start = parsed.data.windowStart || current?.windowStart || "02:30";
+      const end = parsed.data.windowEnd || current?.windowEnd || "11:30";
+      const count = parsed.data.postsPerDay ?? current?.postsPerDay ?? 7;
+
+      const [startH, startM] = start.split(":").map(Number);
+      const [endH, endM] = end.split(":").map(Number);
+      const startMinutes = (startH || 0) * 60 + (startM || 0);
+      const endMinutes = (endH || 0) * 60 + (endM || 0);
+      const windowSpan = endMinutes - startMinutes;
+
+      if (windowSpan <= 0) {
+        return NextResponse.json(
+          { error: `Invalid window: window end (${end}) must be strictly after window start (${start}).` },
+          { status: 400 },
+        );
+      }
+
+      const nominalGap = count > 1 ? windowSpan / (count - 1) : windowSpan;
+      if (nominalGap < 45) {
+        return NextResponse.json(
+          {
+            error: `Window too narrow for ${count} posts: span is ${windowSpan} minutes, yielding only ~${Math.round(nominalGap)} min between slots (minimum allowed spacing is 45 minutes). Please expand window or decrease posts per day.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
     await db.update(automationSettings).set({
       ...parsed.data,
       pausedUntil: parsed.data.pausedUntil

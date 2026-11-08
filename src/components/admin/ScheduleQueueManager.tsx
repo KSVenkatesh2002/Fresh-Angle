@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { PostSlot, TopicQueue, Category } from "@/db/schema";
-import { Calendar, Plus, ListPlus, Trash2, CheckCircle2 } from "lucide-react";
+import { Calendar, Plus, ListPlus, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
 
 interface ScheduleQueueManagerProps {
   slots: PostSlot[];
@@ -18,6 +18,7 @@ export function ScheduleQueueManager({
   const [bulkText, setBulkText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [importing, setImporting] = useState(false);
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function handleBulkImport(): Promise<void> {
@@ -62,6 +63,25 @@ export function ScheduleQueueManager({
       setMsg("Topic removed from queue. Refresh to update list.");
     } catch {
       // silent
+    }
+  }
+
+  async function handleRescheduleSlot(slotId: string): Promise<void> {
+    setReschedulingId(slotId);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/admin/schedule/reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reschedule slot");
+      setMsg("Slot successfully rescheduled for immediate execution! Refresh to see updated list.");
+    } catch (err) {
+      setMsg(`Reschedule Error: ${(err as Error).message}`);
+    } finally {
+      setReschedulingId(null);
     }
   }
 
@@ -192,7 +212,7 @@ export function ScheduleQueueManager({
                     key={slot.id}
                     className="p-3 rounded-xl bg-surface-muted border border-border flex items-center justify-between text-xs"
                   >
-                    <div>
+                    <div className="space-y-0.5 max-w-[65%]">
                       <p className="font-medium text-foreground">
                         {date.toLocaleDateString("en-US", {
                           weekday: "short",
@@ -209,24 +229,56 @@ export function ScheduleQueueManager({
                         })}{" "}
                         UTC
                       </p>
-                      <span className="text-[10px] text-foreground-muted capitalize">
-                        Origin: {slot.origin}
+                      <div className="flex items-center gap-2">
+                        {slot.origin === "test" ? (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning">
+                            🧪 TEST
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-foreground-muted capitalize">
+                            Origin: {slot.origin}
+                          </span>
+                        )}
+                        {slot.attempts > 0 && (
+                          <span className="text-[10px] text-foreground-muted">
+                            Attempts: {slot.attempts}
+                          </span>
+                        )}
+                      </div>
+                      {slot.error && (
+                        <p className="text-[10px] text-danger/90 truncate" title={slot.error}>
+                          Reason: {slot.error}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {(slot.status === "missed" || slot.status === "failed") && (
+                        <button
+                          type="button"
+                          onClick={() => handleRescheduleSlot(slot.id)}
+                          disabled={reschedulingId === slot.id}
+                          className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] font-semibold flex items-center gap-1 transition-colors disabled:opacity-50"
+                          title="Reschedule this slot for immediate execution"
+                        >
+                          <RotateCcw className={`w-3 h-3 ${reschedulingId === slot.id ? "animate-spin" : ""}`} />
+                          <span>{reschedulingId === slot.id ? "Rescheduling..." : "Reschedule"}</span>
+                        </button>
+                      )}
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono capitalize border ${
+                          slot.status === "done"
+                            ? "bg-success/15 border-success/30 text-success"
+                            : slot.status === "running"
+                              ? "bg-primary/15 border-primary/30 text-primary"
+                              : slot.status === "failed" ||
+                                  slot.status === "missed"
+                                ? "bg-danger/15 border-danger/30 text-danger"
+                                : "bg-surface border-border text-foreground-muted"
+                        }`}
+                      >
+                        {slot.status}
                       </span>
                     </div>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono capitalize border ${
-                        slot.status === "done"
-                          ? "bg-success/15 border-success/30 text-success"
-                          : slot.status === "running"
-                            ? "bg-primary/15 border-primary/30 text-primary"
-                            : slot.status === "failed" ||
-                                slot.status === "missed"
-                              ? "bg-danger/15 border-danger/30 text-danger"
-                              : "bg-surface border-border text-foreground-muted"
-                      }`}
-                    >
-                      {slot.status}
-                    </span>
                   </li>
                 );
               })}

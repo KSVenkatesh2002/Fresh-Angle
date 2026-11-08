@@ -3,6 +3,7 @@ import { siteConfig } from "@/config/site";
 import { getDb } from "@/db/client";
 import { posts, categories, tags } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getAbsoluteCoverImageUrl } from "@/lib/images/helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export async function GET(): Promise<Response> {
         updatedAt: posts.updatedAt,
         publishedAt: posts.publishedAt,
         coverImageId: posts.coverImageId,
+        coverImageUrl: posts.coverImageUrl,
       })
       .from(posts)
       .where(eq(posts.status, "published"));
@@ -53,7 +55,12 @@ export async function GET(): Promise<Response> {
       lastmod: (p.updatedAt || p.publishedAt || new Date()).toISOString(),
       changefreq: "weekly",
       priority: 0.8,
-      image: p.coverImageId ? `${siteConfig.url}/api/images/${p.coverImageId}` : undefined,
+      image: (p.coverImageUrl || p.coverImageId)
+        ? getAbsoluteCoverImageUrl(
+            { coverImageUrl: p.coverImageUrl, coverImageId: p.coverImageId },
+            siteConfig.url,
+          )
+        : undefined,
     }));
   } catch (err) {
     console.warn(`[sitemap] Could not fetch posts: ${(err as Error).message}`);

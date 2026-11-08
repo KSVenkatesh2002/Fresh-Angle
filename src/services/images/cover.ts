@@ -43,7 +43,7 @@ export async function getCoverImage(
     return {
       buffer: webpBuffer,
       source: "ai",
-      credit: "Generated with Cloudflare Workers AI Flux-1",
+      credit: undefined, // Caption mode: no hardcoded AI watermark overlay, clean credit
       alt: input.altText,
     };
   } catch (cfErr: unknown) {

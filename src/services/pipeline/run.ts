@@ -15,6 +15,7 @@ export interface RunDailyPipelineOptions {
   triggerSource?: "scheduled" | "manual" | "queue" | string;
   slotTime?: string;
   slotId?: string;
+  isTest?: boolean;
 }
 
 export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): Promise<string> {
@@ -139,7 +140,7 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
     // 7. Save to DB
     activeStepName = "save";
     start = Date.now();
-    const autoPublish = process.env.AUTO_PUBLISH !== "false";
+    const autoPublish = options.isTest ? false : process.env.AUTO_PUBLISH !== "false";
     const savedPost = await stepSave({
       post: reviewResult.post,
       cover: coverResult,
@@ -147,12 +148,13 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
       aiProvider: reviewResult.provider,
       aiModel: reviewResult.model,
       autoPublish,
+      isTest: options.isTest,
     });
     recordStepTiming(
       "save",
       Date.now() - start,
       true,
-      `Post ID: ${savedPost.id}`,
+      `Post ID: ${savedPost.id}${options.isTest ? " (TEST DRAFT)" : ""}`,
     );
 
     // 8. Publish & Notify
@@ -163,8 +165,9 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
       categoryName: reviewResult.post.category,
       provider: reviewResult.provider,
       model: reviewResult.model,
-      triggerSource,
+      triggerSource: options.isTest ? "test" : triggerSource,
       slotTime: options.slotTime,
+      isTest: options.isTest,
     });
     recordStepTiming("publish_notify", Date.now() - start, true);
 

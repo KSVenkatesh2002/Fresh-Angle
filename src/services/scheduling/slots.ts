@@ -83,6 +83,7 @@ export function calculateDaySlotTimes(
     const windowSpan = Math.max(1, endMinutes - startMinutes);
 
     const step = count > 1 ? windowSpan / (count - 1) : windowSpan / 2;
+    const minutes: number[] = [];
 
     for (let i = 0; i < count; i++) {
       let targetMinute = Math.round(startMinutes + i * step);
@@ -97,9 +98,37 @@ export function calculateDaySlotTimes(
           Math.min(endMinutes, targetMinute + jitterVal),
         );
       }
+      minutes.push(targetMinute);
+    }
 
-      const h = Math.floor(targetMinute / 60);
-      const m = targetMinute % 60;
+    // Sort to evaluate and enforce spacing
+    minutes.sort((a, b) => a - b);
+
+    // Enforce minimum gap of ~45 minutes (when windowSpan accommodates it)
+    const minDesiredGap =
+      count > 1 ? Math.min(45, Math.floor((windowSpan / (count - 1)) * 0.6)) : 0;
+
+    if (minDesiredGap > 0) {
+      // Forward pass: ensure no gap smaller than minDesiredGap
+      for (let i = 1; i < count; i++) {
+        if (minutes[i] - minutes[i - 1] < minDesiredGap) {
+          minutes[i] = minutes[i - 1] + minDesiredGap;
+        }
+      }
+      // Backward pass: if last slot pushed past endMinutes, shift backward within bounds
+      if (minutes[count - 1] > endMinutes) {
+        minutes[count - 1] = endMinutes;
+        for (let i = count - 2; i >= 0; i--) {
+          if (minutes[i + 1] - minutes[i] < minDesiredGap) {
+            minutes[i] = minutes[i + 1] - minDesiredGap;
+          }
+        }
+      }
+    }
+
+    for (const mTotal of minutes) {
+      const h = Math.floor(mTotal / 60);
+      const m = mTotal % 60;
       const slotDate = new Date(Date.UTC(year, month - 1, day, h, m, 0));
       results.push(slotDate);
     }
@@ -131,10 +160,14 @@ export async function syncPostSlotsForDate(
   const now = new Date();
 
   // Mark past unexecuted slots that exceeded grace period as missed
-  const graceMs = (settings.lateSlotGraceMinutes || 60) * 60 * 1000;
+  const graceMinutes = settings.lateSlotGraceMinutes || 360;
+  const graceMs = graceMinutes * 60 * 1000;
   await db
     .update(postSlots)
-    .set({ status: "missed", error: "Slot expired before execution" })
+    .set({
+      status: "missed",
+      error: `Slot expired before execution (exceeded ${graceMinutes}m late grace window)`,
+    })
     .where(
       and(
         eq(postSlots.status, "planned"),

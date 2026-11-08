@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { PostWithRelations } from "@/db/queries/posts";
 import { formatDate } from "@/lib/utils/dates";
+import { getCoverImageUrl } from "@/lib/images/helpers";
 import { Sparkles } from "lucide-react";
 
 interface RelatedPostsProps {
@@ -31,9 +32,7 @@ export function RelatedPosts({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {posts.map((post) => {
-          const imageUrl = post.coverImageId
-            ? `/api/images/${post.coverImageId}`
-            : "/opengraph-image";
+          const imageUrl = getCoverImageUrl(post);
 
           return (
             <article

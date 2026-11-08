@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
+import { getAbsoluteCoverImageUrl } from "@/lib/images/helpers";
 
 interface PostMetadataProps {
   title: string;
@@ -8,6 +9,7 @@ interface PostMetadataProps {
   publishedAt?: Date | string | null;
   updatedAt?: Date | string | null;
   coverImageId?: string | null;
+  coverImageUrl?: string | null;
   categoryName?: string;
   tags?: string[];
 }
@@ -19,12 +21,14 @@ export function constructPostMetadata({
   publishedAt,
   updatedAt,
   coverImageId,
+  coverImageUrl,
   tags = [],
 }: PostMetadataProps): Metadata {
   const postUrl = `${siteConfig.url}/blog/${slug}`;
-  const imageUrl = coverImageId
-    ? `${siteConfig.url}/api/images/${coverImageId}`
-    : `${siteConfig.url}/opengraph-image`;
+  const imageUrl = getAbsoluteCoverImageUrl(
+    { coverImageUrl, coverImageId },
+    siteConfig.url,
+  );
 
   const pubDate = publishedAt ? new Date(publishedAt).toISOString() : undefined;
   const modDate = updatedAt ? new Date(updatedAt).toISOString() : pubDate;

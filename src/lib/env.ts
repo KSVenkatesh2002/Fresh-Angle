@@ -1,4 +1,6 @@
-import "server-only";
+if (typeof window !== "undefined") {
+  throw new Error("Server-only module cannot be executed on the client");
+}
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -15,19 +17,24 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
   OPENROUTER_MODEL: z.string().optional(),
 
-  // Image Generation
+  // Image Generation & Cloudinary Storage
   CF_ACCOUNT_ID: z.string().min(1, "CF_ACCOUNT_ID is required"),
   CF_API_TOKEN: z.string().min(1, "CF_API_TOKEN is required"),
   CF_IMAGE_MODEL: z.string().default("@cf/black-forest-labs/flux-1-schnell"),
   PEXELS_API_KEY: z.string().default("your_pexels_api_key"),
-  IMAGE_STORAGE: z.enum(["db", "r2"]).default("db"),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1, "CLOUDINARY_CLOUD_NAME is required"),
+  CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),
+  CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY_API_SECRET is required"),
+  CLOUDINARY_FOLDER: z.string().default("fresh-angle/covers"),
+  IMAGE_FALLBACK: z.enum(["default_image", "draft"]).default("default_image"),
 
   // Security & Admin
   CRON_SECRET: z.string().min(1, "CRON_SECRET is required"),
-  ADMIN_PASSWORD: z.string().min(1, "ADMIN_PASSWORD is required"),
+  ADMIN_PASSWORD: z.string().optional(),
   SESSION_SECRET: z
     .string()
-    .min(32, "SESSION_SECRET must be at least 32 characters"),
+    .min(32, "SESSION_SECRET must be at least 32 characters")
+    .optional(),
 
   // GitHub Dispatch
   GITHUB_REPO: z.string().optional(),
@@ -66,4 +73,44 @@ function validateEnv(): Env {
   return result.data;
 }
 
-export const env = validateEnv();
+let envCache: Env | null = null;
+
+export function getEnv(): Env {
+  if (envCache) return envCache;
+
+  if (process.env.NODE_ENV === "test") {
+    const parseResult = envSchema.safeParse(process.env);
+    if (!parseResult.success) {
+      return {
+        DATABASE_URL: process.env.DATABASE_URL || "postgres://dummy:dummy@localhost:5432/dummy",
+        SITE_URL: process.env.SITE_URL || "https://freshangle.vercel.app",
+        SITE_NAME: process.env.SITE_NAME || "Fresh Angle",
+        DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE || "Asia/Kolkata",
+        GEMINI_API_KEY: process.env.GEMINI_API_KEY || "dummy-gemini-key",
+        GROQ_API_KEY: process.env.GROQ_API_KEY || "dummy-groq-key",
+        CF_ACCOUNT_ID: process.env.CF_ACCOUNT_ID || "dummy-cf-account",
+        CF_API_TOKEN: process.env.CF_API_TOKEN || "dummy-cf-token",
+        CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || "test-cloud",
+        CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || "test-key",
+        CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || "test-secret",
+        CLOUDINARY_FOLDER: process.env.CLOUDINARY_FOLDER || "fresh-angle/covers",
+        IMAGE_FALLBACK: (process.env.IMAGE_FALLBACK as "default_image" | "draft") || "default_image",
+        CRON_SECRET: process.env.CRON_SECRET || "dummy-cron-secret",
+        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "dummy-admin-password",
+        SESSION_SECRET: process.env.SESSION_SECRET || "dummy-session-secret-min-32-chars-long",
+        AUTO_PUBLISH: process.env.AUTO_PUBLISH || "true",
+        EMBEDDING_PROVIDER: "none",
+      } as Env;
+    }
+    return parseResult.data;
+  }
+
+  envCache = validateEnv();
+  return envCache;
+}
+
+export const env = new Proxy({} as Env, {
+  get(_target, prop: string | symbol) {
+    return getEnv()[prop as keyof Env];
+  },
+});

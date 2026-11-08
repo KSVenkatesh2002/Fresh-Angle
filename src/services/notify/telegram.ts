@@ -122,3 +122,27 @@ export async function sendContactNotification(contact: {
 
   return sendTelegramMessage(text);
 }
+
+export async function sendDatabaseStorageAlert(params: {
+  usedBytes: number;
+  limitBytes: number;
+  percent: number;
+  threshold: 70 | 90;
+  topTables: Array<{ tableName: string; totalSize: string }>;
+}): Promise<boolean> {
+  const usedMb = (params.usedBytes / (1024 * 1024)).toFixed(1);
+  const limitMb = (params.limitBytes / (1024 * 1024)).toFixed(0);
+  const levelEmoji = params.threshold >= 90 ? "🚨" : "⚠️";
+
+  let text =
+    `[${siteConfig.name}] ${levelEmoji} <b>Neon Database Storage Alert: ${params.percent}% Used</b>\n\n` +
+    `💾 <b>Disk Utilization:</b> ${usedMb} MB / ${limitMb} MB (${params.percent}% of 0.5 GB free tier)\n` +
+    `⚠️ <b>Threshold Triggered:</b> ${params.threshold}%\n\n` +
+    `<b>Top Tables by Footprint:</b>\n`;
+
+  params.topTables.slice(0, 5).forEach((t) => {
+    text += `• <code>${t.tableName}</code>: ${t.totalSize}\n`;
+  });
+
+  return sendTelegramMessage(text, { disableNotification: params.threshold < 90 });
+}

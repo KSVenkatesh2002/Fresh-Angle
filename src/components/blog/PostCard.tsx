@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { PostWithRelations } from "@/db/queries/posts";
 import { formatDate } from "@/lib/utils/dates";
+import { getCoverImageUrl } from "@/lib/images/helpers";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Clock, Calendar } from "lucide-react";
@@ -16,9 +17,7 @@ export function PostCard({
   post,
   featured = false,
 }: PostCardProps): React.JSX.Element {
-  const imageUrl = post.coverImageId
-    ? `/api/images/${post.coverImageId}`
-    : "/opengraph-image";
+  const imageUrl = getCoverImageUrl(post);
 
   return (
     <Card

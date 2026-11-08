@@ -87,49 +87,20 @@ export function getDb(): ReturnType<typeof drizzle<typeof schema>> {
   return dbInstance;
 }
 
-// Image Storage abstraction interface
-export interface ImageStorage {
-  saveImage(params: {
-    data: Buffer;
-    mime?: string;
-    width?: number;
-    height?: number;
-  }): Promise<string>;
-  getImage(id: string): Promise<schema.PostImage | null>;
+/**
+ * Legacy read-only database image reader for pre-migration rows.
+ * Kept until Phase 5 (after at least 2 weeks verification of Cloudinary migration).
+ */
+export async function getLegacyDbImage(id: string): Promise<schema.PostImage | null> {
+  const db = getDb();
+  const result = await db.query.postImages.findFirst({
+    where: (img, { eq }) => eq(img.id, id),
+  });
+
+  return result ?? null;
 }
 
-// Database-backed implementation of ImageStorage
-export const dbImageStorage: ImageStorage = {
-  async saveImage({
-    data,
-    mime = "image/webp",
-    width = 1200,
-    height = 630,
-  }): Promise<string> {
-    const db = getDb();
-    const [inserted] = await db
-      .insert(schema.postImages)
-      .values({
-        data,
-        mime,
-        width,
-        height,
-      })
-      .returning({ id: schema.postImages.id });
-
-    if (!inserted) {
-      throw new Error("Failed to insert image into database");
-    }
-
-    return inserted.id;
-  },
-
-  async getImage(id: string): Promise<schema.PostImage | null> {
-    const db = getDb();
-    const result = await db.query.postImages.findFirst({
-      where: (img, { eq }) => eq(img.id, id),
-    });
-
-    return result ?? null;
-  },
+// Backward-compatible reader wrapper (read-only)
+export const dbImageStorage = {
+  getImage: getLegacyDbImage,
 };

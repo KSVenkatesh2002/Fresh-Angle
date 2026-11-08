@@ -35,16 +35,39 @@ export const bytea = customType<{
   },
 });
 
-// Post Images table (stores WebP covers)
+// Post Images table (supports Cloudinary storage with backward-compatible legacy bytea)
 export const postImages = pgTable("post_images", {
   id: uuid("id").defaultRandom().primaryKey(),
-  data: bytea("data").notNull(),
+  data: bytea("data"), // Nullable: new images store directly to Cloudinary without DB bloat
   mime: text("mime").notNull().default("image/webp"),
   width: integer("width").notNull().default(1200),
   height: integer("height").notNull().default(630),
+  storageKey: text("storage_key"),
+  publicUrl: text("public_url"),
+  bytes: integer("bytes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
+});
+
+// Image Migrations tracking table for zero-loss Cloudinary migration
+export const imageMigrations = pgTable("image_migrations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  imageId: uuid("image_id")
+    .notNull()
+    .references(() => postImages.id, { onDelete: "cascade" }),
+  postId: uuid("post_id"),
+  oldBytes: integer("old_bytes"),
+  newBytes: integer("new_bytes"),
+  publicUrl: text("public_url"),
+  storageKey: text("storage_key"),
+  bytes: integer("bytes"),
+  status: text("status").notNull().default("pending"), // pending | verified | failed
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
 });
 
 // Categories table
@@ -100,6 +123,7 @@ export const posts = pgTable(
     coverImageId: uuid("cover_image_id").references(() => postImages.id, {
       onDelete: "set null",
     }),
+    coverImageUrl: text("cover_image_url"),
     coverAlt: text("cover_alt").notNull().default(""),
     coverCredit: text("cover_credit"),
     coverSource: text("cover_source")
@@ -110,7 +134,7 @@ export const posts = pgTable(
     wordCount: integer("word_count").notNull().default(0),
     seoScore: integer("seo_score").notNull().default(0),
     origin: text("origin")
-      .$type<"auto" | "manual" | "queue">()
+      .$type<"auto" | "manual" | "queue" | "test">()
       .notNull()
       .default("auto"),
     isIndexed: boolean("is_indexed").notNull().default(false),
@@ -259,10 +283,10 @@ export const automationSettings = pgTable("automation_settings", {
     .$type<"ai" | "pexels" | "default">()
     .notNull()
     .default("ai"),
-  maxPostsPerRun: integer("max_posts_per_run").notNull().default(1),
+  maxPostsPerRun: integer("max_posts_per_run").notNull().default(2),
   lateSlotGraceMinutes: integer("late_slot_grace_minutes")
     .notNull()
-    .default(60),
+    .default(360),
   consecutiveFailures: integer("consecutive_failures").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
@@ -293,7 +317,7 @@ export const postSlots = pgTable(
       .notNull()
       .default("planned"),
     origin: text("origin")
-      .$type<"auto" | "manual" | "queue">()
+      .$type<"auto" | "manual" | "queue" | "test">()
       .notNull()
       .default("auto"),
     categoryId: uuid("category_id").references(() => categories.id, {
@@ -754,6 +778,8 @@ export type PostSource = typeof postSources.$inferSelect;
 export type NewPostSource = typeof postSources.$inferInsert;
 export type PostImage = typeof postImages.$inferSelect;
 export type NewPostImage = typeof postImages.$inferInsert;
+export type ImageMigration = typeof imageMigrations.$inferSelect;
+export type NewImageMigration = typeof imageMigrations.$inferInsert;
 export type PipelineRun = typeof pipelineRuns.$inferSelect;
 export type NewPipelineRun = typeof pipelineRuns.$inferInsert;
 

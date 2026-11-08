@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fresh-angle-tick-trigger",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-11-01",
+  "triggers": {
+    "crons": [
+      // 1. Active posting window (02:30 to 11:30 UTC / 08:00 to 17:00 IST): runs every 15 minutes
+      "*/15 2-11 * * *",
+      // 2. Off-peak window (00:00, 01:00, 12:00 to 23:00 UTC): runs once an hour at minute 0
+      "0 0,1,12-23 * * *"
+    ]
+  },
+  "vars": {
+    "GITHUB_OWNER": "KSVenkatesh2002",
+    "GITHUB_REPO": "Fresh-Angle",
+    "GITHUB_WORKFLOW": "tick.yml",
+    "GITHUB_REF": "main"
+  },
+  "build": {
+    "command": "node scripts/check-kv-id.mjs"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "ALERT_KV",
+      "id": "REPLACE_WITH_ALERT_KV_NAMESPACE_ID"
+    }
+  ]
+}
+

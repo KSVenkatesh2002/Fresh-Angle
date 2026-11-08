@@ -26,8 +26,16 @@ yarn-error.log*
 .env*.local
 .env
 
+# backups and exports
+backups/
+*.json.bak
+
 # vercel
 .vercel
+
+# cloudflare worker
+.wrangler/
+.dev.vars
 
 # typescript
 *.tsbuildinfo

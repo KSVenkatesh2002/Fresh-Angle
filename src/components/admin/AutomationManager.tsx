@@ -18,6 +18,14 @@ interface AutomationManagerProps {
   tomorrowSlots: string[];
 }
 
+interface SlotPreviewResult {
+  slots: string[];
+  minGapMinutes: number;
+  nominalGap: number;
+  windowSpan: number;
+  isValid: boolean;
+}
+
 function computeSlotPreview(
   count: number,
   windowStart: string,
@@ -25,20 +33,30 @@ function computeSlotPreview(
   jitterMinutes: number,
   mode: "auto_distribute" | "fixed_times",
   fixedTimes: string[],
-): string[] {
-  if (count <= 0) return [];
+): SlotPreviewResult {
+  if (count <= 0) {
+    return { slots: [], minGapMinutes: 0, nominalGap: 0, windowSpan: 0, isValid: true };
+  }
+
   if (mode === "fixed_times") {
-    return fixedTimes.map((t) => `${t} UTC`);
+    const slots = fixedTimes.map((t) => `${t} UTC`);
+    return { slots, minGapMinutes: 60, nominalGap: 60, windowSpan: 1440, isValid: true };
   }
 
   const [startH, startM] = windowStart.split(":").map(Number);
   const [endH, endM] = windowEnd.split(":").map(Number);
   const startMinutes = (startH || 0) * 60 + (startM || 0);
   const endMinutes = (endH || 0) * 60 + (endM || 0);
-  const windowSpan = Math.max(1, endMinutes - startMinutes);
+  const windowSpan = endMinutes - startMinutes;
+
+  if (windowSpan <= 0) {
+    return { slots: [], minGapMinutes: 0, nominalGap: 0, windowSpan, isValid: false };
+  }
+
+  const nominalGap = count > 1 ? windowSpan / (count - 1) : windowSpan;
   const step = count > 1 ? windowSpan / (count - 1) : windowSpan / 2;
 
-  const results: string[] = [];
+  const minutes: number[] = [];
   for (let i = 0; i < count; i++) {
     let targetMinute = Math.round(startMinutes + i * step);
     if (jitterMinutes > 0) {
@@ -49,11 +67,51 @@ function computeSlotPreview(
         Math.min(endMinutes, targetMinute + jitterVal),
       );
     }
-    const h = String(Math.floor(targetMinute / 60)).padStart(2, "0");
-    const m = String(targetMinute % 60).padStart(2, "0");
-    results.push(`${h}:${m} UTC`);
+    minutes.push(targetMinute);
   }
-  return results;
+
+  minutes.sort((a, b) => a - b);
+
+  // Enforce spacing algorithm: minimum desired gap 45 minutes
+  const minDesiredGap =
+    count > 1 ? Math.min(45, Math.floor((windowSpan / (count - 1)) * 0.6)) : 0;
+
+  if (minDesiredGap > 0) {
+    for (let i = 1; i < count; i++) {
+      if (minutes[i] - minutes[i - 1] < minDesiredGap) {
+        minutes[i] = minutes[i - 1] + minDesiredGap;
+      }
+    }
+    if (minutes[count - 1] > endMinutes) {
+      minutes[count - 1] = endMinutes;
+      for (let i = count - 2; i >= 0; i--) {
+        if (minutes[i + 1] - minutes[i] < minDesiredGap) {
+          minutes[i] = minutes[i + 1] - minDesiredGap;
+        }
+      }
+    }
+  }
+
+  let minGapMinutes = Infinity;
+  for (let i = 1; i < minutes.length; i++) {
+    const gap = minutes[i] - minutes[i - 1];
+    if (gap < minGapMinutes) minGapMinutes = gap;
+  }
+  if (minGapMinutes === Infinity) minGapMinutes = windowSpan;
+
+  const slots = minutes.map((mTotal) => {
+    const h = String(Math.floor(mTotal / 60)).padStart(2, "0");
+    const m = String(mTotal % 60).padStart(2, "0");
+    return `${h}:${m} UTC`;
+  });
+
+  return {
+    slots,
+    minGapMinutes,
+    nominalGap,
+    windowSpan,
+    isValid: nominalGap >= 45 && windowSpan > 0,
+  };
 }
 
 export function AutomationManager({
@@ -103,9 +161,18 @@ export function AutomationManager({
   ]);
 
   async function handleSave(): Promise<void> {
+    if (mode === "auto_distribute" && !dynamicSlots.isValid) {
+      setStatusMsg({
+        type: "error",
+        text: `Cannot save: window is too narrow for ${postsPerDay} posts. Span is ${dynamicSlots.windowSpan}m, giving ~${Math.round(dynamicSlots.nominalGap)}m spacing between slots (minimum allowed spacing is 45m).`,
+      });
+      return;
+    }
+
     setSaving(true);
     setStatusMsg(null);
     try {
+      const clampedMaxPosts = Math.max(1, Math.min(3, maxPostsPerRun || 1));
       const res = await fetch("/api/admin/automation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,12 +187,15 @@ export function AutomationManager({
             jitterMinutes,
             publishMode,
             contentMode,
-            maxPostsPerRun,
+            maxPostsPerRun: clampedMaxPosts,
           },
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to update settings");
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Failed to update settings");
+      }
       setStatusMsg({
         type: "success",
         text: "Automation parameters saved successfully! Slots synchronized.",
@@ -370,15 +440,22 @@ export function AutomationManager({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-foreground-muted mb-1.5">
-                Max Posts Per Run
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-foreground-muted">
+                  Max Posts Per Run
+                </label>
+                <span className="text-[10px] text-foreground-muted">Allowed: 1 – 3</span>
+              </div>
               <input
                 type="number"
                 min={1}
-                max={5}
+                max={3}
                 value={maxPostsPerRun}
-                onChange={(e) => setMaxPostsPerRun(Number(e.target.value))}
+                onChange={(e) =>
+                  setMaxPostsPerRun(
+                    Math.max(1, Math.min(3, Number(e.target.value) || 1)),
+                  )
+                }
                 className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
@@ -388,7 +465,7 @@ export function AutomationManager({
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || (mode === "auto_distribute" && !dynamicSlots.isValid)}
               className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Parameters"}
@@ -405,17 +482,56 @@ export function AutomationManager({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Configured Daily Slots ({dynamicSlots.length})
+                Configured Daily Slots ({dynamicSlots.slots.length})
               </h3>
               <span className="text-[10px] text-foreground-muted">Live Preview</span>
             </div>
-            {dynamicSlots.length === 0 ? (
+
+            {mode === "auto_distribute" && (
+              <div className="p-3 rounded-xl bg-surface border border-border space-y-2 text-xs">
+                <div className="flex items-center justify-between text-foreground-muted">
+                  <span>Window Span:</span>
+                  <strong className="text-foreground font-mono">
+                    {dynamicSlots.windowSpan}m ({windowStart} – {windowEnd})
+                  </strong>
+                </div>
+                <div className="flex items-center justify-between text-foreground-muted">
+                  <span>Average Slot Gap:</span>
+                  <strong className="text-foreground font-mono">
+                    ~{Math.round(dynamicSlots.nominalGap)}m
+                  </strong>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-border">
+                  <span className="font-semibold text-foreground">
+                    Minimum Slot Gap:
+                  </span>
+                  <strong
+                    className={`font-mono font-bold ${dynamicSlots.isValid ? "text-success" : "text-destructive"}`}
+                  >
+                    {dynamicSlots.minGapMinutes} min{" "}
+                    {dynamicSlots.isValid ? "✓ (>= 45m)" : "✕ (< 45m)"}
+                  </strong>
+                </div>
+
+                {!dynamicSlots.isValid && (
+                  <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed">
+                    ⚠️ <strong>Window Too Narrow:</strong> {dynamicSlots.windowSpan}m
+                    across {postsPerDay} posts yields only ~
+                    {Math.round(dynamicSlots.nominalGap)}m spacing. Minimum allowed
+                    spacing is 45 minutes. Please expand the window or decrease
+                    posts per day before saving.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {dynamicSlots.slots.length === 0 ? (
               <p className="text-xs text-foreground-muted">
                 No slots configured
               </p>
             ) : (
               <ul className="space-y-1.5">
-                {dynamicSlots.map((time, idx) => (
+                {dynamicSlots.slots.map((time, idx) => (
                   <li
                     key={idx}
                     className="p-2 rounded-lg bg-surface border border-border text-xs text-foreground flex items-center justify-between"
@@ -430,15 +546,15 @@ export function AutomationManager({
 
           <div className="space-y-3 pt-3 border-t border-border">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-              Tomorrow&apos;s Planned Slots ({dynamicSlots.length})
+              Tomorrow&apos;s Planned Slots ({dynamicSlots.slots.length})
             </h3>
-            {dynamicSlots.length === 0 ? (
+            {dynamicSlots.slots.length === 0 ? (
               <p className="text-xs text-foreground-muted">
                 No slots scheduled
               </p>
             ) : (
               <ul className="space-y-1.5">
-                {dynamicSlots.map((time, idx) => (
+                {dynamicSlots.slots.map((time, idx) => (
                   <li
                     key={idx}
                     className="p-2 rounded-lg bg-surface border border-border text-xs text-foreground flex items-center justify-between"

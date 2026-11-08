@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { siteConfig } from "@/config/site";
-import { User, Globe } from "lucide-react";
+import { User, Globe, Image as ImageIcon, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "System Settings & Architecture Profiles",
@@ -96,6 +96,49 @@ export default function AdminSettingsPage(): React.JSX.Element {
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-muted">
               <span className="text-foreground-muted">Content Language</span>
               <strong className="text-foreground">{siteConfig.language}</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Image Storage & CDN Architecture */}
+        <div className="p-6 rounded-2xl bg-surface border border-border space-y-4 md:col-span-2">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-primary" />
+            <span>Image Storage & CDN Architecture</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-1">
+              <span className="text-foreground-muted block font-medium">Storage Provider</span>
+              <div className="flex items-center gap-1.5 text-foreground font-semibold">
+                <ShieldCheck className="w-4 h-4 text-success" />
+                <span>Cloudinary CDN</span>
+              </div>
+              <p className="text-[11px] text-foreground-muted">
+                Signed WebP uploads, responsive transforms, and edge CDN delivery.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-1">
+              <span className="text-foreground-muted block font-medium">Target Asset Folder</span>
+              <div className="font-mono text-primary font-semibold">
+                {process.env.CLOUDINARY_FOLDER || "fresh-angle/covers"}
+              </div>
+              <p className="text-[11px] text-foreground-muted">
+                Deterministic keys: <code>{"{folder}/{yyyy}/{mm}/{slug}-{hash}"}</code>.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-1">
+              <span className="text-foreground-muted block font-medium">Failure Fallback Strategy</span>
+              <div className="font-mono text-foreground font-semibold">
+                {process.env.IMAGE_FALLBACK || "default_image"}
+              </div>
+              <p className="text-[11px] text-foreground-muted">
+                {process.env.IMAGE_FALLBACK === "draft"
+                  ? "Post demoted to draft if image synthesis/upload fails."
+                  : "Falls back to static branded cover in public/images/."}
+              </p>
             </div>
           </div>
         </div>

@@ -1,0 +1,17 @@
+{
+  "name": "fresh-angle-tick-trigger",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker cron trigger for Fresh Angle GitHub Actions scheduler",
+  "main": "src/index.ts",
+  "scripts": {
+    "predeploy": "node scripts/check-kv-id.mjs",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241106.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^3.86.0"
+  }
+}
+

@@ -1,11 +1,13 @@
 import { sql, eq, and, lte, asc } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { automationSettings, posts, postSlots } from "@/db/schema";
+import { automationSettings, posts, postSlots, settings as settingsTable } from "@/db/schema";
 import { ensurePostSlotsForDate } from "./slots";
 import { runDailyPipeline } from "@/services/pipeline/run";
 import { sendTelegramMessage } from "@/services/notify/telegram";
 import { pingIndexNow } from "@/services/seo/indexnow";
 import { siteConfig } from "@/config/site";
+import { runDailyDatabaseMaintenance } from "@/services/maintenance/database";
+import { checkTickDisruptionAlert } from "./watchdog";
 
 const ADVISORY_LOCK_ID = 827361;
 
@@ -31,6 +33,48 @@ export async function runSchedulerTick(): Promise<{
   }
 
   try {
+    const now = new Date();
+
+    // 0. Daily database retention & health monitoring (runs once per 24 hours)
+    try {
+      await runDailyDatabaseMaintenance();
+    } catch (maintErr) {
+      console.warn("⚠️ [Tick] Daily database maintenance error:", maintErr);
+    }
+
+    // 0.1 Check tick gap during active posting window (02:30–11:30 UTC / 08:00–17:00 IST)
+    try {
+      const lastTickRow = await db.query.settings.findFirst({
+        where: eq(settingsTable.key, "last_tick_at"),
+      });
+
+      if (lastTickRow && lastTickRow.value) {
+        const lastTickTime = new Date(lastTickRow.value).getTime();
+        const gapMinutes = Math.floor((now.getTime() - lastTickTime) / (60 * 1000));
+
+        const utcMinuteOfDay = now.getUTCHours() * 60 + now.getUTCMinutes();
+        const isPostingWindow = utcMinuteOfDay >= 150 && utcMinuteOfDay <= 690; // 02:30 to 11:30 UTC
+
+        if (gapMinutes >= 90 && isPostingWindow) {
+          await checkTickDisruptionAlert(gapMinutes);
+        }
+      }
+
+      await db
+        .insert(settingsTable)
+        .values({
+          key: "last_tick_at",
+          value: now.toISOString(),
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: settingsTable.key,
+          set: { value: now.toISOString(), updatedAt: now },
+        });
+    } catch (watchdogErr) {
+      console.warn("⚠️ [Tick] Watchdog check error:", watchdogErr);
+    }
+
     // Check automation settings
     const [settings] = await db.select().from(automationSettings).limit(1);
     if (!settings || !settings.enabled) {
@@ -40,14 +84,12 @@ export async function runSchedulerTick(): Promise<{
       };
     }
 
-    if (settings.pausedUntil && new Date(settings.pausedUntil) > new Date()) {
+    if (settings.pausedUntil && new Date(settings.pausedUntil) > now) {
       return {
         executed: false,
         message: `Automation paused until ${new Date(settings.pausedUntil).toISOString()}`,
       };
     }
-
-    const now = new Date();
 
     // 2. Publish due scheduled posts
     const dueScheduledPosts = await db.query.posts.findMany({
@@ -71,15 +113,18 @@ export async function runSchedulerTick(): Promise<{
     const todayStr = now.toISOString().split("T")[0];
     await ensurePostSlotsForDate(todayStr);
 
-    // 4. Fetch due planned slots
-    const graceWindowMs = settings.lateSlotGraceMinutes * 60 * 1000;
+    // 4. Fetch due planned slots ordered oldest first
+    const graceMinutes = settings.lateSlotGraceMinutes || 360;
+    const graceWindowMs = graceMinutes * 60 * 1000;
+    const maxPerRun = settings.maxPostsPerRun || 2;
+
     const dueSlots = await db.query.postSlots.findMany({
       where: and(
         eq(postSlots.status, "planned"),
         lte(postSlots.plannedAt, now),
       ),
-      orderBy: [asc(postSlots.plannedAt)],
-      limit: 10,
+      orderBy: [asc(postSlots.plannedAt)], // Oldest due slot first
+      limit: 20,
     });
 
     if (dueSlots.length === 0) {
@@ -91,38 +136,50 @@ export async function runSchedulerTick(): Promise<{
       };
     }
 
-    let generatedCount = 0;
-    const maxPerRun = settings.maxPostsPerRun || 1;
+    // Separate slots into valid (within grace window) and expired (exceeded grace window)
+    const validDueSlots: typeof dueSlots = [];
+    const expiredSlots: typeof dueSlots = [];
 
-    const maxGraceMs = Math.max(graceWindowMs, 240 * 60 * 1000); // Allow at least 4 hours grace window
-
-    // If all due slots exceeded grace period, keep the most recent one so publishing never stops completely
-    const validDueSlots = dueSlots.filter(
-      (s) => now.getTime() - new Date(s.plannedAt).getTime() <= maxGraceMs,
-    );
-    const slotsToProcess =
-      validDueSlots.length > 0 ? validDueSlots : [dueSlots[dueSlots.length - 1]];
-
-    // Mark older expired slots as missed
-    const slotToKeepId = slotsToProcess[0]?.id;
     for (const slot of dueSlots) {
-      if (
-        slot.id !== slotToKeepId &&
-        now.getTime() - new Date(slot.plannedAt).getTime() > maxGraceMs
-      ) {
-        await db
-          .update(postSlots)
-          .set({
-            status: "missed",
-            error: "Slot exceeded late grace window",
-          })
-          .where(eq(postSlots.id, slot.id));
+      const slotAgeMs = now.getTime() - new Date(slot.plannedAt).getTime();
+      if (slotAgeMs > graceWindowMs) {
+        expiredSlots.push(slot);
+      } else {
+        validDueSlots.push(slot);
       }
     }
 
+    // Mark all expired slots as missed with explicit, descriptive reason
+    for (const slot of expiredSlots) {
+      const plannedTimeIso = new Date(slot.plannedAt).toISOString();
+      const ageMinutes = Math.round((now.getTime() - new Date(slot.plannedAt).getTime()) / (60 * 1000));
+      await db
+        .update(postSlots)
+        .set({
+          status: "missed",
+          error: `Slot expired: exceeded ${graceMinutes}m late grace window (${ageMinutes}m elapsed, planned: ${plannedTimeIso})`,
+        })
+        .where(eq(postSlots.id, slot.id));
+    }
+
+    if (validDueSlots.length === 0) {
+      return {
+        executed: true,
+        message: expiredSlots.length > 0
+          ? `Marked ${expiredSlots.length} expired slots as missed (exceeded ${graceMinutes}m grace window)`
+          : "No slots due for generation",
+        publishedCount,
+        generatedCount: 0,
+      };
+    }
+
+    // Take oldest due valid slots up to max_posts_per_run
+    const slotsToProcess = validDueSlots.slice(0, maxPerRun);
+    let generatedCount = 0;
+
     for (const slot of slotsToProcess) {
       if (generatedCount >= maxPerRun) {
-        break; // Respect max_posts_per_run
+        break; // Strictly respect max_posts_per_run
       }
 
       // Mark slot as running
@@ -140,11 +197,14 @@ export async function runSchedulerTick(): Promise<{
           .substring(11, 16) + " IST";
         const slotTimeDisplay = `${istTimeStr} (${slotDate.toISOString().substring(11, 16)} UTC)`;
 
+        const isTestSlot = slot.origin === "test";
+
         // Execute pipeline with explicit slot attribution
         const postId = await runDailyPipeline({
-          triggerSource: "scheduled",
+          triggerSource: isTestSlot ? "test" : "scheduled",
           slotTime: slotTimeDisplay,
           slotId: slot.id,
+          isTest: isTestSlot,
         });
 
         // Mark slot as done

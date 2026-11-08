@@ -1,4 +1,5 @@
 import { siteConfig } from "@/config/site";
+import { getAbsoluteCoverImageUrl } from "@/lib/images/helpers";
 
 export interface BreadcrumbItem {
   name: string;
@@ -46,13 +47,15 @@ export function generateArticleJsonLd(post: {
   publishedAt?: Date | string | null;
   updatedAt?: Date | string | null;
   coverImageId?: string | null;
+  coverImageUrl?: string | null;
   categoryName?: string;
   authorName?: string;
 }): Record<string, unknown> {
   const postUrl = `${siteConfig.url}/blog/${post.slug}`;
-  const imageUrl = post.coverImageId
-    ? `${siteConfig.url}/api/images/${post.coverImageId}`
-    : `${siteConfig.url}/opengraph-image`;
+  const imageUrl = getAbsoluteCoverImageUrl(
+    { coverImageUrl: post.coverImageUrl, coverImageId: post.coverImageId },
+    siteConfig.url,
+  );
 
   const pubDate = post.publishedAt
     ? new Date(post.publishedAt).toISOString()

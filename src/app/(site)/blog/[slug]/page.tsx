@@ -11,6 +11,7 @@ import {
 import { extractTableOfContents } from "@/lib/markdown/toc";
 import { MarkdownRenderer } from "@/lib/markdown/render";
 import { formatDate } from "@/lib/utils/dates";
+import { getCoverImageUrl } from "@/lib/images/helpers";
 import { Container } from "@/components/layout/Container";
 import { Badge } from "@/components/ui/Badge";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
@@ -66,6 +67,7 @@ export async function generateMetadata({
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt,
     coverImageId: post.coverImageId,
+    coverImageUrl: post.coverImageUrl,
     categoryName: post.category?.name,
     tags: post.tags?.map((t) => t.name),
   });
@@ -117,14 +119,13 @@ export default async function BlogPostPage({
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt,
     coverImageId: post.coverImageId,
+    coverImageUrl: post.coverImageUrl,
     categoryName: post.category?.name,
   });
 
   const faqJsonLd = generateFaqJsonLd(faqs);
 
-  const imageUrl = post.coverImageId
-    ? `/api/images/${post.coverImageId}`
-    : "/opengraph-image";
+  const imageUrl = getCoverImageUrl(post);
 
   return (
     <main className="py-8 sm:py-12 relative">
