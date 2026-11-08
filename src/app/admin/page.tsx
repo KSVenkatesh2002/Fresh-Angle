@@ -20,6 +20,7 @@ import { getDb } from "@/db/client";
 import { automationSettings, postSlots } from "@/db/schema";
 import { eq, and, gte, asc } from "drizzle-orm";
 import { ensureUpcomingSlots } from "@/services/scheduling/slots";
+import { formatDualTime } from "@/lib/utils/time";
 
 export const dynamic = "force-dynamic";
 
@@ -153,7 +154,7 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
           </p>
           <p className="text-[11px] text-foreground-muted truncate">
             {upcomingSlot
-              ? `Next slot: ${new Date(upcomingSlot.plannedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })} UTC`
+              ? `Next slot: ${formatDualTime(upcomingSlot.plannedAt)}`
               : "No pending slot"}
           </p>
         </div>

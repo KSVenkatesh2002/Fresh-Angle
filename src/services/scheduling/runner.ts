@@ -8,6 +8,7 @@ import { pingIndexNow } from "@/services/seo/indexnow";
 import { siteConfig } from "@/config/site";
 import { runDailyDatabaseMaintenance } from "@/services/maintenance/database";
 import { checkTickDisruptionAlert } from "./watchdog";
+import { formatDualTime } from "@/lib/utils/time";
 
 const ADVISORY_LOCK_ID = 827361;
 
@@ -190,12 +191,7 @@ export async function runSchedulerTick(): Promise<{
 
       try {
         const slotDate = new Date(slot.plannedAt);
-        // Format slot time in IST and UTC for clear logging and notifications
-        const istTimeStr = new Date(slotDate.getTime() + 5.5 * 3600 * 1000)
-          .toISOString()
-          .replace("T", " ")
-          .substring(11, 16) + " IST";
-        const slotTimeDisplay = `${istTimeStr} (${slotDate.toISOString().substring(11, 16)} UTC)`;
+        const slotTimeDisplay = formatDualTime(slotDate);
 
         const isTestSlot = slot.origin === "test";
 

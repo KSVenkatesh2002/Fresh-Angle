@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getDb } from "@/db/client";
 import { automationSettings } from "@/db/schema";
 import { calculateDaySlotTimes } from "@/services/scheduling/slots";
+import { formatDualTime } from "@/lib/utils/time";
 import { AutomationManager } from "@/components/admin/AutomationManager";
 
 export const dynamic = "force-dynamic";
@@ -47,13 +48,7 @@ export default async function AdminAutomationPage(): Promise<React.JSX.Element> 
     tomorrowOverride || undefined,
   );
 
-  const formatSlot = (d: Date) =>
-    d.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "UTC",
-    }) + " UTC";
+  const formatSlot = (d: Date) => formatDualTime(d);
 
   return (
     <div className="space-y-6">

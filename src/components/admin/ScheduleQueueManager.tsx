@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { formatDualTime } from "@/lib/utils/time";
 import { PostSlot, TopicQueue, Category } from "@/db/schema";
 import { Calendar, Plus, ListPlus, Trash2, CheckCircle2, RotateCcw } from "lucide-react";
 
@@ -220,14 +221,7 @@ export function ScheduleQueueManager({
                           day: "numeric",
                           timeZone: "UTC",
                         })}{" "}
-                        at{" "}
-                        {date.toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                          timeZone: "UTC",
-                        })}{" "}
-                        UTC
+                        · {formatDualTime(date)}
                       </p>
                       <div className="flex items-center gap-2">
                         {slot.origin === "test" ? (

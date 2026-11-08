@@ -102,7 +102,13 @@ function computeSlotPreview(
   const slots = minutes.map((mTotal) => {
     const h = String(Math.floor(mTotal / 60)).padStart(2, "0");
     const m = String(mTotal % 60).padStart(2, "0");
-    return `${h}:${m} UTC`;
+
+    // Convert to IST (+5h 30m)
+    const istTotal = (mTotal + 330) % 1440;
+    const istH = String(Math.floor(istTotal / 60)).padStart(2, "0");
+    const istM = String(istTotal % 60).padStart(2, "0");
+
+    return `${h}:${m} UTC · ${istH}:${istM} IST`;
   });
 
   return {
