@@ -3,10 +3,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { siteConfig } from "@/config/site";
 import { Container } from "./Container";
-import { Sparkles, Bot, ExternalLink } from "lucide-react";
+import { Sparkles, ExternalLink } from "lucide-react";
+import { getDisplaySettings } from "@/services/settings/display";
 
-export function Footer(): React.JSX.Element {
+export async function Footer(): Promise<React.JSX.Element> {
   const currentYear = new Date().getFullYear();
+  const displaySettings = await getDisplaySettings().catch(() => ({ showDeveloperFooter: false }));
 
   return (
     <footer className="w-full border-t border-border bg-surface-muted/50 mt-20 transition-colors">
@@ -27,8 +29,8 @@ export function Footer(): React.JSX.Element {
               {siteConfig.description}
             </p>
 
-            {/* Creator Profile Card */}
-            {siteConfig.creator && (
+            {/* Creator Profile Card (Conditional via Admin Toggle) */}
+            {siteConfig.creator && displaySettings.showDeveloperFooter && (
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl bg-surface border border-border max-w-lg shadow-sm hover:border-primary/50 transition-colors">
                 <a
                   href={siteConfig.creator.url}
@@ -69,13 +71,6 @@ export function Footer(): React.JSX.Element {
                 </div>
               </div>
             )}
-
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border text-xs text-foreground-muted">
-              <Bot className="w-3.5 h-3.5 text-primary" />
-              <span>
-                Automated research engine publishing daily with editorial AI
-              </span>
-            </div>
           </div>
 
           {/* Navigation Links */}

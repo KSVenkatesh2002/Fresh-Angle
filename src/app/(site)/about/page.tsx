@@ -16,6 +16,7 @@ import {
   Code,
 } from "lucide-react";
 import { siteConfig } from "@/config/site";
+import { getDisplaySettings } from "@/services/settings/display";
 
 export const metadata: Metadata = constructPageMetadata({
   title: "About Fresh Angle - Technical Insights & Systems Architecture",
@@ -24,9 +25,10 @@ export const metadata: Metadata = constructPageMetadata({
   path: "/about",
 });
 
-export default function AboutPage(): React.JSX.Element {
+export default async function AboutPage(): Promise<React.JSX.Element> {
   const personJsonLd = generatePersonJsonLd();
   const creator = siteConfig.creator;
+  const displaySettings = await getDisplaySettings().catch(() => ({ showDeveloperAboutPage: false }));
 
   return (
     <main className="py-8 sm:py-12">
@@ -67,8 +69,8 @@ export default function AboutPage(): React.JSX.Element {
             </p>
           </section>
 
-          {/* Creator Profile Section */}
-          {creator && (
+          {/* Creator Profile Section (Conditional via Admin Toggle) */}
+          {creator && displaySettings.showDeveloperAboutPage && (
             <section className="p-6 sm:p-8 rounded-2xl bg-surface border border-border space-y-4">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
                 <Code className="w-4 h-4" />

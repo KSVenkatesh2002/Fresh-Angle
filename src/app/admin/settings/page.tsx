@@ -5,6 +5,8 @@ import { siteConfig } from "@/config/site";
 import { User, Globe, Image as ImageIcon, ShieldCheck } from "lucide-react";
 import { getNotificationSettings } from "@/services/notify/settings";
 import { NotificationSettingsManager } from "@/components/admin/NotificationSettingsManager";
+import { getDisplaySettings } from "@/services/settings/display";
+import { DisplaySettingsManager } from "@/components/admin/DisplaySettingsManager";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +16,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminSettingsPage(): Promise<React.JSX.Element> {
-  const notificationSettings = await getNotificationSettings();
+  const [notificationSettings, displaySettings] = await Promise.all([
+    getNotificationSettings(),
+    getDisplaySettings(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -23,9 +28,12 @@ export default async function AdminSettingsPage(): Promise<React.JSX.Element> {
           System & Creator Configuration
         </h1>
         <p className="text-sm text-foreground-muted">
-          Global runtime variables, creator profile attribution, and Telegram notification controls.
+          Global runtime variables, developer display visibility, and Telegram notification controls.
         </p>
       </div>
+
+      {/* Public Content & Developer Attribution Toggles */}
+      <DisplaySettingsManager initialSettings={displaySettings} />
 
       {/* Telegram Notification Controls */}
       <NotificationSettingsManager initialSettings={notificationSettings} />

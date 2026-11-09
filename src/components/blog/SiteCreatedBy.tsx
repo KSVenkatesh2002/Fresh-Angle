@@ -2,9 +2,13 @@ import React from "react";
 import Image from "next/image";
 import { siteConfig } from "@/config/site";
 import { ExternalLink, Code } from "lucide-react";
+import { getDisplaySettings } from "@/services/settings/display";
 
-export function SiteCreatedBy(): React.JSX.Element | null {
+export async function SiteCreatedBy(): Promise<React.JSX.Element | null> {
   if (!siteConfig.creator) return null;
+  const displaySettings = await getDisplaySettings().catch(() => ({ showDeveloperPostCard: false }));
+  if (!displaySettings.showDeveloperPostCard) return null;
+
   const creator = siteConfig.creator;
 
   return (

@@ -5,6 +5,8 @@ import { contactMessages, postFeedback } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { Mail, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Inbound Transmissions & Reader Feedback",
   robots: { index: false, follow: false },

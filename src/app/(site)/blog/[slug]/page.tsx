@@ -25,6 +25,7 @@ import { siteConfig } from "@/config/site";
 import { ReadingProgressBar } from "@/components/blog/ReadingProgressBar";
 import { PostFeedback } from "@/components/blog/PostFeedback";
 import { SiteCreatedBy } from "@/components/blog/SiteCreatedBy";
+import { getDisplaySettings } from "@/services/settings/display";
 import {
   Calendar,
   Clock,
@@ -125,6 +126,7 @@ export default async function BlogPostPage({
   const faqJsonLd = generateFaqJsonLd(faqs);
 
   const imageUrl = getCoverImageUrl(post);
+  const displaySettings = await getDisplaySettings().catch(() => ({ showPrimarySources: false }));
 
   return (
     <main className="py-8 sm:py-12 relative">
@@ -267,8 +269,8 @@ export default async function BlogPostPage({
             </section>
           )}
 
-          {/* Primary Research Sources */}
-          {post.sources && post.sources.length > 0 && (
+          {/* Primary Research Sources (Conditional via Admin Toggle) */}
+          {displaySettings.showPrimarySources && post.sources && post.sources.length > 0 && (
             <section
               aria-labelledby="sources-heading"
               className="my-10 p-6 rounded-2xl bg-surface-muted/50 border border-border"
