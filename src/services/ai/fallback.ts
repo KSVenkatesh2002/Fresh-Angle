@@ -109,6 +109,7 @@ Please output ONLY a valid, corrected JSON object complying strictly with the re
       prompt: repairPrompt,
       json: true,
       temperature: 0.2,
+      maxTokens: options.maxTokens,
     });
 
     parsedData = this.tryParseAndValidate(result.text, schema);

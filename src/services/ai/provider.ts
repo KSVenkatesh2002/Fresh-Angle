@@ -3,6 +3,7 @@ export interface GenerateTextOptions {
   prompt: string;
   json?: boolean;
   temperature?: number;
+  maxTokens?: number;
 }
 
 export interface AiGenerationResult {

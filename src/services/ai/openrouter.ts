@@ -66,6 +66,7 @@ export class OpenRouterProvider implements AiProvider {
             messages,
             temperature: options.temperature ?? 0.7,
             response_format: options.json ? { type: "json_object" } : undefined,
+            max_tokens: options.maxTokens ?? 8192,
           }),
           timeoutMs: PIPELINE_CONFIG.limits.aiTimeoutMs,
         },

@@ -64,12 +64,13 @@ export class GeminiProvider implements AiProvider {
             messages,
             temperature: options.temperature ?? 0.7,
             response_format: options.json ? { type: "json_object" } : undefined,
+            max_tokens: options.maxTokens ?? 8192,
           }),
           timeoutMs: PIPELINE_CONFIG.limits.aiTimeoutMs,
         },
         {
-          retries: PIPELINE_CONFIG.limits.maxRetries,
-          backoffMs: 2000,
+          retries: 4,
+          backoffMs: 2500,
         },
       );
 

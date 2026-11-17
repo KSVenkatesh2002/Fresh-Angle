@@ -35,6 +35,7 @@ export async function stepReview(
         system: SYSTEM_EDITORIAL_PERSONA,
         prompt,
         temperature: 0.3,
+        maxTokens: 12288,
       },
       postReviewSchema,
     );

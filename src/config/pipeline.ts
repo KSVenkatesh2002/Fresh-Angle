@@ -33,7 +33,7 @@ export const PIPELINE_CONFIG = {
     coverHeight: 630,
     maxCoverSizeBytes: 125 * 1024, // 125KB target
     httpTimeoutMs: 15000, // 15s timeout
-    aiTimeoutMs: 60000, // 60s timeout for AI generation
+    aiTimeoutMs: 90000, // 90s timeout for AI generation
     maxRetries: 3,
   } as PipelineLimits,
   similarityThreshold: 0.45, // Jaccard / Levenshtein duplicate topic rejection threshold

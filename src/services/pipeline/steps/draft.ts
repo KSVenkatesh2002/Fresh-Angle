@@ -31,6 +31,7 @@ export async function stepDraft(
     system: SYSTEM_EDITORIAL_PERSONA,
     prompt,
     temperature: 0.6,
+    maxTokens: 8192,
   });
 
   console.log(

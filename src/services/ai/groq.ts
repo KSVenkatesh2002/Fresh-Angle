@@ -63,6 +63,7 @@ export class GroqProvider implements AiProvider {
             messages,
             temperature: options.temperature ?? 0.7,
             response_format: options.json ? { type: "json_object" } : undefined,
+            max_tokens: options.maxTokens ?? 16384,
           }),
           timeoutMs: PIPELINE_CONFIG.limits.aiTimeoutMs,
         },
