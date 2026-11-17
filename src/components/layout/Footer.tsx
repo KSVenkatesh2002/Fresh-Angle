@@ -3,16 +3,59 @@ import Link from "next/link";
 import Image from "next/image";
 import { siteConfig } from "@/config/site";
 import { Container } from "./Container";
-import { Sparkles, ExternalLink } from "lucide-react";
+import { Sparkles, ExternalLink, Send } from "lucide-react";
 import { getDisplaySettings } from "@/services/settings/display";
 
 export async function Footer(): Promise<React.JSX.Element> {
   const currentYear = new Date().getFullYear();
-  const displaySettings = await getDisplaySettings().catch(() => ({ showDeveloperFooter: false }));
+  const displaySettings = await getDisplaySettings().catch(() => ({
+    showDeveloperFooter: false,
+    showTelegramJoin: true,
+    telegramChannelUrl: "https://t.me/freshangle_blog",
+  }));
+
+  const telegramUrl =
+    displaySettings.telegramChannelUrl?.trim() || "https://t.me/freshangle_blog";
 
   return (
     <footer className="w-full border-t border-border bg-surface-muted/50 mt-20 transition-colors">
       <Container>
+        {/* Telegram Community Join Banner (Conditional via Admin Toggle) */}
+        {displaySettings.showTelegramJoin && (
+          <div className="pt-10 pb-4 border-b border-border/60">
+            <div className="p-6 rounded-2xl bg-surface border border-border shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+              <div className="flex items-start sm:items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Send className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-foreground">
+                      Join Fresh Angle on Telegram
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      Community
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground-muted max-w-xl">
+                    Get real-time breaking tech dispatches, frontier AI papers, and publication alerts delivered directly to your Telegram feed.
+                  </p>
+                </div>
+              </div>
+              <a
+                href={telegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-opacity shrink-0 shadow-sm"
+              >
+                <Send className="w-4 h-4" />
+                <span>Join Telegram Channel</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        )}
+
         <div className="py-12 md:py-16 grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand & Creator Profile */}
           <div className="md:col-span-2 space-y-4">

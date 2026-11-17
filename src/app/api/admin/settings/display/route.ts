@@ -12,6 +12,8 @@ const updateSchema = z.object({
   showDeveloperAboutPage: z.boolean().optional(),
   showPrimarySources: z.boolean().optional(),
   showEditorialAuthor: z.boolean().optional(),
+  showTelegramJoin: z.boolean().optional(),
+  telegramChannelUrl: z.string().optional(),
 });
 
 export async function GET(): Promise<NextResponse> {

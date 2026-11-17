@@ -8,6 +8,8 @@ export interface DisplaySettingsConfig {
   showDeveloperAboutPage: boolean;
   showPrimarySources: boolean;
   showEditorialAuthor: boolean;
+  showTelegramJoin: boolean;
+  telegramChannelUrl?: string;
 }
 
 export const DEFAULT_DISPLAY_SETTINGS: DisplaySettingsConfig = {
@@ -16,6 +18,8 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettingsConfig = {
   showDeveloperAboutPage: false, // Default turned off as requested
   showPrimarySources: false, // Default turned off as requested
   showEditorialAuthor: false, // Default turned off as requested
+  showTelegramJoin: true, // Default turned on for community channel join
+  telegramChannelUrl: "https://t.me/freshangle_blog",
 };
 
 const DISPLAY_SETTINGS_KEY = "site_display_preferences";

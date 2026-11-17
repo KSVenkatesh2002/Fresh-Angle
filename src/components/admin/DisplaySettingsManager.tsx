@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { DisplaySettingsConfig } from "@/services/settings/display";
-import { Sliders, Check, AlertTriangle, User, ExternalLink, BookOpen, Layers, UserCheck } from "lucide-react";
+import { Sliders, Check, AlertTriangle, User, ExternalLink, BookOpen, Layers, UserCheck, Send } from "lucide-react";
 
 interface DisplaySettingsManagerProps {
   initialSettings: DisplaySettingsConfig;
@@ -18,10 +18,25 @@ export function DisplaySettingsManager({
     text: string;
   } | null>(null);
 
-  const handleToggle = (key: keyof DisplaySettingsConfig) => {
+  const handleToggle = (
+    key:
+      | "showDeveloperFooter"
+      | "showDeveloperPostCard"
+      | "showDeveloperAboutPage"
+      | "showPrimarySources"
+      | "showEditorialAuthor"
+      | "showTelegramJoin",
+  ) => {
     setSettings((prev) => ({
       ...prev,
       [key]: !prev[key],
+    }));
+  };
+
+  const handleUrlChange = (val: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      telegramChannelUrl: val,
     }));
   };
 
@@ -225,6 +240,7 @@ export function DisplaySettingsManager({
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                 settings.showEditorialAuthor ? "bg-primary" : "bg-border"
               }`}
+              title={settings.showEditorialAuthor ? "Disable Editorial Author" : "Enable Editorial Author"}
             >
               <span
                 className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
@@ -232,6 +248,52 @@ export function DisplaySettingsManager({
                 }`}
               />
             </button>
+          </div>
+
+          {/* Telegram Channel Join Button on Site Toggle */}
+          <div className="p-4 rounded-xl bg-surface-muted/50 border border-border flex flex-col justify-between gap-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-bold text-foreground">
+                    Join Telegram Channel Button on Site
+                  </span>
+                </div>
+                <p className="text-[11px] text-foreground-muted">
+                  Displays a &quot;Join Telegram Channel&quot; button in the site header, mobile navigation drawer, and footer community banner.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggle("showTelegramJoin")}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  settings.showTelegramJoin ? "bg-primary" : "bg-border"
+                }`}
+                title={settings.showTelegramJoin ? "Disable Telegram Join Button" : "Enable Telegram Join Button"}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
+                    settings.showTelegramJoin ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {settings.showTelegramJoin && (
+              <div className="pt-2 border-t border-border/60">
+                <label className="block text-[11px] font-medium text-foreground-muted mb-1">
+                  Telegram Channel Invite Link
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://t.me/freshangle_blog"
+                  value={settings.telegramChannelUrl || ""}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-surface border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

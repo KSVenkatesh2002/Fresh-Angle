@@ -5,13 +5,14 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavLink } from "@/config/site";
-import { Menu, X, ChevronRight } from "lucide-react";
+import { Menu, X, ChevronRight, Send } from "lucide-react";
 
 interface MobileNavProps {
   navLinks: readonly NavLink[];
+  telegramUrl?: string;
 }
 
-export function MobileNav({ navLinks }: MobileNavProps): React.JSX.Element {
+export function MobileNav({ navLinks, telegramUrl }: MobileNavProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -74,6 +75,21 @@ export function MobileNav({ navLinks }: MobileNavProps): React.JSX.Element {
           );
         })}
       </nav>
+
+      {telegramUrl && (
+        <div className="pt-6 mt-6 border-t border-border">
+          <a
+            href={telegramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-sm hover:opacity-90 transition-opacity"
+          >
+            <Send className="w-4 h-4" />
+            <span>Join Telegram Channel</span>
+          </a>
+        </div>
+      )}
     </div>
   ) : null;
 

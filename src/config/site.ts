@@ -34,6 +34,7 @@ export interface SiteConfig {
   readonly social: {
     readonly x?: string;
     readonly github?: string;
+    readonly telegram?: string;
     readonly rss: string;
   };
   readonly postsPerPage: number;
@@ -106,6 +107,7 @@ export const siteConfig: SiteConfig = {
   social: {
     x: "https://x.com/freshangle_ai",
     github: "https://github.com/KSVenkatesh2002/Fresh-Angle",
+    telegram: "https://t.me/freshangle_blog",
     rss: "/feed.xml",
   },
   postsPerPage: 12,

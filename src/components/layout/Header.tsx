@@ -5,9 +5,18 @@ import { Container } from "./Container";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { HeaderSearch } from "./HeaderSearch";
 import { MobileNav } from "./MobileNav";
-import { Sparkles, Rss } from "lucide-react";
+import { Sparkles, Rss, Send } from "lucide-react";
+import { getDisplaySettings } from "@/services/settings/display";
 
-export function Header(): React.JSX.Element {
+export async function Header(): Promise<React.JSX.Element> {
+  const displaySettings = await getDisplaySettings().catch(() => ({
+    showTelegramJoin: true,
+    telegramChannelUrl: "https://t.me/freshangle_blog",
+  }));
+
+  const telegramUrl =
+    displaySettings.telegramChannelUrl?.trim() || "https://t.me/freshangle_blog";
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-surface/85 backdrop-blur-md transition-colors">
       <Container>
@@ -48,6 +57,32 @@ export function Header(): React.JSX.Element {
           <div className="flex items-center gap-2">
             <HeaderSearch />
 
+            {displaySettings.showTelegramJoin && (
+              <>
+                <a
+                  href={telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Join Telegram Channel"
+                  title="Join Telegram Channel"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Join Telegram</span>
+                </a>
+                <a
+                  href={telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Join Telegram Channel"
+                  title="Join Telegram Channel"
+                  className="sm:hidden w-9 h-9 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Send className="w-4 h-4" />
+                </a>
+              </>
+            )}
+
             <Link
               href="/feed.xml"
               target="_blank"
@@ -61,7 +96,10 @@ export function Header(): React.JSX.Element {
 
             <ThemeToggle />
 
-            <MobileNav navLinks={siteConfig.navLinks} />
+            <MobileNav
+              navLinks={siteConfig.navLinks}
+              telegramUrl={displaySettings.showTelegramJoin ? telegramUrl : undefined}
+            />
           </div>
         </div>
       </Container>
