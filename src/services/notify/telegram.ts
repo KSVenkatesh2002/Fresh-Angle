@@ -4,6 +4,8 @@ import { getNotificationSettings } from "@/services/notify/settings";
 
 export interface TelegramOptions {
   disableNotification?: boolean;
+  chatId?: string;
+  threadId?: string | number;
 }
 
 export async function sendTelegramMessage(
@@ -11,10 +13,10 @@ export async function sendTelegramMessage(
   options: TelegramOptions = {},
 ): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  const threadId = process.env.TELEGRAM_THREAD_ID;
+  const targetChatId = options.chatId || process.env.TELEGRAM_CHAT_ID;
+  const targetThreadId = options.threadId ?? process.env.TELEGRAM_THREAD_ID;
 
-  if (!token || !chatId) {
+  if (!token || !targetChatId) {
     return false;
   }
 
@@ -22,15 +24,15 @@ export async function sendTelegramMessage(
 
   try {
     const body: Record<string, unknown> = {
-      chat_id: chatId,
+      chat_id: targetChatId,
       text,
       parse_mode: "HTML",
       disable_web_page_preview: false,
       disable_notification: options.disableNotification ?? false,
     };
 
-    if (threadId) {
-      body.message_thread_id = parseInt(threadId, 10);
+    if (targetThreadId) {
+      body.message_thread_id = typeof targetThreadId === "string" ? parseInt(targetThreadId, 10) : targetThreadId;
     }
 
     const res = await fetchWithRetry(
@@ -63,35 +65,59 @@ export async function sendPostPublishedNotification(notif: {
   warnings?: string[];
 }): Promise<boolean> {
   const settings = await getNotificationSettings();
-  if (settings.postPublished === "disabled") {
-    return true;
+  let adminResult = true;
+
+  // 1. Admin channel notification
+  if (settings.postPublished !== "disabled") {
+    const triggerLabel = notif.triggerSource === "scheduled"
+      ? `⏰ Scheduled Slot${notif.slotTime ? ` (${notif.slotTime})` : ""}`
+      : notif.triggerSource === "manual"
+        ? `⚡ Manual Admin Trigger (Generate Now)`
+        : notif.triggerSource || "Autonomous Automation";
+
+    let text =
+      `[${siteConfig.name}] ✅ <b>Post Published</b>\n\n` +
+      `📰 <a href="${notif.url}">${notif.title}</a>\n` +
+      `🎯 <b>Trigger:</b> ${triggerLabel}\n` +
+      `📁 <b>Track:</b> ${notif.category}\n` +
+      `🤖 <b>Model:</b> ${notif.provider} (${notif.model})\n` +
+      (notif.readingTimeMin
+        ? `⏱️ <b>Reading Time:</b> ${notif.readingTimeMin} min\n`
+        : "") +
+      `🔗 ${notif.url}`;
+
+    if (notif.warnings && notif.warnings.length > 0) {
+      text +=
+        `\n\n⚠️ <b>Warnings:</b>\n` +
+        notif.warnings.map((w) => `• ${w}`).join("\n");
+    }
+
+    const isSilent = settings.postPublished === "silent";
+    adminResult = await sendTelegramMessage(text, { disableNotification: isSilent });
   }
 
-  const triggerLabel = notif.triggerSource === "scheduled"
-    ? `⏰ Scheduled Slot${notif.slotTime ? ` (${notif.slotTime})` : ""}`
-    : notif.triggerSource === "manual"
-      ? `⚡ Manual Admin Trigger (Generate Now)`
-      : notif.triggerSource || "Autonomous Automation";
+  // 2. Public Channel / All Users Broadcast (Only for post published)
+  if (settings.publicChannelBroadcast) {
+    const publicChannelId = settings.publicChannelId?.trim() || process.env.TELEGRAM_PUBLIC_CHANNEL_ID;
+    if (publicChannelId) {
+      const publicBroadcastText =
+        `📰 <b>${notif.title}</b>\n\n` +
+        `📁 <i>${notif.category}</i>` +
+        (notif.readingTimeMin ? ` • ⏱️ ${notif.readingTimeMin} min read` : "") +
+        `\n\nRead the full dispatch:\n👉 ${notif.url}`;
 
-  let text =
-    `[${siteConfig.name}] ✅ <b>Post Published</b>\n\n` +
-    `📰 <a href="${notif.url}">${notif.title}</a>\n` +
-    `🎯 <b>Trigger:</b> ${triggerLabel}\n` +
-    `📁 <b>Track:</b> ${notif.category}\n` +
-    `🤖 <b>Model:</b> ${notif.provider} (${notif.model})\n` +
-    (notif.readingTimeMin
-      ? `⏱️ <b>Reading Time:</b> ${notif.readingTimeMin} min\n`
-      : "") +
-    `🔗 ${notif.url}`;
-
-  if (notif.warnings && notif.warnings.length > 0) {
-    text +=
-      `\n\n⚠️ <b>Warnings:</b>\n` +
-      notif.warnings.map((w) => `• ${w}`).join("\n");
+      try {
+        await sendTelegramMessage(publicBroadcastText, {
+          chatId: publicChannelId,
+          disableNotification: false,
+        });
+      } catch (pubErr) {
+        console.warn("⚠️ [Telegram Public Channel Broadcast] Failed:", pubErr);
+      }
+    }
   }
 
-  const isSilent = settings.postPublished === "silent";
-  return sendTelegramMessage(text, { disableNotification: isSilent });
+  return adminResult;
 }
 
 export async function sendPipelineFailureNotification(

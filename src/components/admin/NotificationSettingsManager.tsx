@@ -5,7 +5,7 @@ import {
   NotificationSettingsConfig,
   NotificationChannelMode,
 } from "@/services/notify/settings";
-import { Bell, BellOff, Volume2, VolumeX, Check, AlertTriangle } from "lucide-react";
+import { Bell, BellOff, Volume2, VolumeX, Check, AlertTriangle, Users } from "lucide-react";
 
 interface NotificationSettingsManagerProps {
   initialSettings: NotificationSettingsConfig;
@@ -80,6 +80,13 @@ export function NotificationSettingsManager({
     setSettings((prev) => ({
       ...prev,
       [key]: mode,
+    }));
+  };
+
+  const handleTogglePublicBroadcast = () => {
+    setSettings((prev) => ({
+      ...prev,
+      publicChannelBroadcast: !prev.publicChannelBroadcast,
     }));
   };
 
@@ -217,6 +224,87 @@ export function NotificationSettingsManager({
               </div>
             );
           })}
+        </div>
+
+        {/* Public Telegram Channel Broadcast for All Users (Post Published Only) */}
+        <div className="pt-6 border-t border-border space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-surface-muted/60 border border-border">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-foreground">
+                  Public Telegram Channel Broadcast (All Users / Readers)
+                </span>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary font-bold">
+                  Post Published Only
+                </span>
+              </div>
+              <p className="text-xs text-foreground-muted max-w-xl">
+                Automatically broadcasts every newly published dispatch to your public Telegram channel or group so all readers and community members receive real-time publication alerts.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleTogglePublicBroadcast}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                settings.publicChannelBroadcast ? "bg-primary" : "bg-border"
+              }`}
+              title={settings.publicChannelBroadcast ? "Disable Public Broadcast" : "Enable Public Broadcast"}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
+                  settings.publicChannelBroadcast ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {settings.publicChannelBroadcast && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-surface border border-border text-xs">
+              <div>
+                <label className="block text-foreground-muted font-medium mb-1">
+                  Public Channel Chat ID / Username
+                </label>
+                <input
+                  type="text"
+                  placeholder="@your_channel or -100xxxxxxxxxx"
+                  value={settings.publicChannelId || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      publicChannelId: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <p className="text-[11px] text-foreground-muted mt-1">
+                  Make sure your bot is added as an <strong>Administrator</strong> with post messages permission.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-foreground-muted font-medium mb-1">
+                  Public Channel Link (Optional for footer/site link)
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://t.me/your_channel"
+                  value={settings.publicChannelUrl || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      publicChannelUrl: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <p className="text-[11px] text-foreground-muted mt-1">
+                  Public invitation link for readers to join your Telegram channel.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

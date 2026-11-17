@@ -17,6 +17,9 @@ const updateSchema = z.object({
   quotaUsageAlerts: modeSchema.optional(),
   dbStorageAlerts: modeSchema.optional(),
   contactFormAlerts: modeSchema.optional(),
+  publicChannelBroadcast: z.boolean().optional(),
+  publicChannelId: z.string().optional(),
+  publicChannelUrl: z.string().optional(),
 });
 
 export async function GET(): Promise<NextResponse> {

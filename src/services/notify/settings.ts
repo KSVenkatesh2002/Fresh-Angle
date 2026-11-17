@@ -12,6 +12,10 @@ export interface NotificationSettingsConfig {
   quotaUsageAlerts: NotificationChannelMode;
   dbStorageAlerts: NotificationChannelMode;
   contactFormAlerts: NotificationChannelMode;
+  // Dedicated toggle and config for public channel broadcasts to all users
+  publicChannelBroadcast: boolean;
+  publicChannelId?: string;
+  publicChannelUrl?: string;
 }
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsConfig = {
@@ -22,6 +26,9 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsConfig = {
   quotaUsageAlerts: "loud",
   dbStorageAlerts: "loud",
   contactFormAlerts: "loud",
+  publicChannelBroadcast: false,
+  publicChannelId: "",
+  publicChannelUrl: "",
 };
 
 const SETTINGS_KEY = "telegram_notification_preferences";
