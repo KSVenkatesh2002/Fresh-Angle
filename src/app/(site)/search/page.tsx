@@ -41,9 +41,27 @@ export default async function SearchPage({
 }): Promise<React.JSX.Element> {
   const params = await searchParams;
   const query = params.q?.trim() || "";
-  const selectedCategory = params.category || "";
-  const selectedSort = params.sort || (query ? "relevance" : "newest");
-  const currentPage = parseInt(params.page || "1", 10) || 1;
+  const selectedCategory = params.category?.trim() || "";
+
+  // Sanitize sort: strip any accidental path pollution like "newest/page/5"
+  const rawSort = (params.sort || "").replace(/\/page\/\d+.*$/, "").trim();
+  const selectedSort =
+    rawSort === "relevance" || rawSort === "newest" || rawSort === "oldest"
+      ? (rawSort as "relevance" | "newest" | "oldest")
+      : (query ? "relevance" : "newest");
+
+  // Sanitize page: strip any non-numeric or path segments
+  const rawPage = (params.page || "").replace(/\/.*$/, "").trim();
+  const currentPage = Math.max(1, parseInt(rawPage || "1", 10) || 1);
+
+  // Build clean search pagination base query string
+  const paginationParams = new URLSearchParams();
+  if (query) paginationParams.set("q", query);
+  if (selectedCategory) paginationParams.set("category", selectedCategory);
+  if (selectedSort) paginationParams.set("sort", selectedSort);
+  const searchPaginationBase = paginationParams.toString()
+    ? `/search?${paginationParams.toString()}`
+    : "/search";
 
   const [categoriesList, searchResult] = await Promise.all([
     getAllCategories().catch(() => []),
@@ -151,7 +169,8 @@ export default async function SearchPage({
           <Pagination
             currentPage={searchResult.page}
             totalPages={searchResult.totalPages}
-            basePath={`/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(selectedCategory)}&sort=${selectedSort}`}
+            basePath={searchPaginationBase}
+            mode="query"
           />
         )}
       </Container>

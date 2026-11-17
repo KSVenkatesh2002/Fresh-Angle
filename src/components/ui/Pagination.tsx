@@ -1,24 +1,68 @@
 import React from "react";
 import Link from "next/link";
 
+export interface PaginationUrlOptions {
+  basePath: string;
+  page: number;
+  mode?: "path" | "query";
+  queryParam?: string;
+}
+
+export function getPaginationUrl({
+  basePath,
+  page,
+  mode,
+  queryParam = "page",
+}: PaginationUrlOptions): string {
+  const isQueryMode = mode === "query" || basePath.includes("?");
+
+  if (isQueryMode) {
+    const [rawPath, rawSearch] = basePath.split("?");
+    const cleanPath = rawPath.replace(/\/page\/\d+.*$/, "").replace(/\/$/, "");
+    const searchParams = new URLSearchParams(rawSearch || "");
+
+    // Strip any polluted /page/ from existing query parameters
+    for (const [key, value] of Array.from(searchParams.entries())) {
+      if (value.includes("/page/")) {
+        searchParams.set(key, value.replace(/\/page\/\d+.*$/, ""));
+      }
+    }
+
+    if (page === 1) {
+      searchParams.delete(queryParam);
+    } else {
+      searchParams.set(queryParam, String(page));
+    }
+
+    const queryString = searchParams.toString();
+    const resolvedPath = cleanPath || "/";
+    return queryString ? `${resolvedPath}?${queryString}` : resolvedPath;
+  }
+
+  // Path-based pagination: e.g. /blog -> /blog/page/2
+  const cleanBase = basePath.replace(/\/page\/\d+.*$/, "").replace(/\/$/, "");
+  return page === 1 ? cleanBase || "/" : `${cleanBase}/page/${page}`;
+}
+
 export interface PaginationProps {
   currentPage: number;
   totalPages: number;
   basePath: string;
+  mode?: "path" | "query";
+  queryParam?: string;
 }
 
 export function Pagination({
   currentPage,
   totalPages,
   basePath,
+  mode,
+  queryParam = "page",
 }: PaginationProps): React.JSX.Element | null {
   if (totalPages <= 1) return null;
 
-  const getPageUrl = (page: number): string => {
-    // Strip trailing slash if present
-    const cleanBase = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
-    return page === 1 ? cleanBase || "/" : `${cleanBase}/page/${page}`;
-  };
+  const getPageUrl = (page: number): string =>
+    getPaginationUrl({ basePath, page, mode, queryParam });
 
   const pages: number[] = [];
   const maxVisiblePages = 5;

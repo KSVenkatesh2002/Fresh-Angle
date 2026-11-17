@@ -90,3 +90,4 @@ describe("DisplaySettings & Telegram Join Toggle", () => {
     expect((await getDisplaySettings()).showTelegramJoin).toBe(true);
   });
 });
+
