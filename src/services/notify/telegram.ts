@@ -113,10 +113,12 @@ export async function sendPostPublishedNotification(notif: {
         (notif.readingTimeMin ? ` • ⏱️ ${notif.readingTimeMin} min read` : "") +
         `\n\nRead the full dispatch:\n👉 ${notif.url}`;
 
+      const isPublicSilent = settings.publicChannelSound === "silent";
+
       try {
         await sendTelegramMessage(publicBroadcastText, {
           chatId: publicChannelId,
-          disableNotification: false,
+          disableNotification: isPublicSilent,
         });
       } catch (pubErr) {
         console.warn("⚠️ [Telegram Public Channel Broadcast] Failed:", pubErr);

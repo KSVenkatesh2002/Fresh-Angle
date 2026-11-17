@@ -5,7 +5,7 @@ import {
   NotificationSettingsConfig,
   NotificationChannelMode,
 } from "@/services/notify/settings";
-import { Bell, BellOff, Volume2, VolumeX, Check, AlertTriangle, Users } from "lucide-react";
+import { Bell, BellOff, Volume2, VolumeX, Check, AlertTriangle, Users, Send } from "lucide-react";
 
 interface NotificationSettingsManagerProps {
   initialSettings: NotificationSettingsConfig;
@@ -68,6 +68,7 @@ export function NotificationSettingsManager({
 }: NotificationSettingsManagerProps): React.JSX.Element {
   const [settings, setSettings] = useState<NotificationSettingsConfig>(initialSettings);
   const [saving, setSaving] = useState(false);
+  const [testingBroadcast, setTestingBroadcast] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{
     type: "success" | "error";
     text: string;
@@ -88,6 +89,33 @@ export function NotificationSettingsManager({
       ...prev,
       publicChannelBroadcast: !prev.publicChannelBroadcast,
     }));
+  };
+
+  const handleTestBroadcast = async () => {
+    setTestingBroadcast(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/admin/notifications/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: "public_channel" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to deliver test message");
+      }
+      setStatusMsg({
+        type: "success",
+        text: data.message || "Test notification delivered to Telegram group successfully!",
+      });
+    } catch (err) {
+      setStatusMsg({
+        type: "error",
+        text: (err as Error).message,
+      });
+    } finally {
+      setTestingBroadcast(false);
+    }
   };
 
   const handleSave = async () => {
@@ -261,47 +289,92 @@ export function NotificationSettingsManager({
           </div>
 
           {settings.publicChannelBroadcast && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-surface border border-border text-xs">
-              <div>
-                <label className="block text-foreground-muted font-medium mb-1">
-                  Public Channel Chat ID / Username
-                </label>
-                <input
-                  type="text"
-                  placeholder="@your_channel or -100xxxxxxxxxx"
-                  value={settings.publicChannelId || ""}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      publicChannelId: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <p className="text-[11px] text-foreground-muted mt-1">
-                  Make sure your bot is added as an <strong>Administrator</strong> with post messages permission.
-                </p>
+            <div className="space-y-4 p-4 rounded-xl bg-surface border border-border text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-foreground-muted font-medium mb-1">
+                    Public Channel Chat ID / Username
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="@your_channel or -100xxxxxxxxxx"
+                    value={settings.publicChannelId || ""}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        publicChannelId: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                  <p className="text-[11px] text-foreground-muted mt-1">
+                    Make sure your bot is added as an <strong>Administrator</strong> with post messages permission.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-foreground-muted font-medium mb-1">
+                    Public Channel Link (Optional for footer/site link)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://t.me/your_channel"
+                    value={settings.publicChannelUrl || ""}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        publicChannelUrl: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                  <p className="text-[11px] text-foreground-muted mt-1">
+                    Public invitation link for readers to join your Telegram channel.
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-foreground-muted font-medium mb-1">
-                  Public Channel Link (Optional for footer/site link)
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://t.me/your_channel"
-                  value={settings.publicChannelUrl || ""}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      publicChannelUrl: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <p className="text-[11px] text-foreground-muted mt-1">
-                  Public invitation link for readers to join your Telegram channel.
-                </p>
+              {/* Broadcast Sound & Test Trigger Row */}
+              <div className="pt-3 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-foreground-muted font-medium">Broadcast Sound:</span>
+                  <div className="inline-flex rounded-lg border border-border bg-surface-muted p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setSettings((prev) => ({ ...prev, publicChannelSound: "loud" }))}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors ${
+                        settings.publicChannelSound !== "silent"
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "text-foreground-muted hover:text-foreground"
+                      }`}
+                    >
+                      <Volume2 className="w-3 h-3" />
+                      <span>Loud (Sound)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSettings((prev) => ({ ...prev, publicChannelSound: "silent" }))}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors ${
+                        settings.publicChannelSound === "silent"
+                          ? "bg-primary/20 text-primary border border-primary/40 font-bold"
+                          : "text-foreground-muted hover:text-foreground"
+                      }`}
+                    >
+                      <VolumeX className="w-3 h-3" />
+                      <span>Silent (No Ring)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleTestBroadcast}
+                  disabled={testingBroadcast || !settings.publicChannelId}
+                  className="px-3 py-1.5 rounded-lg border border-border bg-surface-muted hover:bg-surface text-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5 text-primary" />
+                  <span>{testingBroadcast ? "Sending Test..." : "Send Test Alert to Group"}</span>
+                </button>
               </div>
             </div>
           )}

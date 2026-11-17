@@ -20,6 +20,7 @@ const updateSchema = z.object({
   publicChannelBroadcast: z.boolean().optional(),
   publicChannelId: z.string().optional(),
   publicChannelUrl: z.string().optional(),
+  publicChannelSound: z.enum(["loud", "silent"]).optional(),
 });
 
 export async function GET(): Promise<NextResponse> {

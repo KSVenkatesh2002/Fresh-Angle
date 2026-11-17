@@ -16,10 +16,11 @@ export interface NotificationSettingsConfig {
   publicChannelBroadcast: boolean;
   publicChannelId?: string;
   publicChannelUrl?: string;
+  publicChannelSound?: "loud" | "silent";
 }
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsConfig = {
-  postPublished: "silent",
+  postPublished: "loud",
   postDraftTest: "silent",
   pipelineFailure: "loud",
   schedulerDisruption: "loud",
@@ -29,6 +30,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsConfig = {
   publicChannelBroadcast: false,
   publicChannelId: "",
   publicChannelUrl: "",
+  publicChannelSound: "loud",
 };
 
 const SETTINGS_KEY = "telegram_notification_preferences";
