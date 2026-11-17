@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { DisplaySettingsConfig } from "@/services/settings/display";
-import { Sliders, Check, AlertTriangle, User, ExternalLink, BookOpen, Layers } from "lucide-react";
+import { Sliders, Check, AlertTriangle, User, ExternalLink, BookOpen, Layers, UserCheck } from "lucide-react";
 
 interface DisplaySettingsManagerProps {
   initialSettings: DisplaySettingsConfig;
@@ -201,6 +201,34 @@ export function DisplaySettingsManager({
               <span
                 className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
                   settings.showPrimarySources ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Editorial Author Attribution Toggle */}
+          <div className="p-4 rounded-xl bg-surface-muted/50 border border-border flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-foreground">
+                  Editorial Author Attribution on Post Page
+                </span>
+              </div>
+              <p className="text-[11px] text-foreground-muted">
+                Displays the author attribution block in the header of individual blog posts.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleToggle("showEditorialAuthor")}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                settings.showEditorialAuthor ? "bg-primary" : "bg-border"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
+                  settings.showEditorialAuthor ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>

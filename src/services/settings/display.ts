@@ -7,6 +7,7 @@ export interface DisplaySettingsConfig {
   showDeveloperPostCard: boolean;
   showDeveloperAboutPage: boolean;
   showPrimarySources: boolean;
+  showEditorialAuthor: boolean;
 }
 
 export const DEFAULT_DISPLAY_SETTINGS: DisplaySettingsConfig = {
@@ -14,6 +15,7 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettingsConfig = {
   showDeveloperPostCard: false, // Default turned off as requested
   showDeveloperAboutPage: false, // Default turned off as requested
   showPrimarySources: false, // Default turned off as requested
+  showEditorialAuthor: false, // Default turned off as requested
 };
 
 const DISPLAY_SETTINGS_KEY = "site_display_preferences";

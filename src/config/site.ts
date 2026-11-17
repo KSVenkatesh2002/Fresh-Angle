@@ -57,9 +57,9 @@ export const siteConfig: SiteConfig = {
       }
     : null,
   author: {
-    name: "Fresh Angle Editorial AI",
-    role: "Automated Research & Synthesis Engine",
-    bio: "An autonomous research system synthesizing peer-reviewed papers, engineering announcements, and industry dispatches into concise, factual briefings.",
+    name: "Fresh Angle Editorial Desk",
+    role: "Research & Editorial Desk",
+    bio: "An editorial research desk synthesizing peer-reviewed papers, engineering announcements, and industry dispatches into concise, factual briefings.",
     url: "https://freshangle.vercel.app/about",
   },
   navLinks: [

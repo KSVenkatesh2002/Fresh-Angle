@@ -14,7 +14,7 @@ export async function sendTelegramMessage(
 ): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const targetChatId = options.chatId || process.env.TELEGRAM_CHAT_ID;
-  const targetThreadId = options.threadId ?? process.env.TELEGRAM_THREAD_ID;
+  const targetThreadId = options.chatId ? options.threadId : (options.threadId ?? process.env.TELEGRAM_THREAD_ID);
 
   if (!token || !targetChatId) {
     return false;
@@ -45,6 +45,13 @@ export async function sendTelegramMessage(
       },
       { retries: 2, backoffMs: 1000 },
     );
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      console.warn(
+        `⚠️ [Telegram API Error] Status ${res.status} sending to ${targetChatId}: ${errBody}`,
+      );
+    }
 
     return res.ok;
   } catch (err: unknown) {

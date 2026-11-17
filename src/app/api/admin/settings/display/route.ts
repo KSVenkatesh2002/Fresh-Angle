@@ -11,6 +11,7 @@ const updateSchema = z.object({
   showDeveloperPostCard: z.boolean().optional(),
   showDeveloperAboutPage: z.boolean().optional(),
   showPrimarySources: z.boolean().optional(),
+  showEditorialAuthor: z.boolean().optional(),
 });
 
 export async function GET(): Promise<NextResponse> {

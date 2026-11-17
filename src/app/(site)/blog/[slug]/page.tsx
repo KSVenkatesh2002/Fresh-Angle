@@ -126,7 +126,13 @@ export default async function BlogPostPage({
   const faqJsonLd = generateFaqJsonLd(faqs);
 
   const imageUrl = getCoverImageUrl(post);
-  const displaySettings = await getDisplaySettings().catch(() => ({ showPrimarySources: false }));
+  const displaySettings = await getDisplaySettings().catch(() => ({
+    showPrimarySources: false,
+    showEditorialAuthor: false,
+    showDeveloperPostCard: false,
+    showDeveloperFooter: false,
+    showDeveloperAboutPage: false,
+  }));
 
   return (
     <main className="py-8 sm:py-12 relative">
@@ -192,20 +198,28 @@ export default async function BlogPostPage({
             </p>
 
             {/* Author Attribution & Share */}
-            <div className="py-4 border-y border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                  <UserCheck className="w-5 h-5" />
+            <div
+              className={`py-4 border-y border-border flex flex-col sm:flex-row sm:items-center gap-4 ${
+                displaySettings.showEditorialAuthor
+                  ? "justify-between"
+                  : "justify-end"
+              }`}
+            >
+              {displaySettings.showEditorialAuthor && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground leading-tight">
+                      {siteConfig.author.name}
+                    </p>
+                    <p className="text-xs text-foreground-muted">
+                      Editorial Research & Analysis
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {siteConfig.author.name}
-                  </p>
-                  <p className="text-xs text-foreground-muted">
-                    Autonomous Intelligence Synthesis
-                  </p>
-                </div>
-              </div>
+              )}
 
               <ShareButtons url={postUrl} title={post.title} />
             </div>
