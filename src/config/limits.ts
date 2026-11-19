@@ -7,11 +7,11 @@ export const LIMITS = {
   adminPageSize: 20,
 
   // Content Quality Gates
-  minWordCount: 700,
+  minWordCount: 850,
   targetWordCount: {
-    short: 800,
+    short: 900,
     medium: 1200,
-    long: 1800,
+    long: 1600,
   },
   minH2Headings: 3,
   maxH2Headings: 6,

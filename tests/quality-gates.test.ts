@@ -36,16 +36,25 @@ describe("Content Quality Gates Evaluation", () => {
   });
 
   it("passes comprehensive technical briefing meeting all criteria", () => {
-    const section1 = new Array(300).fill("transformer").join(" ");
-    const section2 = new Array(300).fill("attention").join(" ");
-    const section3 = new Array(200).fill("quantization").join(" ");
+    const section1 = new Array(350).fill("transformer").join(" ");
+    const section2 = new Array(350).fill("attention").join(" ");
+    const section3 = new Array(250).fill("quantization").join(" ");
+
+    const benchmarkTable = [
+      "| Benchmark Metric | Prior Generation | New Architecture | Delta |",
+      "| :--- | :--- | :--- | :--- |",
+      "| Throughput (tok/s) | 42 | 118 | +180% |",
+      "| MMLU-Pro Accuracy | 68.4% | 79.2% | +10.8% |",
+      "| Memory Footprint (VRAM) | 48GB | 24GB | -50% |",
+    ].join("\n");
 
     const markdown = [
-      "## Architectural Foundations",
+      "## Architectural Foundations and Data Pipelines",
       section1,
-      "## Empirical Benchmark Results",
+      "## Empirical Benchmark Results and Performance Comparison",
+      benchmarkTable,
       section2,
-      "## Key Takeaways and Implications",
+      "## Key Takeaways and Engineering Trade-offs",
       section3,
     ].join("\n\n");
 
@@ -60,5 +69,24 @@ describe("Content Quality Gates Evaluation", () => {
     expect(result.passed).toBe(true);
     expect(result.score).toBeGreaterThanOrEqual(80);
     expect(result.issues).toHaveLength(0);
+  });
+
+  it("penalizes missing benchmark comparison tables", () => {
+    const section = new Array(900).fill("architecture").join(" ");
+    const markdown = [
+      "## Architecture Overview",
+      section,
+      "## Key Takeaways",
+      "Key takeaways list here.",
+    ].join("\n\n");
+
+    const result = evaluateQualityGates({
+      title: "Deep Technical Exploration of Foundation Models",
+      excerpt: "Deep technical exploration of foundation models and distributed memory architectures.",
+      contentMd: markdown,
+      sourcesCount: 2,
+    });
+
+    expect(result.issues.some((i) => i.includes("Missing benchmark or metrics comparison table"))).toBe(true);
   });
 });

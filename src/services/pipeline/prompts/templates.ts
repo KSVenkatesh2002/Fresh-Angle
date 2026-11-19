@@ -40,7 +40,7 @@ export function buildDraftPrompt(
   sourcesText: string,
 ): string {
   return `
-Write the full blog post in clean, authoritative Markdown based on the approved outline and sources.
+Write the full technical dispatch in clean, authoritative, publication-ready Markdown based on the approved outline and sources.
 
 TOPIC: "${topic}"
 
@@ -50,16 +50,19 @@ ${outlineJson}
 SOURCES:
 ${sourcesText}
 
-WRITING INSTRUCTIONS:
-- Tone: Analytical, technical, direct, lucid.
-- Structure:
-  - Engaging opening introducing the development and its significance.
-  - H2 (##) and H3 (###) subheadings mirroring the outline.
-  - A dedicated "Key Takeaways" section.
-  - Clear explanations of technical trade-offs, architecture, or benchmark numbers (only if present in sources).
-  - A thoughtful conclusion on what this means for engineers and the industry.
-- Grounding: DO NOT invent numbers or statements. Every factual claim must originate from the provided sources.
-- Format: Return ONLY the raw Markdown text. Do NOT wrap in JSON.
+DEPTH & TECHNICAL RIGOR INSTRUCTIONS:
+- TARGET LENGTH: 900 to 1,400 words. Provide deep architectural and engineering substance, not a shallow summary.
+- TONE: Authoritative, engineering-focused, analytical, lucid. Write for staff ML engineers, distributed systems architects, and technical leaders.
+- MANDATORY CONTENT SECTIONS:
+  1. Introduction & Context: What breakthrough or system shift occurred, why existing paradigms fell short, and why this matters now.
+  2. System Architecture & Mechanics: Detailed explanation of internal mechanics, data pipelines, model topology (e.g. MoE routing, KV cache, speculative decoding, attention optimizations, or silicon interconnects).
+  3. Benchmark & Performance Comparison Table: MUST include a GitHub-flavored Markdown table comparing key metrics (latency, throughput, MMLU, GSM8K, VRAM, or memory bandwidth) against relevant baselines or prior generations.
+  4. Engineering Trade-offs & Production Realities: Practical considerations including deployment costs, hardware requirements, failure modes, and developer ergonomics.
+  5. Key Takeaways: High-density bulleted list of 3-5 crucial architectural conclusions.
+  6. Industry & Strategic Implications: What this unlocks for autonomous systems, enterprise deployment, or compute infrastructure over the next 12-24 months.
+- ORIGINALITY & SYNTHESIS: Synthesize all information in your own completely original words. Do not copy phrasing or sentence structures from the sources.
+- GROUNDING: Ground all quantitative numbers, benchmark scores, and claims strictly in the sources. Do not invent synthetic metrics.
+- FORMAT: Return ONLY the raw Markdown text. Do NOT wrap in JSON.
 `;
 }
 
@@ -69,7 +72,7 @@ export function buildReviewPrompt(
   sourcesText: string,
 ): string {
   return `
-Perform a rigorous editorial review of the following draft against the primary sources. Correct any unsupported claims, sharpen the prose, eliminate fluff, and construct SEO metadata.
+Perform a rigorous editorial review of the following technical draft against the primary sources. Correct any unsupported claims, sharpen the technical rigor, verify benchmark comparisons, eliminate conversational fluff, and construct SEO metadata.
 
 PRIMARY SOURCES:
 ${sourcesText}
@@ -77,12 +80,18 @@ ${sourcesText}
 DRAFT POST:
 ${draftMarkdown}
 
+EDITORIAL CRITERIA:
+1. Target length must be 900 to 1,400 words of rich technical depth.
+2. Ensure there is a Markdown comparison table (| Metric | Model A | Model B | Notes |) and a dedicated "Key Takeaways" section.
+3. Originality: Verify that the draft synthesizes concepts in fresh editorial language rather than copying source phrasing verbatim.
+4. Eliminate corporate clichés ("game changer", "delve into", "testament to", "in today's fast-paced world").
+
 OUTPUT REQUIREMENTS:
 Output a single valid JSON object matching this schema:
 {
   "title": "Compelling, punchy headline under 90 characters",
   "excerpt": "Crisp 2-3 sentence overview (under 250 characters)",
-  "contentMd": "Complete polished Markdown post incorporating all edits, sections, and conclusion",
+  "contentMd": "Complete polished Markdown post (900-1400 words) with Markdown comparison table, architecture breakdown, and Key Takeaways",
   "metaTitle": "Concise SEO title under 55 characters (strictly between 30 and 58 characters)",
   "metaDescription": "Actionable meta description under 150 characters (strictly between 60 and 150 characters)",
   "category": "Artificial Intelligence | Frontier Models & LLMs | Machine Learning | Hardware & Silicon",

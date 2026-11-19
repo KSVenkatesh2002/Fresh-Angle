@@ -66,7 +66,24 @@ export function evaluateQualityGates(params: {
     deductions += 15;
   }
 
-  // 4. Banned filler phrases
+  // 4. Benchmark Comparison Table
+  const hasTable = /\|.+\|[\r\n]+\|[-:| ]+\|/m.test(params.contentMd);
+  if (!hasTable) {
+    issues.push("Missing benchmark or metrics comparison table");
+    deductions += 15;
+  }
+
+  // 5. System Architecture & Trade-offs Analysis
+  const hasEngineeringAnalysis =
+    /(trade-off|architecture|mechanics|infrastructure|benchmarks?|throughput|latency|memory bandwidth)/i.test(
+      params.contentMd,
+    );
+  if (!hasEngineeringAnalysis) {
+    issues.push("Missing concrete engineering trade-offs or architectural analysis");
+    deductions += 10;
+  }
+
+  // 6. Banned filler phrases
   const lowerContent = params.contentMd.toLowerCase();
   for (const filler of BANNED_FILLERS) {
     if (lowerContent.includes(filler)) {
