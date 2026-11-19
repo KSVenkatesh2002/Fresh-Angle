@@ -20,26 +20,30 @@ export interface GenerateCoverOptions {
 
 /**
  * Uses Google Gemini (via AiFallbackChain) to expand a raw concept/title into a
- * visually rich, topic-tailored, and hallucination-free Flux-1 image prompt.
+ * visually rich, topic-tailored, and art-directed Flux-1 image prompt with complete creative freedom.
  */
 async function generateAiPrompt(rawPrompt: string, title?: string, category?: string): Promise<string> {
   const chain = new AiFallbackChain();
 
-  const system = `You are an award-winning creative art director and prompt engineer specializing in editorial 3D and macro art for Flux-1 Schnell.
-Given an article title and a concept, your job is to craft a single, unique, visually captivating image prompt for the cover image.
+  const system = `You are an award-winning creative art director and prompt engineer for cutting-edge editorial publications.
+Given an article title and concept, choose the single most meaningful visual medium and art direction for this specific article.
 
-RULES:
-1. Capture the unique core theme of the specific article (e.g. personal finance, home security, cloud GPU clusters, synthetic biology, agentic coding).
-2. DO NOT use generic semiconductor chips, circuit boards, or processors unless the article is explicitly about microchips or semiconductor manufacturing.
-3. Describe tangible physical materials, lighting, depth, and atmosphere (e.g. brushed titanium, frosted optical glass, architectural studio rim lighting, volumetric depth, Octane 3D render, 8k).
-4. Strictly NEVER include words, text, typography, letters, logos, brand names, UI screens, watermarks, or human faces.
+CREATIVE FREEDOM GUIDELINES:
+1. DELIBERATELY CHOOSE THE ART STYLE suited to this article:
+   - For hardware/semiconductors: macro die photography, engineering cutaway, industrial lab still-life, or extreme microscope cross-section.
+   - For frontier models/reasoning: cinematic documentary still, high-contrast monochrome editorial portrait, or conceptual physical installation.
+   - For algorithms/graph theory/code: fine-line technical blueprint, geometric line art, minimalist vector topology, or schematic diagram.
+   - For energy/datacenters: architectural photography, atmospheric dusk landscape, or cooling infrastructure perspective.
+2. DO NOT default to generic 3D abstract shapes, obsidian blocks, or dark monoliths.
+3. Specify tangible subjects, authentic lighting, composition, camera framing, and color palette.
+4. Strictly NEVER include words, text, typography, letters, logos, brand names, UI screens, watermarks, or distorted human faces.
 5. Output ONLY the prompt text in 1-2 detailed sentences without conversational preamble or quotes.`;
 
   const user = `Article Title: ${title || "Cutting-Edge Tech Perspective"}
 Category: ${category || "Artificial Intelligence"}
 Base Concept: ${rawPrompt}
 
-Optimized Flux-1 Image Prompt:`;
+Optimized Creative Image Prompt:`;
 
   try {
     const result = await chain.generateText({
@@ -86,7 +90,7 @@ export async function generateCloudflareCover(
     )
     .trim();
 
-  const refinedPrompt = `${sanitizedPrompt}, modern 3D editorial art, tactile premium materials, cinematic studio lighting, volumetric depth, octane render, 8k resolution, minimalist architectural composition, strictly no text, no words, no letters, no logos, no watermarks, no distorted faces`;
+  const refinedPrompt = `${sanitizedPrompt}, high resolution, masterpiece, cinematic lighting, strictly no text, no words, no letters, no logos, no watermarks, no distorted faces`;
 
   console.log(
     `🎨 [Cloudflare AI] Generating cover image with prompt: "${refinedPrompt.slice(0, 100)}..."`,
