@@ -2,16 +2,20 @@ import {
   fetchTopicCandidates,
   TopicCandidate,
 } from "@/services/research/topics";
-import { isDuplicateTopic } from "@/services/research/dedupe";
+import {
+  selectBestTopicCandidate,
+  PastPostData,
+} from "@/services/research/topic-selector";
 import { getDb } from "@/db/client";
 import { posts, topicQueue, categories } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, gte } from "drizzle-orm";
 
 export interface PickTopicResult {
   topic: TopicCandidate;
   candidateCount: number;
   fromQueue?: boolean;
   queueId?: string;
+  preScrapedContent?: string;
 }
 
 export interface PickTopicOptions {
@@ -83,7 +87,7 @@ export async function stepPickTopic(options: PickTopicOptions = {}): Promise<Pic
 
   // 2. Fall back to niche RSS feeds and trending sources
   console.log(
-    "🔍 [Step 1/8: Pick Topic] Discovering topics from niche RSS feeds and Hacker News...",
+    "🔍 [Step 1/8: Pick Topic] Discovering topics from niche RSS feeds, ArXiv, Hugging Face & community...",
   );
 
   const candidates = await fetchTopicCandidates();
@@ -95,60 +99,58 @@ export async function stepPickTopic(options: PickTopicOptions = {}): Promise<Pic
 
   console.log(`Found ${candidates.length} candidates matching niche keywords.`);
 
-  // Query existing posts and source URLs to prevent duplicate coverage
-  let existingTitles: string[] = [];
-  let existingTopicKeys: string[] = [];
-  let existingSourceUrls: string[] = [];
+  // Query existing posts and source URLs to prevent duplicate coverage and enforce entity cooldown
+  let pastPostData: PastPostData[] = [];
 
   try {
-    const db = getDb();
-    const pastPosts = await db
-      .select({ title: posts.title, topicKey: posts.topicKey })
-      .from(posts);
-
-    existingTitles = pastPosts.map((p) => p.title);
-    existingTopicKeys = pastPosts.map((p) => p.topicKey);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const pastRecords = await db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        topicKey: posts.topicKey,
+        excerpt: posts.excerpt,
+        content: posts.contentMd,
+        createdAt: posts.createdAt,
+      })
+      .from(posts)
+      .where(gte(posts.createdAt, thirtyDaysAgo))
+      .orderBy(desc(posts.createdAt));
 
     const pastSources = await db.query.postSources.findMany({
-      columns: { url: true },
+      columns: { postId: true, url: true },
     });
-    existingSourceUrls = pastSources.map((s) => s.url);
+
+    const sourceMap = new Map<string, string[]>();
+    for (const s of pastSources) {
+      if (s.postId) {
+        const list = sourceMap.get(s.postId) || [];
+        list.push(s.url);
+        sourceMap.set(s.postId, list);
+      }
+    }
+
+    pastPostData = pastRecords.map((p) => ({
+      id: p.id,
+      title: p.title,
+      topicKey: p.topicKey,
+      excerpt: p.excerpt,
+      content: p.content,
+      createdAt: p.createdAt,
+      sourceUrls: p.id ? sourceMap.get(p.id) || [] : [],
+    }));
   } catch (err) {
     console.warn(
       `⚠️ [Pick Topic] Could not fetch past posts for deduplication: ${(err as Error).message}`,
     );
   }
 
-  // Find the highest-scoring non-duplicate topic
-  for (const candidate of candidates) {
-    const dedupeCheck = isDuplicateTopic(
-      candidate.title,
-      existingTitles,
-      existingTopicKeys,
-      candidate.url,
-      existingSourceUrls,
-    );
-    if (!dedupeCheck.isDuplicate) {
-      console.log(
-        `✓ [Pick Topic] Selected: "${candidate.title}" (Score: ${candidate.relevanceScore})`,
-      );
-      return {
-        topic: candidate,
-        candidateCount: candidates.length,
-      };
-    } else {
-      console.log(
-        `⏩ [Pick Topic] Skipping duplicate topic: "${candidate.title}" (matched: "${dedupeCheck.matchedWith}", score: ${dedupeCheck.score.toFixed(2)})`,
-      );
-    }
-  }
+  // Select the optimal candidate using pre-scraping, entity cooldown, and multi-factor scoring
+  const selectionResult = await selectBestTopicCandidate(candidates, pastPostData);
 
-  // If all were deemed duplicates, pick the top candidate to maintain publishing cadence
-  console.warn(
-    "⚠️ [Pick Topic] All candidate topics had similarity to past posts. Falling back to highest relevance candidate.",
-  );
   return {
-    topic: candidates[0],
+    topic: selectionResult.selectedTopic,
     candidateCount: candidates.length,
+    preScrapedContent: selectionResult.preScrapedContent,
   };
 }

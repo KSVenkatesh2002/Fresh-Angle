@@ -10,6 +10,7 @@ export interface TopicCandidate {
   category: string;
   pubDate?: string;
   relevanceScore: number;
+  snippet?: string;
 }
 
 const xmlParser = new XMLParser({
@@ -69,7 +70,17 @@ export function parseRssFeedItems(
 
       if (!title || !url || !url.startsWith("http")) continue;
 
-      const relevanceScore = scoreTopicRelevance(title);
+      // Extract description / snippet
+      const rawSnippet =
+        typeof item.description === "string"
+          ? item.description
+          : typeof item.summary === "string"
+          ? item.summary
+          : item.content?.["#text"] || "";
+      // Strip HTML tags from snippet
+      const cleanSnippet = rawSnippet.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
+
+      const relevanceScore = scoreTopicRelevance(title + " " + cleanSnippet);
 
       // Only include topics that match niche keywords
       if (relevanceScore > 0) {
@@ -80,6 +91,7 @@ export function parseRssFeedItems(
           category,
           pubDate: item.pubDate || item.published || item.updated,
           relevanceScore,
+          snippet: cleanSnippet || undefined,
         });
       }
     }
@@ -94,12 +106,44 @@ export function parseRssFeedItems(
 }
 
 /**
- * Fetches top candidates across all configured RSS feeds.
+ * Fetches top candidates across all configured RSS feeds and active DB feeds.
  */
 export async function fetchTopicCandidates(): Promise<TopicCandidate[]> {
   const allCandidates: TopicCandidate[] = [];
 
-  for (const feed of TOPIC_FEEDS) {
+  // Build combined feed list from static config + DB feeds table
+  const feedList: Array<{ name: string; url: string; category: string; weight: number }> = [
+    ...TOPIC_FEEDS,
+  ];
+
+  try {
+    const { getDb } = await import("@/db/client");
+    const { feeds } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+
+    const dbFeeds = await getDb()
+      .select({ name: feeds.name, url: feeds.url })
+      .from(feeds)
+      .where(eq(feeds.enabled, true));
+
+    const existingUrls = new Set(feedList.map((f) => f.url.toLowerCase()));
+    for (const dbFeed of dbFeeds) {
+      if (!existingUrls.has(dbFeed.url.toLowerCase())) {
+        feedList.push({
+          name: dbFeed.name,
+          url: dbFeed.url,
+          category: "Industry & Community",
+          weight: 1.0,
+        });
+        existingUrls.add(dbFeed.url.toLowerCase());
+      }
+    }
+  } catch (err) {
+    // Non-fatal if DB feeds could not be read
+    console.warn("⚠️ [Research] Notice: Reading static feeds only:", (err as Error).message);
+  }
+
+  for (const feed of feedList) {
     try {
       console.log(`📡 [Research] Fetching feed: ${feed.name}...`);
       const response = await fetchWithRetry(
@@ -138,6 +182,14 @@ export async function fetchTopicCandidates(): Promise<TopicCandidate[]> {
     }
   }
 
-  // Sort by highest relevance score
-  return allCandidates.sort((a, b) => b.relevanceScore - a.relevanceScore);
+  // Deduplicate candidates by URL and sort by highest relevance score
+  const seenUrls = new Set<string>();
+  const uniqueCandidates = allCandidates.filter((c) => {
+    const clean = c.url.split("?")[0].toLowerCase();
+    if (seenUrls.has(clean)) return false;
+    seenUrls.add(clean);
+    return true;
+  });
+
+  return uniqueCandidates.sort((a, b) => b.relevanceScore - a.relevanceScore);
 }
