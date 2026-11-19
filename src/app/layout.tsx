@@ -2,8 +2,6 @@ import React from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { siteConfig } from "@/config/site";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
   generateWebsiteJsonLd,
@@ -114,9 +112,7 @@ export default function RootLayout({
         <JsonLd data={[websiteJsonLd, organizationJsonLd]} />
       </head>
       <body className="min-h-screen flex flex-col font-sans bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
-        <Header />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        {children}
       </body>
     </html>
   );
