@@ -110,3 +110,4 @@ describe("Resilient Multi-Provider Cover Image Engine", () => {
     expect(result.buffer.toString()).toBe("BRANDED_COVER");
   });
 });
+

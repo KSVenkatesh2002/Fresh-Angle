@@ -47,3 +47,4 @@ Speculative decoding accelerates autoregressive generation by using an efficient
     expect(result.matchedExcerpts.length).toBeGreaterThan(0);
   });
 });
+

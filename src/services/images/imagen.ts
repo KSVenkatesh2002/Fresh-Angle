@@ -70,3 +70,4 @@ export async function generateImagenCover(prompt: string): Promise<Buffer> {
 
   return Buffer.from(base64Image, "base64");
 }
+

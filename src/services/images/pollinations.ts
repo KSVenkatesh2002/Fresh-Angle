@@ -43,3 +43,4 @@ export async function generatePollinationsCover(prompt: string): Promise<Buffer>
 
   return buffer;
 }
+
