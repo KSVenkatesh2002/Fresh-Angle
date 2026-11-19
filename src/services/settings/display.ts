@@ -10,6 +10,16 @@ export interface DisplaySettingsConfig {
   showEditorialAuthor: boolean;
   showTelegramJoin: boolean;
   telegramChannelUrl?: string;
+  // Social sharing controls
+  showShareButtons: boolean;
+  shareX: boolean;
+  shareLinkedIn: boolean;
+  shareTelegram: boolean;
+  shareWhatsApp: boolean;
+  shareReddit: boolean;
+  shareHackerNews: boolean;
+  shareFacebook: boolean;
+  shareCopyLink: boolean;
 }
 
 export const DEFAULT_DISPLAY_SETTINGS: DisplaySettingsConfig = {
@@ -20,6 +30,15 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettingsConfig = {
   showEditorialAuthor: false, // Default turned off as requested
   showTelegramJoin: true, // Default turned on for community channel join
   telegramChannelUrl: "https://t.me/freshangle_blog",
+  showShareButtons: true,
+  shareX: true,
+  shareLinkedIn: true,
+  shareTelegram: true,
+  shareWhatsApp: true,
+  shareReddit: true,
+  shareHackerNews: true,
+  shareFacebook: false,
+  shareCopyLink: true,
 };
 
 const DISPLAY_SETTINGS_KEY = "site_display_preferences";

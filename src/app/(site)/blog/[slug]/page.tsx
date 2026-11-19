@@ -221,7 +221,11 @@ export default async function BlogPostPage({
                 </div>
               )}
 
-              <ShareButtons url={postUrl} title={post.title} />
+              <ShareButtons
+                url={postUrl}
+                title={post.title}
+                displaySettings={displaySettings}
+              />
             </div>
           </header>
 

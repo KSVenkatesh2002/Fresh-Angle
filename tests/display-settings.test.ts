@@ -89,5 +89,31 @@ describe("DisplaySettings & Telegram Join Toggle", () => {
     await saveDisplaySettings({ showTelegramJoin: true });
     expect((await getDisplaySettings()).showTelegramJoin).toBe(true);
   });
+
+  it("returns default social sharing settings when no DB record exists", async () => {
+    const settings = await getDisplaySettings();
+    expect(settings.showShareButtons).toBe(true);
+    expect(settings.shareX).toBe(true);
+    expect(settings.shareLinkedIn).toBe(true);
+    expect(settings.shareTelegram).toBe(true);
+    expect(settings.shareWhatsApp).toBe(true);
+    expect(settings.shareReddit).toBe(true);
+    expect(settings.shareHackerNews).toBe(true);
+    expect(settings.shareFacebook).toBe(false);
+    expect(settings.shareCopyLink).toBe(true);
+  });
+
+  it("persists custom social share toggles correctly", async () => {
+    await saveDisplaySettings({
+      showShareButtons: true,
+      shareFacebook: true,
+      shareReddit: false,
+    });
+
+    const settings = await getDisplaySettings();
+    expect(settings.shareFacebook).toBe(true);
+    expect(settings.shareReddit).toBe(false);
+    expect(settings.shareX).toBe(true);
+  });
 });
 

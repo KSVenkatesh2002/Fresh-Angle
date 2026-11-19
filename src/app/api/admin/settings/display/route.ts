@@ -14,6 +14,15 @@ const updateSchema = z.object({
   showEditorialAuthor: z.boolean().optional(),
   showTelegramJoin: z.boolean().optional(),
   telegramChannelUrl: z.string().optional(),
+  showShareButtons: z.boolean().optional(),
+  shareX: z.boolean().optional(),
+  shareLinkedIn: z.boolean().optional(),
+  shareTelegram: z.boolean().optional(),
+  shareWhatsApp: z.boolean().optional(),
+  shareReddit: z.boolean().optional(),
+  shareHackerNews: z.boolean().optional(),
+  shareFacebook: z.boolean().optional(),
+  shareCopyLink: z.boolean().optional(),
 });
 
 export async function GET(): Promise<NextResponse> {
