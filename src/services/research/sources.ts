@@ -35,6 +35,28 @@ export function extractPublisherFromUrl(url: string): string {
 }
 
 /**
+ * Cleans web-scraped and extracted text by stripping boilerplate navigation,
+ * login links, markdown image tags, repeated pipe banners, and cookie notices.
+ */
+export function stripBoilerplate(text: string): string {
+  if (!text) return "";
+  return text
+    // Strip markdown images: ![alt](url)
+    .replace(/!\[[^\]]*\]\([^\)]+\)/g, " ")
+    // Strip markdown navigation links (Login, Subscribe, Sign in, Menu, etc.)
+    .replace(/\[\s*(login|sign in|sign up|register|subscribe|home|privacy policy|terms of service|cookie policy|share|menu|navigation)\s*\]\([^\)]+\)/gi, " ")
+    // Strip list items with single link navigation: * [Login](/...)
+    .replace(/^[\s*\-•]\s*\[[^\]]+\]\([^\)]+\)\s*$/gm, " ")
+    // Strip empty table pipe rows used for header navigation: | | | | |---|---|---|
+    .replace(/^[\|\s\-:]+$/gm, " ")
+    // Strip common disclaimer/cookie banner lines
+    .replace(/^.*(cookie policy|gdpr|all rights reserved|copyright ©|subscribe to unlock).*$/gim, " ")
+    // Collapse multiple empty lines
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
  * Fetches an article webpage and extracts the main clean text content using Cheerio.
  * Supports options.maxChars (0 or Infinity for full text) and options.extractHeadings.
  */
@@ -142,10 +164,12 @@ export async function extractArticleContent(
         ? (options.maxChars === 0 ? Infinity : options.maxChars)
         : PIPELINE_CONFIG.limits.articleTextCharLimit;
 
+    const sanitizedText = stripBoilerplate(extractedText);
+
     const cleanContent =
-      Number.isFinite(charLimit) && extractedText.length > charLimit
-        ? `${extractedText.substring(0, charLimit)}...`
-        : extractedText;
+      Number.isFinite(charLimit) && sanitizedText.length > charLimit
+        ? `${sanitizedText.substring(0, charLimit)}...`
+        : sanitizedText;
 
     return {
       url,

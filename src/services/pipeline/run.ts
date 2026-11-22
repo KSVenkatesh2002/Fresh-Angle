@@ -148,8 +148,8 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
     activeStepName = "save";
     start = Date.now();
     // Safety guard: until Phase 3 (Originality Checker & Rewrite Loop) is validated,
-    // save strictly as draft/needs_review, never auto-publish.
-    const autoPublish = false;
+    // autoPublish defaults to false unless explicitly overridden by AUTO_PUBLISH=true in env.
+    const autoPublish = options.isTest ? false : process.env.AUTO_PUBLISH === "true";
     const savedPost = await stepSave({
       post: reviewResult.post,
       cover: coverResult,

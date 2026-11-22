@@ -214,7 +214,7 @@ export function extractSearchKeywords(title: string): string {
 
 /**
  * Evaluates whether a search result is sufficiently relevant to the topic
- * based on Tavily confidence score and keyword overlap.
+ * based on Tavily confidence score and at least 2 keyword hits.
  */
 export function isRelevantSource(
   r: TavilySearchResult,
@@ -224,7 +224,22 @@ export function isRelevantSource(
   if (r.score < minScore) return false;
   const kwList = keywords.toLowerCase().split(/\s+/).filter((k) => k.length > 2);
   const text = (r.title + " " + r.content).toLowerCase();
-  return kwList.some((kw) => text.includes(kw));
+  const matches = kwList.filter((kw) => text.includes(kw));
+  const minRequiredHits = Math.min(2, kwList.length);
+  return matches.length >= minRequiredHits;
+}
+
+/**
+ * Determines whether a topic is technical/research-oriented vs breaking news/industry dispatch.
+ */
+export function isResearchOrientedTopic(title: string): boolean {
+  const researchKeywords = [
+    "paper", "arxiv", "research", "algorithm", "architecture", "benchmark",
+    "training", "attention", "survey", "weights", "transformer", "inference",
+    "scaling", "dataset", "reasoning", "quantization", "fine-tuning", "rlhf", "dpo"
+  ];
+  const lower = title.toLowerCase();
+  return researchKeywords.some((kw) => lower.includes(kw));
 }
 
 /**
@@ -389,8 +404,11 @@ export async function gatherMultiSourceResearch(
   }
 
   // Supplement with academic (arXiv) and developer community (Hacker News) sources
-  // if either baseline or community sources have capacity (< 2 each)
-  if (baselineSources.length < 2 || communitySources.length < 2) {
+  // ONLY if the topic is research/paper-oriented and baseline/community sources have capacity (< 2 each)
+  if (
+    isResearchOrientedTopic(topicTitle) &&
+    (baselineSources.length < 2 || communitySources.length < 2)
+  ) {
     try {
       const supplementary = await discoverSecondarySources(topicTitle, primaryUrl);
       for (const s of supplementary) {
@@ -417,15 +435,17 @@ export async function gatherMultiSourceResearch(
   }
 
   const allSources = [...baselineSources, ...communitySources];
-  const researchDepth: "single" | "multi" = allSources.length > 0 ? "multi" : "single";
+  // Strict rule: Only set research_depth = 'multi' if at least one relevant secondary source has 1,500+ characters
+  const hasSubstantialSecondary = allSources.some((s) => s.content.length >= 1500);
+  const researchDepth: "single" | "multi" = hasSubstantialSecondary ? "multi" : "single";
 
   if (researchDepth === "single") {
     console.warn(
-      `⚠️ [MultiSource] No secondary sources gathered for "${topicTitle}". Falling back gracefully to single-source (research_depth: 'single').`,
+      `⚠️ [MultiSource] Secondary sources lack substantial depth (<1,500 chars) or none found for "${topicTitle}". Marking research_depth: 'single'.`,
     );
   } else {
     console.log(
-      `✓ [MultiSource] Assembled ${allSources.length} triangulating secondary sources (${baselineSources.length} baseline, ${communitySources.length} community).`,
+      `✓ [MultiSource] Assembled ${allSources.length} triangulating secondary sources (${baselineSources.length} baseline, ${communitySources.length} community). Substantial content verified.`,
     );
   }
 
