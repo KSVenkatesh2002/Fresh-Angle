@@ -7,7 +7,13 @@ export interface ExtractedArticleSource {
   title: string;
   publisher: string;
   content: string;
+  headings?: string[];
   role?: "primary" | "academic_baseline" | "community_discussion";
+}
+
+export interface ExtractArticleOptions {
+  maxChars?: number;
+  extractHeadings?: boolean;
 }
 
 /**
@@ -30,10 +36,12 @@ export function extractPublisherFromUrl(url: string): string {
 
 /**
  * Fetches an article webpage and extracts the main clean text content using Cheerio.
+ * Supports options.maxChars (0 or Infinity for full text) and options.extractHeadings.
  */
 export async function extractArticleContent(
   url: string,
   fallbackTitle?: string,
+  options?: ExtractArticleOptions,
 ): Promise<ExtractedArticleSource> {
   const publisher = extractPublisherFromUrl(url);
 
@@ -58,6 +66,17 @@ export async function extractArticleContent(
 
     const html = await response.text();
     const $ = cheerio.load(html);
+
+    // Extract headings before removing anything, if requested
+    const headings: string[] = [];
+    if (options?.extractHeadings) {
+      $("h1, h2, h3").each((_, elem) => {
+        const text = $(elem).text().trim().replace(/\s+/g, " ");
+        if (text.length > 5 && text.length < 120) {
+          headings.push(text);
+        }
+      });
+    }
 
     // Remove noise: scripts, styles, forms, navs, footers, sidebars, cookie banners
     $(
@@ -117,10 +136,14 @@ export async function extractArticleContent(
       extractedText = paragraphs.slice(0, 15).join("\n\n");
     }
 
-    // Truncate to limit
-    const charLimit = PIPELINE_CONFIG.limits.articleTextCharLimit;
+    // Apply char limit only if maxChars is not 0 or Infinity
+    const charLimit =
+      options?.maxChars !== undefined
+        ? (options.maxChars === 0 ? Infinity : options.maxChars)
+        : PIPELINE_CONFIG.limits.articleTextCharLimit;
+
     const cleanContent =
-      extractedText.length > charLimit
+      Number.isFinite(charLimit) && extractedText.length > charLimit
         ? `${extractedText.substring(0, charLimit)}...`
         : extractedText;
 
@@ -129,6 +152,7 @@ export async function extractArticleContent(
       title,
       publisher,
       content: cleanContent,
+      headings: headings.length > 0 ? headings : undefined,
     };
   } catch (err: unknown) {
     console.warn(

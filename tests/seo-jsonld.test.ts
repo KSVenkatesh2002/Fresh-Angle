@@ -31,3 +31,4 @@ describe("SEO Schema.org Rich Snippets (TechArticle)", () => {
     expect(/^[a-f0-9]{32}$/i.test(siteConfig.indexNowKey)).toBe(true);
   });
 });
+

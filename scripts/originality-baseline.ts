@@ -14,10 +14,17 @@ export interface ArticleBaselineRow {
   title: string;
   sourceUrl: string;
   wordCount: number;
+  sourceCharCount: number;
   overlap3Gram: number; // 0.0 to 1.0
   overlap4Gram: number; // 0.0 to 1.0
   overlap5Gram: number; // 0.0 to 1.0
   maxConsecutiveWords: number;
+  sourceNumbersCount: number;
+  draftNumbersCount: number;
+  sourceNumberReusePct: number; // % of source numbers present in draft
+  draftNumberOriginPct: number; // % of draft numbers that came from source
+  headingMatchPct: number; // % of draft headings matched to source headings
+  headingOrderPct: number; // % monotonic alignment of matched headings (100% = identical sequence)
   fetchStatus: string;
 }
 
@@ -28,23 +35,38 @@ export function cleanDraftTextForBaseline(contentMd: string): string {
   if (!contentMd) return "";
 
   return contentMd
-    // 1. Remove fenced code blocks
     .replace(/```[\s\S]*?```/g, " ")
-    // 2. Remove inline code
     .replace(/`[^`]+`/g, " ")
-    // 3. Remove blockquotes (lines starting with >)
     .replace(/^[ \t]*>.*$/gm, " ")
-    // 4. Remove tables (lines starting/ending with | or containing markdown table rows)
     .replace(/^[ \t]*\|.*\|[ \t]*$/gm, " ")
-    // 5. Remove markdown links: [anchor text](url) -> keep only anchor text
     .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
-    // 6. Remove standalone URLs
     .replace(/https?:\/\/[^\s\)]+/g, " ")
-    // 7. Remove markdown headings
     .replace(/^[ \t]*#{1,6}\s+.*$/gm, " ")
-    // 8. Normalize whitespace
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Extracts markdown headings from draft text in order.
+ */
+export function extractDraftHeadings(contentMd: string): string[] {
+  const matches = contentMd.match(/^[ \t]*#{1,3}\s+(.+)$/gm);
+  if (!matches) return [];
+  return matches
+    .map((m) => m.replace(/^[ \t]*#{1,3}\s+/, "").trim())
+    .filter((h) => h.length > 4);
+}
+
+/**
+ * Extracts numeric, percentage, metric, and quantitative values from text.
+ */
+export function extractNumbers(text: string): Set<string> {
+  const matches = text.match(/\b\d+(?:\.\d+)?(?:%|x|b|m|k|gb|mb|tb|ms|s|ghz)?\b/gi);
+  if (!matches) return new Set();
+  const normalized = matches
+    .map((m) => m.toLowerCase().trim())
+    .filter((m) => m.length > 0 && !/^0+$/.test(m));
+  return new Set(normalized);
 }
 
 /**
@@ -74,7 +96,7 @@ export function getNGramShingles(words: string[], k: number): Set<string> {
 }
 
 /**
- * Computes shingle overlap ratio (matches / postShingles.size).
+ * Computes shingle overlap ratio.
  */
 export function computeOverlap(postShingles: Set<string>, sourceShingles: Set<string>): number {
   if (postShingles.size === 0) return 0;
@@ -86,7 +108,7 @@ export function computeOverlap(postShingles: Set<string>, sourceShingles: Set<st
 }
 
 /**
- * Finds the maximum length of consecutive matching word tokens between post and source.
+ * Finds the maximum run of consecutive matching words between post and source.
  */
 export function findMaxConsecutiveMatchingWords(
   postWords: string[],
@@ -94,7 +116,6 @@ export function findMaxConsecutiveMatchingWords(
 ): number {
   if (postWords.length === 0 || sourceWords.length === 0) return 0;
 
-  // Build word index for source text
   const sourceWordPositions = new Map<string, number[]>();
   for (let j = 0; j < sourceWords.length; j++) {
     const w = sourceWords[j];
@@ -133,8 +154,72 @@ export function findMaxConsecutiveMatchingWords(
 }
 
 /**
- * Helper to compute statistical percentiles (e.g. p90, median).
+ * Computes heading similarity and sequence preservation (order similarity).
  */
+export function computeHeadingStructuralSimilarity(
+  draftHeadings: string[],
+  sourceHeadings: string[],
+): { headingMatchPct: number; headingOrderPct: number } {
+  if (draftHeadings.length === 0 || sourceHeadings.length === 0) {
+    return { headingMatchPct: 0, headingOrderPct: 0 };
+  }
+
+  const matchedSourceIndices: number[] = [];
+
+  for (const dH of draftHeadings) {
+    const dWords = new Set(getWordTokens(dH));
+    if (dWords.size === 0) continue;
+
+    let bestMatchIdx = -1;
+    let bestSim = 0;
+
+    for (let sIdx = 0; sIdx < sourceHeadings.length; sIdx++) {
+      const sWords = new Set(getWordTokens(sourceHeadings[sIdx]));
+      if (sWords.size === 0) continue;
+
+      let overlap = 0;
+      for (const w of dWords) {
+        if (sWords.has(w)) overlap++;
+      }
+      const sim = overlap / (dWords.size + sWords.size - overlap);
+      if (sim > 0.30 && sim > bestSim) {
+        bestSim = sim;
+        bestMatchIdx = sIdx;
+      }
+    }
+
+    if (bestMatchIdx !== -1) {
+      matchedSourceIndices.push(bestMatchIdx);
+    }
+  }
+
+  if (matchedSourceIndices.length === 0) {
+    return { headingMatchPct: 0, headingOrderPct: 0 };
+  }
+
+  const headingMatchPct = (matchedSourceIndices.length / draftHeadings.length) * 100;
+
+  // Compute Longest Increasing Subsequence (LIS) on matchedSourceIndices to measure sequence ordering
+  const lis: number[] = [];
+  for (const x of matchedSourceIndices) {
+    let low = 0;
+    let high = lis.length;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (lis[mid] < x) low = mid + 1;
+      else high = mid;
+    }
+    lis[low] = x;
+  }
+
+  const headingOrderPct = (lis.length / matchedSourceIndices.length) * 100;
+
+  return {
+    headingMatchPct: Math.round(headingMatchPct * 10) / 10,
+    headingOrderPct: Math.round(headingOrderPct * 10) / 10,
+  };
+}
+
 function quantile(arr: number[], q: number): number {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
@@ -148,10 +233,9 @@ function quantile(arr: number[], q: number): number {
 }
 
 async function main() {
-  console.log("📊 Starting Originality Baseline Analysis for Fresh Angle Articles...\n");
+  console.log("🔬 Starting Phase 0.5: Full-Text & Structural Originality Baseline...\n");
   const db = getDb();
 
-  // 1. Fetch published posts
   const publishedPosts = await db
     .select({
       id: posts.id,
@@ -162,13 +246,8 @@ async function main() {
     .from(posts)
     .where(eq(posts.status, "published"));
 
-  console.log(`Retrieved ${publishedPosts.length} published articles from database.`);
-  if (publishedPosts.length === 0) {
-    console.log("No published posts found.");
-    process.exit(0);
-  }
+  console.log(`Analyzing ${publishedPosts.length} published articles against 100% FULL source text...`);
 
-  // 2. Fetch all sources
   const allSources = await db.select().from(postSources);
   const sourcesByPostId = new Map<string, typeof allSources>();
   for (const s of allSources) {
@@ -178,59 +257,99 @@ async function main() {
   }
 
   const results: ArticleBaselineRow[] = [];
-  const cacheDir = path.join(process.cwd(), ".cache", "source-extracts");
-  if (!fs.existsSync(cacheDir)) {
-    fs.mkdirSync(cacheDir, { recursive: true });
+  const fullCacheDir = path.join(process.cwd(), ".cache", "source-full-extracts");
+  if (!fs.existsSync(fullCacheDir)) {
+    fs.mkdirSync(fullCacheDir, { recursive: true });
   }
 
-  console.log(`Processing and re-fetching source documents for ${publishedPosts.length} articles...\n`);
+  const failedSourcesList: Array<{ slug: string; url: string; error: string }> = [];
 
   for (let idx = 0; idx < publishedPosts.length; idx++) {
     const post = publishedPosts[idx];
     const postSourcesList = sourcesByPostId.get(post.id) || [];
     const primarySourceUrl = postSourcesList[0]?.url || "";
 
-    // Clean draft text (exclude code blocks, tables, blockquotes, URLs)
     const cleanDraft = cleanDraftTextForBaseline(post.contentMd);
     const postWords = getWordTokens(cleanDraft);
+    const draftNumbers = extractNumbers(post.contentMd);
+    const draftHeadings = extractDraftHeadings(post.contentMd);
 
     let combinedSourceText = "";
+    const sourceHeadings: string[] = [];
     let fetchStatus = "ok";
 
     if (postSourcesList.length === 0) {
       fetchStatus = "no_source_recorded";
     } else {
-      // Fetch each source URL (with disk cache to avoid re-hammering web servers)
       for (const s of postSourcesList) {
         try {
           const cacheKey = Buffer.from(s.url).toString("base64url").slice(0, 50);
-          const cachePath = path.join(cacheDir, `${cacheKey}.txt`);
+          const cachePath = path.join(fullCacheDir, `${cacheKey}.json`);
 
           let sourceContent = "";
+          let cachedHeadings: string[] = [];
+
           if (fs.existsSync(cachePath)) {
-            sourceContent = fs.readFileSync(cachePath, "utf-8");
+            const parsed = JSON.parse(fs.readFileSync(cachePath, "utf-8"));
+            sourceContent = parsed.content;
+            cachedHeadings = parsed.headings || [];
           } else {
-            const extracted = await extractArticleContent(s.url, s.title);
+            // Fetch 100% full text without 5,000 char truncation (maxChars: 0)
+            const extracted = await extractArticleContent(s.url, s.title, {
+              maxChars: 0,
+              extractHeadings: true,
+            });
             sourceContent = extracted.content;
+            cachedHeadings = extracted.headings || [];
+
             if (sourceContent && !sourceContent.startsWith("Source article could not")) {
-              fs.writeFileSync(cachePath, sourceContent, "utf-8");
+              fs.writeFileSync(
+                cachePath,
+                JSON.stringify({ content: sourceContent, headings: cachedHeadings }),
+                "utf-8",
+              );
             }
           }
 
           if (sourceContent && !sourceContent.startsWith("Source article could not")) {
             combinedSourceText += "\n\n" + sourceContent;
+            sourceHeadings.push(...cachedHeadings);
           } else {
             fetchStatus = "scrape_incomplete";
+            failedSourcesList.push({ slug: post.slug, url: s.url, error: sourceContent.slice(0, 60) });
           }
         } catch (fetchErr) {
           fetchStatus = `fetch_error: ${(fetchErr as Error).message.slice(0, 30)}`;
+          failedSourcesList.push({ slug: post.slug, url: s.url, error: (fetchErr as Error).message });
         }
       }
     }
 
     const sourceWords = getWordTokens(combinedSourceText);
+    const sourceNumbers = extractNumbers(combinedSourceText);
 
-    // Compute shingles
+    // Number reuse metrics
+    let sourceNumbersReused = 0;
+    for (const num of sourceNumbers) {
+      if (draftNumbers.has(num)) sourceNumbersReused++;
+    }
+    const sourceNumberReusePct =
+      sourceNumbers.size > 0 ? (sourceNumbersReused / sourceNumbers.size) * 100 : 0;
+
+    let draftNumbersFromSource = 0;
+    for (const num of draftNumbers) {
+      if (sourceNumbers.has(num)) draftNumbersFromSource++;
+    }
+    const draftNumberOriginPct =
+      draftNumbers.size > 0 ? (draftNumbersFromSource / draftNumbers.size) * 100 : 0;
+
+    // Heading sequence similarity
+    const { headingMatchPct, headingOrderPct } = computeHeadingStructuralSimilarity(
+      draftHeadings,
+      sourceHeadings,
+    );
+
+    // Shingle metrics on FULL source text
     const post3 = getNGramShingles(postWords, 3);
     const post4 = getNGramShingles(postWords, 4);
     const post5 = getNGramShingles(postWords, 5);
@@ -249,20 +368,29 @@ async function main() {
       title: post.title,
       sourceUrl: primarySourceUrl,
       wordCount: postWords.length,
+      sourceCharCount: combinedSourceText.length,
       overlap3Gram: Math.round(overlap3Gram * 1000) / 1000,
       overlap4Gram: Math.round(overlap4Gram * 1000) / 1000,
       overlap5Gram: Math.round(overlap5Gram * 1000) / 1000,
       maxConsecutiveWords,
+      sourceNumbersCount: sourceNumbers.size,
+      draftNumbersCount: draftNumbers.size,
+      sourceNumberReusePct: Math.round(sourceNumberReusePct * 10) / 10,
+      draftNumberOriginPct: Math.round(draftNumberOriginPct * 10) / 10,
+      headingMatchPct,
+      headingOrderPct,
       fetchStatus,
     });
 
-    if ((idx + 1) % 10 === 0 || idx === publishedPosts.length - 1) {
-      console.log(`Analyzed ${idx + 1}/${publishedPosts.length} articles...`);
+    if ((idx + 1) % 15 === 0 || idx === publishedPosts.length - 1) {
+      console.log(`Processed ${idx + 1}/${publishedPosts.length} articles...`);
     }
   }
 
-  // 3. Write CSV Output
-  const csvHeader = "slug,title,source_url,word_count,overlap_3gram,overlap_4gram,overlap_5gram,max_consecutive_words,fetch_status\n";
+  // 3. Write Updated CSV
+  const csvHeader =
+    "slug,title,source_url,word_count,source_chars,overlap_3gram,overlap_4gram,overlap_5gram,max_consecutive_words,source_numbers_reused_pct,draft_numbers_from_source_pct,heading_match_pct,heading_order_pct,fetch_status\n";
+
   const csvRows = results
     .map((r) =>
       [
@@ -270,10 +398,15 @@ async function main() {
         `"${r.title.replace(/"/g, '""')}"`,
         `"${r.sourceUrl}"`,
         r.wordCount,
+        r.sourceCharCount,
         (r.overlap3Gram * 100).toFixed(1) + "%",
         (r.overlap4Gram * 100).toFixed(1) + "%",
         (r.overlap5Gram * 100).toFixed(1) + "%",
         r.maxConsecutiveWords,
+        r.sourceNumberReusePct.toFixed(1) + "%",
+        r.draftNumberOriginPct.toFixed(1) + "%",
+        r.headingMatchPct.toFixed(1) + "%",
+        r.headingOrderPct.toFixed(1) + "%",
         `"${r.fetchStatus}"`,
       ].join(","),
     )
@@ -281,56 +414,91 @@ async function main() {
 
   const csvPath = path.join(process.cwd(), "scripts", "originality-baseline.csv");
   fs.writeFileSync(csvPath, csvHeader + csvRows, "utf-8");
-  console.log(`\n💾 CSV saved to: ${csvPath}\n`);
+  console.log(`\n💾 Updated full-text & structural CSV saved to: ${csvPath}\n`);
 
-  // 4. Calculate Summary Statistics across valid scrapes
-  const validResults = results.filter((r) => r.fetchStatus === "ok" && r.wordCount > 50);
-  const data3 = validResults.map((r) => r.overlap3Gram);
-  const data4 = validResults.map((r) => r.overlap4Gram);
-  const data5 = validResults.map((r) => r.overlap5Gram);
-  const dataRuns = validResults.map((r) => r.maxConsecutiveWords);
+  // 4. Summary Statistics
+  const valid = results.filter((r) => r.fetchStatus === "ok" && r.wordCount > 50);
+  const data3 = valid.map((r) => r.overlap3Gram);
+  const data4 = valid.map((r) => r.overlap4Gram);
+  const data5 = valid.map((r) => r.overlap5Gram);
+  const dataRuns = valid.map((r) => r.maxConsecutiveWords);
+  const dataNumReuse = valid.map((r) => r.sourceNumberReusePct);
+  const dataNumOrigin = valid.map((r) => r.draftNumberOriginPct);
+  const dataHeadMatch = valid.map((r) => r.headingMatchPct);
+  const dataHeadOrder = valid.map((r) => r.headingOrderPct);
 
   const mean = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 
   console.log("================================================================================");
-  console.log("📊 EMPIRICAL ORIGINALITY & PLAGIARISM BASELINE (Phase 0 Audit)");
+  console.log("📊 PHASE 0.5: FULL-TEXT & STRUCTURAL SIMILARITY BASELINE RESULTS");
   console.log("================================================================================");
   console.log(`Total Published Articles: ${results.length}`);
-  console.log(`Articles with Successfully Re-Fetched Sources: ${validResults.length}`);
+  console.log(`Articles with Valid Full-Text Source: ${valid.length}`);
   console.log("--------------------------------------------------------------------------------");
-  console.log(`METRIC                | MEAN       | MEDIAN (p50) | p90        | MAX`);
+  console.log("METRIC                          | MEAN       | MEDIAN     | p90        | MAX");
   console.log("--------------------------------------------------------------------------------");
   console.log(
-    `3-Gram Overlap        | ${(mean(data3) * 100).toFixed(1)}%     | ${(quantile(data3, 0.5) * 100).toFixed(1)}%        | ${(quantile(data3, 0.9) * 100).toFixed(1)}%      | ${(Math.max(...data3, 0) * 100).toFixed(1)}%`,
+    `3-Gram Overlap (Full Source)    | ${(mean(data3) * 100).toFixed(1)}%     | ${(quantile(data3, 0.5) * 100).toFixed(1)}%     | ${(quantile(data3, 0.9) * 100).toFixed(1)}%      | ${(Math.max(...data3, 0) * 100).toFixed(1)}%`,
   );
   console.log(
-    `4-Gram Overlap        | ${(mean(data4) * 100).toFixed(1)}%     | ${(quantile(data4, 0.5) * 100).toFixed(1)}%        | ${(quantile(data4, 0.9) * 100).toFixed(1)}%      | ${(Math.max(...data4, 0) * 100).toFixed(1)}%`,
+    `4-Gram Overlap (Full Source)    | ${(mean(data4) * 100).toFixed(1)}%     | ${(quantile(data4, 0.5) * 100).toFixed(1)}%     | ${(quantile(data4, 0.9) * 100).toFixed(1)}%      | ${(Math.max(...data4, 0) * 100).toFixed(1)}%`,
   );
   console.log(
-    `5-Gram Overlap        | ${(mean(data5) * 100).toFixed(1)}%     | ${(quantile(data5, 0.5) * 100).toFixed(1)}%        | ${(quantile(data5, 0.9) * 100).toFixed(1)}%      | ${(Math.max(...data5, 0) * 100).toFixed(1)}%`,
+    `5-Gram Overlap (Full Source)    | ${(mean(data5) * 100).toFixed(1)}%     | ${(quantile(data5, 0.5) * 100).toFixed(1)}%     | ${(quantile(data5, 0.9) * 100).toFixed(1)}%      | ${(Math.max(...data5, 0) * 100).toFixed(1)}%`,
   );
   console.log(
-    `Max Consecutive Words | ${mean(dataRuns).toFixed(1)} words  | ${quantile(dataRuns, 0.5).toFixed(0)} words     | ${quantile(dataRuns, 0.9).toFixed(0)} words    | ${Math.max(...dataRuns, 0)} words`,
+    `Max Consecutive Words Run       | ${mean(dataRuns).toFixed(1)} words  | ${quantile(dataRuns, 0.5).toFixed(0)} words   | ${quantile(dataRuns, 0.9).toFixed(0)} words    | ${Math.max(...dataRuns, 0)} words`,
+  );
+  console.log(
+    `Source Numbers Reused in Draft  | ${mean(dataNumReuse).toFixed(1)}%     | ${quantile(dataNumReuse, 0.5).toFixed(1)}%     | ${quantile(dataNumReuse, 0.9).toFixed(1)}%      | ${Math.max(...dataNumReuse, 0).toFixed(1)}%`,
+  );
+  console.log(
+    `Draft Numbers From Source       | ${mean(dataNumOrigin).toFixed(1)}%     | ${quantile(dataNumOrigin, 0.5).toFixed(1)}%     | ${quantile(dataNumOrigin, 0.9).toFixed(1)}%      | ${Math.max(...dataNumOrigin, 0).toFixed(1)}%`,
+  );
+  console.log(
+    `Draft Headings Matched to Source| ${mean(dataHeadMatch).toFixed(1)}%     | ${quantile(dataHeadMatch, 0.5).toFixed(1)}%     | ${quantile(dataHeadMatch, 0.9).toFixed(1)}%      | ${Math.max(...dataHeadMatch, 0).toFixed(1)}%`,
+  );
+  console.log(
+    `Heading Sequence Order (LIS)    | ${mean(dataHeadOrder).toFixed(1)}%     | ${quantile(dataHeadOrder, 0.5).toFixed(1)}%    | ${quantile(dataHeadOrder, 0.9).toFixed(1)}%     | ${Math.max(...dataHeadOrder, 0).toFixed(1)}%`,
   );
   console.log("--------------------------------------------------------------------------------\n");
 
-  // 5. Worst 10 Articles (Ranked by 5-Gram Overlap & Max Consecutive Words)
-  const worst10 = [...validResults]
-    .sort((a, b) => b.overlap5Gram - a.overlap5Gram || b.maxConsecutiveWords - a.maxConsecutiveWords)
+  // Top 10 worst offenders by composite structural & verbatim score
+  const worst10 = [...valid]
+    .sort((a, b) => {
+      const scoreA = a.overlap5Gram * 30 + a.maxConsecutiveWords * 2 + a.draftNumberOriginPct * 0.3 + a.headingOrderPct * 0.2;
+      const scoreB = b.overlap5Gram * 30 + b.maxConsecutiveWords * 2 + b.draftNumberOriginPct * 0.3 + b.headingOrderPct * 0.2;
+      return scoreB - scoreA;
+    })
     .slice(0, 10);
 
-  console.log("⚠️ TOP 10 WORST OVERLAP OFFENDERS (Ranked by 5-gram overlap & consecutive run):");
+  console.log("⚠️ TOP 10 OVERALL WORST OFFENDERS (Ranked by Composite Verbatim & Structural Copying):");
   worst10.forEach((r, i) => {
     console.log(
-      `${(i + 1).toString().padStart(2, " ")}. [${(r.overlap5Gram * 100).toFixed(1)}% 5-gram | ${(r.overlap3Gram * 100).toFixed(1)}% 3-gram | run: ${r.maxConsecutiveWords} words] ${r.slug}`,
+      `${(i + 1).toString().padStart(2, " ")}. [5-gram: ${(r.overlap5Gram * 100).toFixed(1)}% | Run: ${r.maxConsecutiveWords} words | Numbers From Src: ${r.draftNumberOriginPct.toFixed(0)}% | Heading Order: ${r.headingOrderPct.toFixed(0)}%] ${r.slug}`,
     );
   });
+  console.log("================================================================================\n");
+
+  // 13 Unfetchable Sources
+  const uniqueFailedUrls = new Map<string, { slug: string; error: string }>();
+  for (const f of failedSourcesList) {
+    if (!uniqueFailedUrls.has(f.url)) {
+      uniqueFailedUrls.set(f.url, { slug: f.slug, error: f.error });
+    }
+  }
+
+  console.log(`📋 UNFETCHABLE SOURCES AUDIT (${uniqueFailedUrls.size} URLs Encountered Issues):`);
+  let count = 1;
+  for (const [url, info] of uniqueFailedUrls.entries()) {
+    console.log(`${(count++).toString().padStart(2, " ")}. [${info.error.slice(0, 45)}] ${url}`);
+  }
   console.log("================================================================================\n");
 
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error("❌ Fatal error in originality baseline:", err);
+  console.error("❌ Fatal error in Phase 0.5 baseline:", err);
   process.exit(1);
 });
