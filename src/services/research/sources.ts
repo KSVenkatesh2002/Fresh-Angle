@@ -7,6 +7,7 @@ export interface ExtractedArticleSource {
   title: string;
   publisher: string;
   content: string;
+  role?: "primary" | "academic_baseline" | "community_discussion";
 }
 
 /**
@@ -141,3 +142,124 @@ export async function extractArticleContent(
     };
   }
 }
+
+/**
+ * Extracts high-signal technical keywords from a topic title for search queries.
+ */
+function extractSearchKeywords(title: string): string {
+  const stopWords = new Set([
+    "a", "an", "the", "in", "on", "for", "with", "how", "why", "what", "is",
+    "are", "and", "or", "of", "to", "via", "using", "from", "at", "by", "this",
+    "that", "into", "introducing", "announcing", "new", "released", "launch"
+  ]);
+
+  const clean = title
+    .replace(/[^\w\s-]/g, " ")
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length > 2 && !stopWords.has(w.toLowerCase()));
+
+  return clean.slice(0, 4).join(" ");
+}
+
+/**
+ * Discovers 1-2 secondary research sources (academic papers via ArXiv or developer discussions via Hacker News)
+ * to triangulate technical claims, eliminate single-source paraphrasing, and guarantee originality.
+ */
+export async function discoverSecondarySources(
+  topicTitle: string,
+  excludeUrl?: string,
+): Promise<ExtractedArticleSource[]> {
+  const searchTerms = extractSearchKeywords(topicTitle);
+  if (!searchTerms) {
+    return [];
+  }
+
+  const secondarySources: ExtractedArticleSource[] = [];
+
+  try {
+    const excludeHost = excludeUrl ? new URL(excludeUrl).hostname.replace(/^www\./, "") : "";
+
+    // Run parallel discovery: ArXiv (academic context) + Hacker News (industry/community context)
+    const [arxivResult, hnResult] = await Promise.allSettled([
+      // 1. ArXiv Search API
+      (async () => {
+        const arxivUrl = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(searchTerms)}&start=0&max_results=2`;
+        const res = await fetchWithRetry(
+          arxivUrl,
+          { timeoutMs: 5000 },
+          { retries: 1, backoffMs: 500 },
+        );
+        if (!res.ok) return [];
+        const xml = await res.text();
+        const $ = cheerio.load(xml, { xmlMode: true });
+        const items: ExtractedArticleSource[] = [];
+
+        $("entry").each((_, entry) => {
+          const entryTitle = $(entry).find("title").text().replace(/\s+/g, " ").trim();
+          const entrySummary = $(entry).find("summary").text().replace(/\s+/g, " ").trim();
+          const entryId = $(entry).find("id").text().trim();
+
+          if (entrySummary.length > 150 && entryTitle) {
+            items.push({
+              url: entryId,
+              title: entryTitle,
+              publisher: "arXiv Technical Paper",
+              content: entrySummary,
+              role: "academic_baseline",
+            });
+          }
+        });
+        return items;
+      })(),
+
+      // 2. Hacker News Algolia Search API
+      (async () => {
+        const hnUrl = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(searchTerms)}&tags=story&hitsPerPage=3`;
+        const res = await fetchWithRetry(
+          hnUrl,
+          { timeoutMs: 5000 },
+          { retries: 1, backoffMs: 500 },
+        );
+        if (!res.ok) return [];
+        const data = await res.json() as { hits?: Array<{ title?: string; url?: string }> };
+        const hits = data.hits || [];
+        const items: ExtractedArticleSource[] = [];
+
+        for (const hit of hits) {
+          if (!hit.url || !hit.title) continue;
+          try {
+            const hitHost = new URL(hit.url).hostname.replace(/^www\./, "");
+            if (excludeHost && hitHost.includes(excludeHost)) continue;
+            if (hit.url === excludeUrl) continue;
+
+            const extracted = await extractArticleContent(hit.url, hit.title);
+            if (extracted.content && extracted.content.length > 250 && !extracted.content.startsWith("Source article could not")) {
+              items.push({
+                ...extracted,
+                role: "community_discussion",
+              });
+              if (items.length >= 1) break; // 1 external community article is plenty
+            }
+          } catch {
+            // Ignore individual fetch errors
+          }
+        }
+        return items;
+      })(),
+    ]);
+
+    if (arxivResult.status === "fulfilled" && arxivResult.value.length > 0) {
+      secondarySources.push(arxivResult.value[0]);
+    }
+
+    if (hnResult.status === "fulfilled" && hnResult.value.length > 0) {
+      secondarySources.push(hnResult.value[0]);
+    }
+  } catch (err) {
+    console.warn(`⚠️ [Research] Secondary source discovery failed gracefully: ${(err as Error).message}`);
+  }
+
+  return secondarySources;
+}
+
