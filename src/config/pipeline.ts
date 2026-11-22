@@ -2,6 +2,11 @@ export interface PipelineLimits {
   readonly maxCandidatesToFetch: number;
   readonly maxArticlesToResearch: number;
   readonly articleTextCharLimit: number;
+  readonly primarySourceCharLimit: number;
+  readonly secondarySourceCharLimit: number;
+  readonly maxTotalResearchPromptChars: number;
+  readonly maxTavilyQueriesPerArticle: number;
+  readonly minTavilyRelevanceScore: number;
   readonly maxOutlineHeadings: number;
   readonly maxTagsPerPost: number;
   readonly minTagsPerPost: number;
@@ -23,6 +28,11 @@ export const PIPELINE_CONFIG = {
     maxCandidatesToFetch: 20,
     maxArticlesToResearch: 4,
     articleTextCharLimit: 5000,
+    primarySourceCharLimit: 5000,
+    secondarySourceCharLimit: 3500,
+    maxTotalResearchPromptChars: 18000,
+    maxTavilyQueriesPerArticle: 3,
+    minTavilyRelevanceScore: 0.65,
     maxOutlineHeadings: 6,
     maxTagsPerPost: 6,
     minTagsPerPost: 3,

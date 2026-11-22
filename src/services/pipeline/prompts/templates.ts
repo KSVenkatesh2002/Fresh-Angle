@@ -1,36 +1,45 @@
 import { PIPELINE_CONFIG } from "@/config/pipeline";
 
 export const SYSTEM_EDITORIAL_PERSONA = `
-You are the senior editorial research director and lead systems architect at Fresh Angle (https://freshangle.vercel.app), a premier publication delivering high-authority, deeply analytical dispatches on artificial intelligence, frontier models, and computing infrastructure.
+You are the senior editorial research director and lead systems architect at Fresh Angle (https://freshangle.vercel.app), a premier engineering publication delivering high-authority, deeply analytical technical dispatches on artificial intelligence, frontier models, and computing infrastructure.
 
 YOUR MISSION:
-Deliver comprehensive, original engineering dispatches that synthesize complex breakthroughs from first principles.
+Synthesize multi-source research into original, first-principles engineering dispatches that explain complex breakthroughs without paraphrasing or structural copying.
 
 CORE EDITORIAL DIRECTIVES:
-1. STRICT ANTI-PARAPHRASING MANDATE:
-   - NEVER mirror the sequence, structural outline, or paragraph-level narrative of any single source document.
-   - NEVER substitute synonyms into source sentences. External plagiarism scanners (Copyleaks, Turnitin, SmallSEOTools) flag structural mirroring as plagiarism.
-   - Completely re-conceptualize the subject matter from first principles. Explain the underlying mechanics using your own original frameworks, mental models, and real-world analogies.
+1. RIGOROUS MULTI-SOURCE ATTRIBUTION WITH INLINE LINKS:
+   - Every factual claim, quantitative metric, benchmark number, architectural parameter, or direct quote MUST come from one of the provided sources and be attributed with a natural inline Markdown link: [Publisher or Source Title](url).
+   - NEVER invent or hallucinate metrics, dates, or quotes.
+   - ACCURACY MANDATE: Keep numbers, figures, and benchmark results 100% accurate as reported in the sources. Do NOT alter, round arbitrarily, or change verified empirical data.
 
-2. MULTI-SOURCE SYNTHESIS & INDEPENDENT CRITIQUE:
-   - Triangulate findings across all provided sources (primary catalyst, architectural baseline, community critiques).
-   - Provide original engineering criticism: Identify unstated trade-offs, hidden latency/memory overheads, hardware bottlenecks, and deployment constraints that the official announcements omit.
+2. STRICT ANTI-MIRRORING & STRUCTURAL RE-ENGINEERING:
+   - STRICTLY FORBIDDEN: NEVER mirror the primary source's section sequence, paragraph progression, examples, or table layouts.
+   - Do NOT rewrite or paraphrase source sentences by substituting synonyms. Plagiarism scanners flag structural clause mirroring.
+   - Re-organize the dispatch around a distinct reader question or technical angle (e.g. how it works under the hood, X vs Y architectural comparison, or systems-level trade-offs), completely decoupled from any source's table of contents.
 
-3. RIGOROUS FACTUAL GROUNDING WITHOUT COPYING:
-   - Ground all empirical metrics, benchmark values, parameters, dates, and proper names strictly in the provided sources. NEVER fabricate numbers or invent synthetic benchmarks.
-   - However, the narrative exposition, comparative analysis, and explanatory prose must be 100% original.
+3. ORIGINAL EXPLANATION, ANALOGIES & ARCHITECTURAL DIAGRAMS:
+   - Explain the core mechanics from first principles using your own explanatory frameworks and fresh real-world analogies.
+   - Include an original Mermaid diagram (e.g. flowchart TD, sequenceDiagram) or clean ASCII diagram illustrating data flow, attention routing, or memory hierarchy.
+   - Synthesize and compare findings across all provided pillars (primary announcement, academic foundation, practitioner critiques).
 
-4. TARGET AUDIENCE & TONE:
-   - Write for Principal ML Engineers, Systems Architects, and Technical Executives.
-   - Tone is analytical, precise, lucid, and intellectually rigorous.
-   - Eliminate fluff, clickbait, and generic clichés ("game changer", "testament to", "delve into", "in today's rapidly evolving AI landscape").
+4. MANDATORY "TRADE-OFFS AND LIMITATIONS" SECTION:
+   - The dispatch MUST include a dedicated section titled "Trade-offs and limitations".
+   - Every limitation or failure mode discussed must either:
+     a) Be directly tied to a retrieved source with an inline link [Source](url), OR
+     b) Be explicitly prefixed and labeled as editorial engineering analysis: "Our take: [analysis]".
+   - NEVER present unsourced speculative claims as verified facts.
 
-5. PIPELINE VERSION: ${PIPELINE_CONFIG.promptsVersion}
+5. SEARCH INTENT WITHOUT SENSATIONALISM:
+   - Target developer search intents (e.g. "how [system] handles [bottleneck]", "[System A] vs [System B] latency trade-offs").
+   - Eliminate fluff, buzzwords, and clichés ("game-changer", "revolutionary", "delve into", "testament to").
+   - Maintain an authoritative, precise, and intellectually honest engineering tone.
+
+PIPELINE PROMPT VERSION: ${PIPELINE_CONFIG.promptsVersion}
 `;
 
 export function buildOutlinePrompt(topic: string, sourcesText: string): string {
   return `
-Create a structured, search-intent-optimized blog post outline for the following topic based on the synthesized sources:
+Create a structured, search-intent-optimized engineering outline for the following topic based on the triangulated research dossier:
 
 TOPIC: "${topic}"
 
@@ -38,20 +47,22 @@ RESEARCH DOSSIER:
 ${sourcesText}
 
 ARCHITECTURAL OUTLINE RULES:
-1. ANTI-PARAPHRASING: DO NOT mirror the section sequence or table of contents of the source articles.
-2. Structure the dispatch to directly answer high-volume developer search queries:
-   - Section 1: The Core Breakthrough & System Context (Why previous paradigms failed)
-   - Section 2: Architectural Deep Dive & Mechanics (Step-by-step breakdown of internals)
-   - Section 3: Empirical Benchmark Matrix (Comparative table against prior baselines)
-   - Section 4: Production Realities & Engineering Trade-offs (VRAM, latency, hidden costs, failure modes)
-   - Section 5: High-Density Key Takeaways (3-5 architectural bullet points)
-   - Section 6: Strategic Roadmap & Deployment Horizon (Next 12-24 months)
-3. Output valid JSON matching the schema below.
+1. NON-MIRRORING STRUCTURE:
+   - DO NOT mirror the primary source's section order or table of contents.
+   - Frame the outline around high-intent technical search angles (e.g., how the system operates under load, architectural comparison against baselines, or production scaling bottlenecks).
+2. REQUIRED STRUCTURAL SECTIONS:
+   - Section 1: The Core Breakthrough & System Context (The architectural bottleneck this solves)
+   - Section 2: How It Works: First-Principles Mechanics (Step-by-step breakdown with planned Mermaid diagram)
+   - Section 3: Empirical Benchmarks & Architectural Comparison (Planned Markdown comparison matrix)
+   - Section 4: Trade-offs and limitations (Mandatory: sourced caveats + "Our take:" analytical takeaways)
+   - Section 5: Key Takeaways (3-5 dense, actionable architectural bullets)
+   - Section 6: Engineering Implications & Horizon (Deployment considerations for the next 12-24 months)
+3. ACCURACY: Ground planned sections in the provided sources. Do not invent topics not supported by research.
 
 OUTPUT REQUIREMENTS:
 Output a single valid JSON object strictly matching this schema:
 {
-  "proposedTitle": "Engaging, authoritative title with high search intent (under 80 chars)",
+  "proposedTitle": "Engaging, authoritative title with clear search intent (under 80 chars, no clickbait)",
   "thesis": "One-sentence core argument or technical conclusion",
   "targetCategory": "e.g., Artificial Intelligence, Frontier Models & LLMs, Machine Learning, Hardware & Silicon",
   "sections": [
@@ -80,21 +91,24 @@ ${outlineJson}
 RESEARCH DOSSIER:
 ${sourcesText}
 
-DEPTH & PLAGIARISM DEFENSE INSTRUCTIONS:
-- TARGET LENGTH: 900 to 1,400 words. Provide deep architectural and engineering substance, not a shallow summary.
-- ANTI-PARAPHRASING ENFORCEMENT:
-  * Plagiarism scanners will cross-reference your output with web sources. Do NOT copy phrases or sentence structures from the sources.
-  * Explain the system mechanics from first principles using fresh analogies and your own explanatory breakdowns.
-  * Synthesize multiple sources into an integrated analytical narrative.
-- MANDATORY CONTENT SECTIONS:
-  1. Introduction & Context: What breakthrough or system shift occurred, why existing paradigms fell short, and why this matters now.
-  2. System Architecture & Mechanics: Detailed explanation of internal mechanics, data pipelines, model topology (e.g. MoE routing, KV cache, speculative decoding, attention optimizations, or silicon interconnects). Include a clean ASCII or Mermaid diagram where architectural visualization adds clarity.
-  3. Benchmark & Performance Comparison Table: MUST include a GitHub-flavored Markdown table comparing key metrics (latency, throughput, MMLU, GSM8K, VRAM, or memory bandwidth) against relevant baselines or prior generations.
-  4. Engineering Trade-offs & Production Realities: Practical considerations including deployment costs, hardware requirements, failure modes, and developer ergonomics.
-  5. Key Takeaways: High-density bulleted list of 3-5 crucial architectural conclusions.
-  6. Industry & Strategic Implications: What this unlocks for autonomous systems, enterprise deployment, or compute infrastructure over the next 12-24 months.
-- FACTUAL GROUNDING: Ground all quantitative numbers, benchmark scores, and claims strictly in the sources. Do not invent synthetic metrics.
-- FORMAT: Return ONLY the raw Markdown text. Do NOT wrap in JSON.
+WRITING & ORIGINALITY SPECIFICATIONS:
+- TARGET LENGTH: 900 to 1,400 words. Rich technical depth, zero fluff.
+- INLINE CITATION MANDATE:
+  * Every factual claim, number, benchmark value, or quote must come from one of the provided sources and include an inline Markdown link to its URL: [Publisher/Title](url).
+  * Facts and numbers must remain strictly accurate as given in the sources.
+- STRICT ANTI-PARAPHRASING:
+  * Do NOT mirror the sentence structure, paragraph order, or phrasing of the sources.
+  * Explain underlying mechanics from first principles using fresh analogies and original phrasing.
+  * Cross-reference and synthesize across the different source pillars.
+- MANDATORY CONTENT COMPONENTS:
+  1. Introduction & Problem Space: Why previous paradigms or baselines failed.
+  2. Architectural Deep Dive with Diagram: Explain internal topology and data flows. MUST include a valid, well-formed Mermaid diagram (\`\`\`mermaid ... \`\`\`) or clean ASCII architectural diagram.
+  3. Benchmark & Comparison Table: MUST include a GitHub-flavored Markdown table comparing metrics against relevant baselines, strictly using numbers from the sources.
+  4. "Trade-offs and limitations" Section: Dedicated H2 section. Every point must either have an inline source link, or be explicitly labeled as "Our take: [analysis]".
+  5. Key Takeaways: High-density bullet list of 3-5 crucial technical takeaways.
+  6. Strategic & Deployment Outlook: Real-world engineering impact over the next 12-24 months.
+
+FORMAT: Return ONLY the raw Markdown text. Do NOT wrap in JSON.
 `;
 }
 
@@ -104,35 +118,42 @@ export function buildReviewPrompt(
   sourcesText: string,
 ): string {
   return `
-Perform a rigorous editorial review of the following technical draft against the research dossier. Correct any unsupported claims, sharpen the technical rigor, verify benchmark comparisons, eliminate conversational fluff, and construct SEO metadata.
+Perform a rigorous editorial review and quality audit of the following technical draft against the research dossier.
 
-CRITICAL REVIEW MANDATES:
-1. PLAGIARISM & ORIGINALITY AUDIT:
-   - Ensure the draft is NOT a section-by-section paraphrase of any single source.
-   - If any paragraph mimics source sentence structure, rewrite it with fresh vocabulary, active voice, and synthesized framing.
-2. TECHNICAL RIGOR & BENCHMARK ACCURACY:
-   - Verify that all numbers and claims in the Markdown comparison table (| Metric | Model A | Model B | Notes |) match the provided sources.
-   - Ensure the "Key Takeaways" section provides high-signal architectural insights.
-3. LENGTH & DEPTH: Target length must be 900 to 1,400 words of rich technical depth.
-4. METADATA & SEARCH OPTIMIZATION:
-   - Construct search-intent-focused title, metaTitle (strictly between 30 and 58 characters), and metaDescription (strictly between 60 and 150 characters).
-   - Construct 2 high-value FAQs with factual, helpful answers to capture Google rich snippet SERPs.
-   - Create an imaginative, topic-specific image prompt following award-winning art direction guidelines (no text, no distorted faces).
+AUDIT CRITERIA:
+1. CITATION & FACTUAL ACCURACY:
+   - Ensure every empirical metric, number, and factual claim has an inline Markdown citation link to its source.
+   - Verify all numbers in the Markdown table match the provided sources exactly. Do NOT alter verified figures.
+2. ORIGINALITY & ANTI-MIRRORING AUDIT:
+   - Verify the draft does NOT follow the section progression or clause phrasing of any single source.
+   - If any sentences closely track source clauses, restructure them with fresh vocabulary and original framing while keeping facts, numbers, and links intact.
+3. TRADE-OFFS & LIMITATIONS AUDIT:
+   - Ensure the "Trade-offs and limitations" section is present.
+   - Ensure any analytical point without a direct source is explicitly prefixed with "Our take:".
+4. STRUCTURAL DEPTH & ARTIFACTS:
+   - Verify the presence of an architectural diagram (Mermaid or ASCII) and Markdown benchmark table.
+   - Word count target: 900 to 1,400 words.
+5. METADATA GENERATION:
+   - Title under 90 characters.
+   - metaTitle strictly between 30 and 58 characters.
+   - metaDescription strictly between 60 and 150 characters.
+   - 2 factual FAQs capturing search intent.
+   - Creative imagePrompt following authentic art direction (no text, no distorted faces).
 
-PRIMARY SOURCES:
+RESEARCH DOSSIER:
 ${sourcesText}
 
 DRAFT POST:
 ${draftMarkdown}
 
 OUTPUT REQUIREMENTS:
-Output a single valid JSON object matching this schema:
+Output a single valid JSON object strictly matching this schema:
 {
   "title": "Compelling, punchy headline under 90 characters",
   "excerpt": "Crisp 2-3 sentence overview (under 250 characters)",
-  "contentMd": "Complete polished Markdown post (900-1400 words) with Markdown comparison table, architecture breakdown, and Key Takeaways",
-  "metaTitle": "Concise SEO title under 55 characters (strictly between 30 and 58 characters)",
-  "metaDescription": "Actionable meta description under 150 characters (strictly between 60 and 150 characters)",
+  "contentMd": "Complete polished Markdown post (900-1400 words) with inline source links, comparison table, diagram, and Trade-offs section",
+  "metaTitle": "Concise SEO title strictly between 30 and 58 characters",
+  "metaDescription": "Actionable meta description strictly between 60 and 150 characters",
   "category": "Artificial Intelligence | Frontier Models & LLMs | Machine Learning | Hardware & Silicon",
   "tags": ["3 to 6 specific lowercase or title-case tags"],
   "slug": "url-friendly-slug-with-hyphens",

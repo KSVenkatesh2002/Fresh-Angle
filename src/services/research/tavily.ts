@@ -1,4 +1,5 @@
 import { fetchWithRetry } from "@/lib/utils/http";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 import {
   ExtractedArticleSource,
   extractArticleContent,
@@ -212,6 +213,21 @@ export function extractSearchKeywords(title: string): string {
 }
 
 /**
+ * Evaluates whether a search result is sufficiently relevant to the topic
+ * based on Tavily confidence score and keyword overlap.
+ */
+export function isRelevantSource(
+  r: TavilySearchResult,
+  keywords: string,
+  minScore = PIPELINE_CONFIG.limits.minTavilyRelevanceScore,
+): boolean {
+  if (r.score < minScore) return false;
+  const kwList = keywords.toLowerCase().split(/\s+/).filter((k) => k.length > 2);
+  const text = (r.title + " " + r.content).toLowerCase();
+  return kwList.some((kw) => text.includes(kw));
+}
+
+/**
  * Derives a clean hostname for domain deduplication.
  */
 export function getHostname(url: string): string {
@@ -284,6 +300,7 @@ export async function gatherMultiSourceResearch(
         if (baselineSources.length >= 2) break;
         const domain = getHostname(r.url);
         if (!domain || seenDomains.has(domain) || seenUrls.has(r.url)) continue;
+        if (!isRelevantSource(r, keywords)) continue;
 
         let article = await extractArticleContent(r.url, r.title);
         if (
@@ -301,6 +318,14 @@ export async function gatherMultiSourceResearch(
           } else {
             continue;
           }
+        }
+
+        // Enforce secondary source char limit from PIPELINE_CONFIG
+        if (article.content.length > PIPELINE_CONFIG.limits.secondarySourceCharLimit) {
+          article.content = article.content.slice(
+            0,
+            PIPELINE_CONFIG.limits.secondarySourceCharLimit,
+          );
         }
 
         article.role = "academic_baseline";
@@ -323,6 +348,7 @@ export async function gatherMultiSourceResearch(
         if (communitySources.length >= 2) break;
         const domain = getHostname(r.url);
         if (!domain || seenDomains.has(domain) || seenUrls.has(r.url)) continue;
+        if (!isRelevantSource(r, keywords)) continue;
 
         let article = await extractArticleContent(r.url, r.title);
         if (
@@ -340,6 +366,14 @@ export async function gatherMultiSourceResearch(
           } else {
             continue;
           }
+        }
+
+        // Enforce secondary source char limit from PIPELINE_CONFIG
+        if (article.content.length > PIPELINE_CONFIG.limits.secondarySourceCharLimit) {
+          article.content = article.content.slice(
+            0,
+            PIPELINE_CONFIG.limits.secondarySourceCharLimit,
+          );
         }
 
         article.role = "community_discussion";

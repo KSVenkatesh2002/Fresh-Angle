@@ -1,4 +1,5 @@
 import { TopicCandidate } from "@/services/research/topics";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 import {
   extractArticleContent,
   ExtractedArticleSource,
@@ -23,6 +24,12 @@ export async function stepResearch(
   // 1. Extract the primary catalyst source
   const primarySource = await extractArticleContent(topic.url, topic.title);
   primarySource.role = "primary";
+  if (primarySource.content.length > PIPELINE_CONFIG.limits.primarySourceCharLimit) {
+    primarySource.content = `${primarySource.content.slice(
+      0,
+      PIPELINE_CONFIG.limits.primarySourceCharLimit,
+    )}...`;
+  }
 
   // 2. Triangulate with secondary technical sources (Tavily Search + arXiv + Hacker News)
   let secondarySources: ExtractedArticleSource[] = [];
@@ -65,15 +72,20 @@ ${s.content}
     })
     .join("\n");
 
+  const cappedSourcesText =
+    formattedSourcesText.length > PIPELINE_CONFIG.limits.maxTotalResearchPromptChars
+      ? `${formattedSourcesText.slice(0, PIPELINE_CONFIG.limits.maxTotalResearchPromptChars)}\n...[TRUNCATED FOR PROMPT BUDGET]`
+      : formattedSourcesText;
+
   console.log(
-    `✓ [Research] Assembled ${sources.length} source(s) (Depth: ${researchDepth}, ${primarySource.content.length} primary chars) for triangulation.`,
+    `✓ [Research] Assembled ${sources.length} source(s) (Depth: ${researchDepth}, ${primarySource.content.length} primary chars, ${cappedSourcesText.length} total prompt chars) for triangulation.`,
   );
 
   return {
     primarySource,
     secondarySources,
     sources,
-    formattedSourcesText,
+    formattedSourcesText: cappedSourcesText,
     researchDepth,
   };
 }
