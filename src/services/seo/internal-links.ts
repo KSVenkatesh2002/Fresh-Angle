@@ -1,6 +1,6 @@
 import { getDb } from "@/db/client";
 import { posts, postLinks, postTags, tags, categories } from "@/db/schema";
-import { eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { extractEntities } from "@/services/research/dedupe";
 
 export interface LinkTarget {
