@@ -129,5 +129,47 @@ First paragraph discusses speculative decoding and then mentions speculative dec
     expect(result.enrichedMd).toContain("[speculative decoding](/blog/sd)");
     expect(result.enrichedMd).toContain("and then mentions speculative decoding again.");
   });
+
+  it("rejects disallowed generic one-word anchors such as architecture, training, security, inference, gpu", () => {
+    const title = "Modern GPU Cloud Infrastructure Architecture and Security";
+    const tags = ["architecture", "training", "security", "inference", "gpu", "cloud-computing"];
+    const keywords = extractTargetKeywords(title, tags);
+
+    expect(keywords).not.toContain("architecture");
+    expect(keywords).not.toContain("training");
+    expect(keywords).not.toContain("security");
+    expect(keywords).not.toContain("inference");
+    expect(keywords).not.toContain("gpu");
+
+    // Even if passed manually into targets, injectContextualInternalLinks must filter them out
+    const postMd = `This system improves enterprise security and accelerates training on every GPU in the cluster.`;
+    const targets: LinkTarget[] = [
+      { id: "sec", title: "Security", slug: "cyber-security", keywords: ["security"] },
+      { id: "trn", title: "Training", slug: "model-training", keywords: ["training"] },
+      { id: "gpu", title: "GPU", slug: "gpu-guide", keywords: ["GPU"] },
+    ];
+
+    const result = injectContextualInternalLinks(postMd, "current", targets, 3);
+    expect(result.injectedLinks.length).toBe(0);
+    expect(result.enrichedMd).toBe(postMd);
+  });
+
+  it("never creates nested or corrupted markdown links when keywords appear in URLs or existing links", () => {
+    const postMd = `We recommend reading [Google AT&T Security](/blog/att-gemini-ai-home-security) for enterprise deployments.`;
+    const targets: LinkTarget[] = [
+      {
+        id: "target-sec",
+        title: "Enterprise Security Post",
+        slug: "enterprise-security-post",
+        keywords: ["security", "home security"],
+      },
+    ];
+
+    const result = injectContextualInternalLinks(postMd, "current-post", targets, 3);
+    // Should NOT inject inside the existing URL
+    expect(result.enrichedMd).not.toContain("[security](/blog/enterprise-security-post)");
+    expect(result.enrichedMd).toContain("[Google AT&T Security](/blog/att-gemini-ai-home-security)");
+    expect(result.injectedLinks.length).toBe(0);
+  });
 });
 

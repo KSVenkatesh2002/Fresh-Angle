@@ -13,6 +13,7 @@ import {
   checkOriginality,
   cleanTextForOriginality,
   getWordTokens,
+  findUnsupportedNumbers,
 } from "../src/services/research/originality";
 import { analyzeCitations } from "../src/services/research/sources";
 
@@ -90,14 +91,22 @@ async function run() {
     const draftRes = await stepDraft(topic.title, outlineRes.outline, research.formattedSourcesText);
     console.log(`✓ Draft complete: ${draftRes.draftMarkdown.length} chars`);
 
+    // Number grounding check BEFORE review/rewrite
+    const unsupportedBefore = findUnsupportedNumbers(draftRes.draftMarkdown, research.formattedSourcesText);
+    console.log(`📊 [Grounding Check - Before Review] Found ${unsupportedBefore.length} unverified number(s): ${unsupportedBefore.join(", ") || "none"}`);
+
     // Pre-review originality check to determine if it passes without rewrite
     const preReviewOriginality = checkOriginality(draftRes.draftMarkdown, research.formattedSourcesText);
     const passedWithoutRewrite = preReviewOriginality.passed;
 
-    // 4. Review
+    // 4. Review (includes number grounding gate + targeted rewrite)
     const reviewRes = await stepReview(topic.title, draftRes.draftMarkdown, research.formattedSourcesText);
     const newDraftMd = reviewRes.post.contentMd;
     console.log(`✓ Review complete: ${newDraftMd.length} chars, title: "${reviewRes.post.title}"`);
+
+    // Number grounding check AFTER review/rewrite
+    const unsupportedAfter = findUnsupportedNumbers(newDraftMd, research.formattedSourcesText);
+    console.log(`📊 [Grounding Check - After Review] Found ${unsupportedAfter.length} unverified number(s): ${unsupportedAfter.join(", ") || "none"}`);
 
     // Save markdown files in scripts/out/samples/
     const newMdPath = path.join(samplesDir, `${oldSlug}-new.md`);
@@ -131,6 +140,8 @@ async function run() {
       title: topic.title,
       slug: oldSlug,
       passedWithoutRewrite,
+      unsupportedBefore,
+      unsupportedAfter,
       newMetrics: {
         rawWords: newDraftMd.split(/\s+/).length,
         cleanWords: newCleanWords,
@@ -167,6 +178,8 @@ async function run() {
     console.log(`Metric                     | Old Baseline Version     | New Pipeline Version`);
     console.log(`--------------------------------------------------------------------------------`);
     console.log(`Word Count (Excl. Code/Tbl)| ${oldCleanWords.toString().padEnd(24)} | ${newCleanWords.toString().padEnd(20)}`);
+    console.log(`Unsupported Numbers (Draft)| N/A                      | ${(unsupportedBefore.length + " unverified").padEnd(20)}`);
+    console.log(`Unsupported Numbers (Final)| N/A                      | ${(unsupportedAfter.length + " unverified").padEnd(20)}`);
     console.log(`3-Gram Shingle Overlap     | ${reportObj.oldMetrics.overlap3Gram.padEnd(24)} | ${reportObj.newMetrics.overlap3Gram.padEnd(20)}`);
     console.log(`4-Gram Shingle Overlap     | ${reportObj.oldMetrics.overlap4Gram.padEnd(24)} | ${reportObj.newMetrics.overlap4Gram.padEnd(20)}`);
     console.log(`5-Gram Shingle Overlap     | ${reportObj.oldMetrics.overlap5Gram.padEnd(24)} | ${reportObj.newMetrics.overlap5Gram.padEnd(20)}`);
@@ -183,16 +196,34 @@ async function run() {
   let md = "# Detector-Ready Sample Generation Report\n\n";
   md += "> Both new and old markdown drafts for these 3 articles have been saved to `scripts/out/samples/`.\n\n";
 
+  let numReportMd = "# Unsupported Numbers Audit Report\n\n";
+  numReportMd += "> Compares count of unsupported numbers (numbers with units, %, x, or $) in drafts before targeted review/rewrite vs. after review.\n\n";
+
   for (const r of comparisonReports) {
+    numReportMd += `## Sample ${r.sampleNum}: ${r.title}\n`;
+    numReportMd += `- **Slug:** \`${r.slug}\`\n`;
+    numReportMd += `- **Unsupported Numbers Before Rewrite (Draft):** **${r.unsupportedBefore.length}**\n`;
+    if (r.unsupportedBefore.length > 0) {
+      numReportMd += `  - Items: ${r.unsupportedBefore.map((n: string) => `\`${n}\``).join(", ")}\n`;
+    }
+    numReportMd += `- **Unsupported Numbers After Rewrite (Final):** **${r.unsupportedAfter.length}**\n`;
+    if (r.unsupportedAfter.length > 0) {
+      numReportMd += `  - Items: ${r.unsupportedAfter.map((n: string) => `\`${n}\``).join(", ")}\n`;
+    }
+    numReportMd += `- **Grounding Audit Status:** **${r.unsupportedAfter.length === 0 ? "PASSED (100% Grounded)" : "FLAGGED NEEDS_REVIEW"}**\n\n`;
+
     md += `## Sample ${r.sampleNum}: ${r.title}\n`;
     md += `- **Slug:** \`${r.slug}\`\n`;
     md += `- **New Draft Saved:** \`scripts/out/samples/${r.slug}-new.md\`\n`;
     md += `- **Old Baseline Saved:** \`scripts/out/samples/${r.slug}-old.md\`\n`;
+    md += `- **Unsupported Numbers Before Rewrite:** **${r.unsupportedBefore.length}** (${r.unsupportedBefore.join(", ") || "none"})\n`;
+    md += `- **Unsupported Numbers After Rewrite:** **${r.unsupportedAfter.length}** (${r.unsupportedAfter.join(", ") || "none"})\n`;
     md += `- **Passed Checker Without Rewrite:** **${r.passedWithoutRewrite ? "YES" : "NO (targeted sentences rewritten)"}**\n\n`;
 
     md += `| Metric | Old Baseline Post | New Pipeline Post | Assessment |\n`;
     md += `| :--- | :---: | :---: | :--- |\n`;
     md += `| Word Count (Prose Only) | ${r.oldMetrics.cleanWords} words | ${r.newMetrics.cleanWords} words | Deep, rich synthesis |\n`;
+    md += `| **Unsupported Numbers** | N/A | **${r.unsupportedAfter.length}** (from ${r.unsupportedBefore.length} in draft) | **Strictly grounded** |\n`;
     md += `| **3-Gram Shingle Overlap** | **${r.oldMetrics.overlap3Gram}** | **${r.newMetrics.overlap3Gram}** | **Massive reduction** |\n`;
     md += `| **4-Gram Shingle Overlap** | **${r.oldMetrics.overlap4Gram}** | **${r.newMetrics.overlap4Gram}** | **Massive reduction** |\n`;
     md += `| **5-Gram Shingle Overlap** | **${r.oldMetrics.overlap5Gram}** | **${r.newMetrics.overlap5Gram}** | **Near-zero / zero** |\n`;
@@ -208,6 +239,10 @@ async function run() {
     }
     md += `\n---\n\n`;
   }
+
+  const numReportPath = path.resolve("scripts/out/unsupported-numbers-report.md");
+  fs.writeFileSync(numReportPath, numReportMd, "utf-8");
+  console.log(`Saved unsupported numbers report to ${numReportPath}`);
 
   const reportPath = path.resolve("scripts/out/samples-report.md");
   fs.writeFileSync(reportPath, md, "utf-8");

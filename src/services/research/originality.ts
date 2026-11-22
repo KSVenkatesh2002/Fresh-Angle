@@ -492,3 +492,124 @@ export async function checkOriginalityWebGate(
     maxRun: highestRun,
   };
 }
+
+/**
+ * Extracts all numbers with units (ms, s, gb, tb, k, m, b, tokens/s), multipliers (x),
+ * percentages (%), and currency ($) from Markdown draft, ignoring table headers,
+ * headings, and date years.
+ */
+export function extractGroundedNumbers(text: string): string[] {
+  if (!text) return [];
+  const clean = text
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]+`/g, " ")
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+    .replace(/https?:\/\/[^\s\)]+/g, " ");
+
+  const lines = clean.split("\n");
+  const extracted = new Set<string>();
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith("#")) continue; // skip heading numbers
+
+    // In tables, skip header row and separator rows
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      if (/^[\|\s\-:]+$/.test(trimmed)) continue; // separator row
+      const nextLine = lines[i + 1]?.trim();
+      if (nextLine && nextLine.startsWith("|") && /^[\|\s\-:]+$/.test(nextLine)) {
+        continue; // this line is the table header row
+      }
+    }
+
+    let lineText = trimmed;
+    if (/^\d+\.\s+/.test(trimmed)) {
+      // Strip leading list numbering (e.g. "1. ")
+      lineText = trimmed.replace(/^\d+\.\s+/, "");
+    }
+
+    // Match strictly: currency ($), multipliers (x), percentages (%), or numbers with technical units
+    const patterns = [
+      /\$\s*\d+(?:,\d+)*(?:\.\d+)?(?:\s*(?:k|m|b|billion|million|thousand))?\b/gi,
+      /\b\d+(?:\.\d+)?\s*x\b/gi,
+      /\b\d+(?:\.\d+)?\s*%/gi,
+      /\b\d+(?:,\d+)*(?:\.\d+)?\s*(?:ms|s|sec|seconds?|mins?|minutes?|hrs?|hours?|kb|mb|gb|tb|pb|tokens?(?:\/s)?|k|m|b|billion|million)\b/gi,
+    ];
+
+    for (const pattern of patterns) {
+      const matches = lineText.match(pattern) || [];
+      for (const m of matches) {
+        const normalized = m.trim().toLowerCase().replace(/\s+/g, "");
+        // Ignore date years like 2024, 2025, 2026
+        if (!normalized || normalized === "2024" || normalized === "2025" || normalized === "2026") continue;
+        extracted.add(normalized);
+      }
+    }
+  }
+
+  return Array.from(extracted);
+}
+
+/**
+ * Compares all numbers with units, %, x, or $ in the draft against the research dossier.
+ * Returns any numbers that do NOT appear in the normalized source text.
+ */
+export function findUnsupportedNumbers(draftMd: string, sourcesText: string): string[] {
+  if (!draftMd || !sourcesText) return [];
+  const draftNumbers = extractGroundedNumbers(draftMd);
+  const normalizedSources = sourcesText.toLowerCase().replace(/,/g, "");
+
+  const unsupported: string[] = [];
+  for (const num of draftNumbers) {
+    const cleanNum = num.replace(/,/g, "");
+    
+    // Check direct inclusion
+    if (normalizedSources.includes(cleanNum)) continue;
+
+    // Check common variants (e.g. "70x" vs "70 x" vs "70-fold" vs "70 times")
+    let matchedVariant = false;
+    if (cleanNum.endsWith("x")) {
+      const base = cleanNum.slice(0, -1);
+      if (
+        normalizedSources.includes(`${base} x`) ||
+        normalizedSources.includes(`${base}-fold`) ||
+        normalizedSources.includes(`${base} times`)
+      ) {
+        matchedVariant = true;
+      }
+    } else if (cleanNum.endsWith("%")) {
+      const base = cleanNum.slice(0, -1);
+      if (
+        normalizedSources.includes(`${base} %`) ||
+        normalizedSources.includes(`${base} percent`)
+      ) {
+        matchedVariant = true;
+      }
+    } else if (cleanNum.startsWith("$")) {
+      const base = cleanNum.slice(1);
+      if (
+        normalizedSources.includes(`$ ${base}`) ||
+        normalizedSources.includes(base) ||
+        normalizedSources.includes(`${base} dollars`)
+      ) {
+        matchedVariant = true;
+      }
+    } else if (cleanNum.endsWith("ms")) {
+      const base = cleanNum.slice(0, -2);
+      if (
+        normalizedSources.includes(`${base} ms`) ||
+        normalizedSources.includes(`${base} milliseconds`) ||
+        normalizedSources.includes(`${base} millisecond`)
+      ) {
+        matchedVariant = true;
+      }
+    }
+
+    if (!matchedVariant) {
+      unsupported.push(num);
+    }
+  }
+
+  return unsupported;
+}
+

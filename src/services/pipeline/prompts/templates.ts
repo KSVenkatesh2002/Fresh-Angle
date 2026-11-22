@@ -65,7 +65,9 @@ ARCHITECTURAL OUTLINE RULES:
      * Section 2: Key Stakeholders & Operational Timeline
      * Section 3: Industry Implications & Enterprise Risk (Sourced facts + "Our take:" analysis)
      * Section 4: Key Takeaways & What to Watch Next
-3. ACCURACY: Ground planned sections in the provided sources. Do not invent topics not supported by research.
+3. STRICT PROHIBITION ON INVENTED NUMBERS:
+   - Forbid planning any numbers, multipliers (e.g., 70x), pricing ($), latency figures, or percentages that are not explicitly stated in the research dossier.
+   - Comparison tables must only contain verified source-stated values; otherwise plan to explain architectural trade-offs in qualitative prose. Do not invent benchmark rows.
 
 OUTPUT REQUIREMENTS:
 Output a single valid JSON object strictly matching this schema:
@@ -101,6 +103,10 @@ ${sourcesText}
 
 WRITING & ORIGINALITY SPECIFICATIONS:
 - TARGET LENGTH: 900 to 1,400 words. Rich technical depth, zero fluff.
+- ZERO INVENTED NUMBERS OR METRICS:
+  * STRICT PROHIBITION: You must NEVER invent, estimate, or hallucinate any numbers, multipliers (e.g., 70x, 2.5x), percentages (e.g., 95%), prices ($), latency figures, or memory metrics.
+  * Every number, multiplier, percentage, or price in the text and tables MUST appear in the provided research dossier.
+  * COMPARISON TABLES: Comparison tables may contain ONLY source-stated values. If a baseline figure, multiplier, or metric is not explicitly present in the sources, OMIT that row or explain the qualitative relationship in prose. NEVER fill table cells with guessed or synthetic numbers.
 - CITATION & ATTRIBUTION RULES:
   * Name the source every time an empirical fact, number, or benchmark is stated (e.g. "According to Anthropic's FlashProve technical report...", "As reported by Reuters...").
   * LINK AT MOST 2 TIMES PER SOURCE: Include an inline Markdown link [Publisher/Context](url) at most TWICE for any single source URL across the entire article (e.g. on its first major introduction).
@@ -131,7 +137,9 @@ export function buildReviewPrompt(
 Perform a rigorous editorial review and quality audit of the following technical draft against the research dossier.
 
 AUDIT CRITERIA:
-1. CITATION & FACTUAL ACCURACY:
+1. CITATION & STRICT NUMBER GROUNDING:
+   - VERIFY EVERY NUMBER: Check every number, multiplier, price ($), and percentage against the research dossier. If any number, multiplier (e.g., 70x, 1x), price ($), or percentage in the draft or comparison matrix is NOT present in the research dossier, REMOVE IT or convert the claim into qualitative prose. Do NOT leave invented numbers.
+   - Comparison tables must contain ONLY source-stated values. Omit unsupported rows or baseline comparisons not present in sources.
    - Name the source for empirical metrics, numbers, and key factual claims.
    - Ensure each distinct source URL is linked AT MOST 2 times. Do not force inline links on every claim; verify plain text source naming for subsequent claims.
    - Verify all numbers in the Markdown table match the provided sources exactly. Do NOT alter verified figures.

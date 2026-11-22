@@ -12,6 +12,7 @@ import { evaluateQualityGates } from "@/services/seo/quality-gates";
 import {
   checkOriginality,
   checkOriginalityWebGate,
+  findUnsupportedNumbers,
   OriginalityCheckResult,
 } from "@/services/research/originality";
 import { capRepeatedUrlLinks, analyzeCitations } from "@/services/research/sources";
@@ -180,6 +181,83 @@ Respond ONLY with valid JSON.`;
     );
     (reviewedPost as Record<string, unknown>).researchDepth = "single";
     (reviewedPost as Record<string, unknown>).status = "needs_review";
+  }
+
+  // 6. Strict Number Grounding Gate: verify numbers with units, %, x, or $ against sources
+  let unsupportedNumbers = findUnsupportedNumbers(
+    reviewedPost.contentMd,
+    formattedSourcesText,
+  );
+
+  if (unsupportedNumbers.length > 0) {
+    console.warn(
+      `⚠️ [Review Number Gate] Found ${unsupportedNumbers.length} unverified number/metric claims not in sources: ${unsupportedNumbers.join(", ")}. Triggering targeted rewrite...`,
+    );
+
+    const numberRewritePrompt = `Strict number grounding audit failed. The following numbers, multipliers, percentages, or prices appear in the draft but are NOT supported by the research sources:
+${unsupportedNumbers.map((n) => `- ${n}`).join("\n")}
+
+RESEARCH DOSSIER:
+${formattedSourcesText}
+
+DRAFT POST CONTENT:
+${reviewedPost.contentMd}
+
+REQUIREMENTS:
+1. Revise the draft content to completely remove every unsupported number, multiplier (e.g. 70x), percentage, or price claim ($).
+2. If an unsupported number is part of a comparison table row, OMIT the row entirely or describe the relationship qualitatively in prose without fabricated figures.
+3. Keep all verified source facts, empirical metrics that ARE in the research dossier, citations, and markdown structure intact.
+4. Output a single JSON object strictly matching:
+{
+  "revisedContentMd": "the complete revised markdown content"
+}
+
+Respond ONLY with valid JSON.`;
+
+    try {
+      const numberRewriteResult = await defaultAiChain.generateValidatedJson(
+        {
+          system:
+            "You are a senior technical copy editor strictly enforcing empirical factual grounding and zero hallucinated metrics.",
+          prompt: numberRewritePrompt,
+          temperature: 0.2,
+          maxTokens: 12288,
+        },
+        z.object({
+          revisedContentMd: z.string(),
+        }),
+      );
+
+      totalTokensPrompt += numberRewriteResult.result.tokensIn || 0;
+      totalTokensCompletion += numberRewriteResult.result.tokensOut || 0;
+
+      reviewedPost.contentMd = capRepeatedUrlLinks(
+        numberRewriteResult.data.revisedContentMd,
+        PIPELINE_CONFIG.originality.maxLinksPerUrl,
+      );
+
+      // Re-verify after rewrite
+      unsupportedNumbers = findUnsupportedNumbers(
+        reviewedPost.contentMd,
+        formattedSourcesText,
+      );
+
+      if (unsupportedNumbers.length > 0) {
+        console.warn(
+          `⚠️ [Review Number Gate] ${unsupportedNumbers.length} unsupported numbers remained after rewrite: ${unsupportedNumbers.join(", ")}. Forcing status to 'needs_review'.`,
+        );
+        (reviewedPost as Record<string, unknown>).status = "needs_review";
+      } else {
+        console.log(
+          `✓ [Review Number Gate] All numbers successfully grounded after targeted rewrite.`,
+        );
+      }
+    } catch (rewriteErr) {
+      console.warn(
+        `⚠️ [Review Number Gate] Rewrite failed: ${(rewriteErr as Error).message}. Marking needs_review.`,
+      );
+      (reviewedPost as Record<string, unknown>).status = "needs_review";
+    }
   }
 
   console.log(

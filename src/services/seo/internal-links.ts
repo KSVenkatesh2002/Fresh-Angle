@@ -23,6 +23,24 @@ export interface LinkInjectionResult {
   injectedLinks: InjectedLink[];
 }
 
+export const DISALLOWED_ONE_WORD_ANCHORS = new Set([
+  "architecture",
+  "training",
+  "security",
+  "inference",
+  "gpu",
+  "model",
+  "models",
+  "ai",
+  "hardware",
+  "software",
+  "performance",
+  "system",
+  "systems",
+  "cloud",
+  "data",
+]);
+
 /**
  * Derives rich, high-signal search anchor phrases from a post's title, tags, and tech entities.
  */
@@ -35,7 +53,7 @@ export function extractTargetKeywords(
   // 1. Tech entities from title
   const entities = extractEntities(title);
   for (const ent of entities) {
-    if (ent.length >= 3) {
+    if (ent.length >= 3 && !DISALLOWED_ONE_WORD_ANCHORS.has(ent.toLowerCase())) {
       keywords.add(ent);
     }
   }
@@ -61,7 +79,11 @@ export function extractTargetKeywords(
   // 3. Meaningful tags
   for (const t of tagsList) {
     const cleanTag = t.replace(/-/g, " ").trim();
-    if (cleanTag.length >= 4 && !["tech", "news", "ai", "guide"].includes(cleanTag.toLowerCase())) {
+    if (
+      cleanTag.length >= 4 &&
+      !["tech", "news", "ai", "guide"].includes(cleanTag.toLowerCase()) &&
+      !DISALLOWED_ONE_WORD_ANCHORS.has(cleanTag.toLowerCase())
+    ) {
       keywords.add(cleanTag);
     }
   }
@@ -84,10 +106,20 @@ export function injectContextualInternalLinks(
     return { enrichedMd: contentMd, injectedLinks: [] };
   }
 
-  // Filter out self-links
-  const eligibleTargets = targets.filter(
-    (t) => t.slug !== currentPostSlug && t.keywords.length > 0,
-  );
+  // Filter out self-links and sanitize keywords to remove disallowed one-word anchors
+  const eligibleTargets = targets
+    .filter((t) => t.slug !== currentPostSlug)
+    .map((t) => ({
+      ...t,
+      keywords: t.keywords.filter((kw) => {
+        const trimmed = kw.trim().toLowerCase();
+        if (!trimmed.includes(" ") && DISALLOWED_ONE_WORD_ANCHORS.has(trimmed)) {
+          return false;
+        }
+        return true;
+      }),
+    }))
+    .filter((t) => t.keywords.length > 0);
 
   if (eligibleTargets.length === 0) {
     return { enrichedMd: contentMd, injectedLinks: [] };
@@ -123,7 +155,7 @@ export function injectContextualInternalLinks(
       return line;
     }
 
-    // Attempt to inject links into this paragraph
+    // Attempt to inject links into this paragraph safely without nesting
     let currentLine = line;
 
     for (const target of eligibleTargets) {
@@ -133,31 +165,61 @@ export function injectContextualInternalLinks(
       for (const keyword of target.keywords) {
         if (linkedTargetSlugs.has(target.slug)) break;
 
-        // Escape regex special characters in keyword
+        // Find all forbidden ranges in currentLine: existing markdown links, inline code, HTML tags
+        const forbiddenRanges: Array<[number, number]> = [];
+
+        // 1. Existing markdown links: [text](url)
+        const linkRegex = /\[[^\]]*\]\([^\)]*\)/g;
+        let matchLink: RegExpExecArray | null;
+        while ((matchLink = linkRegex.exec(currentLine)) !== null) {
+          forbiddenRanges.push([matchLink.index, matchLink.index + matchLink[0].length]);
+        }
+
+        // 2. Inline code spans: `code`
+        const codeRegex = /`[^`]+`/g;
+        let matchCode: RegExpExecArray | null;
+        while ((matchCode = codeRegex.exec(currentLine)) !== null) {
+          forbiddenRanges.push([matchCode.index, matchCode.index + matchCode[0].length]);
+        }
+
+        // 3. HTML tags: <tag>
+        const tagRegex = /<[^>]+>/g;
+        let matchTag: RegExpExecArray | null;
+        while ((matchTag = tagRegex.exec(currentLine)) !== null) {
+          forbiddenRanges.push([matchTag.index, matchTag.index + matchTag[0].length]);
+        }
+
+        // Match keyword with word boundaries
         const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const kwRegex = new RegExp(`\\b${escapedKeyword}\\b`, "gi");
 
-        // Match keyword with word boundaries, NOT inside existing markdown link [..](..) or inline code `..`
-        // We use a regex that looks for word boundary, avoiding characters already part of links
-        const regex = new RegExp(`(?<!\\[[^\\]]*)(?<!\`[^\`]*)\\b(${escapedKeyword})\\b(?![^\\[]*\\])(?![^\`]*\`)`, "i");
+        let kwMatch: RegExpExecArray | null;
+        while ((kwMatch = kwRegex.exec(currentLine)) !== null) {
+          const matchStart = kwMatch.index;
+          const matchEnd = matchStart + kwMatch[0].length;
 
-        const match = currentLine.match(regex);
-        if (match && match.index !== undefined) {
-          const matchedText = match[1];
-          // Check that it's not already linked in currentLine
-          const linkSyntax = `[${matchedText}](/blog/${target.slug})`;
+          // Check if match overlaps with ANY forbidden range
+          const overlapsForbidden = forbiddenRanges.some(
+            ([fStart, fEnd]) => matchStart < fEnd && matchEnd > fStart,
+          );
 
-          currentLine =
-            currentLine.slice(0, match.index) +
-            linkSyntax +
-            currentLine.slice(match.index + matchedText.length);
+          if (!overlapsForbidden) {
+            const matchedText = kwMatch[0];
+            const linkSyntax = `[${matchedText}](/blog/${target.slug})`;
 
-          linkedTargetSlugs.add(target.slug);
-          injectedLinks.push({
-            toPostId: target.id,
-            targetSlug: target.slug,
-            anchor: matchedText,
-          });
-          break; // Move to next target
+            currentLine =
+              currentLine.slice(0, matchStart) +
+              linkSyntax +
+              currentLine.slice(matchEnd);
+
+            linkedTargetSlugs.add(target.slug);
+            injectedLinks.push({
+              toPostId: target.id,
+              targetSlug: target.slug,
+              anchor: matchedText,
+            });
+            break; // Move to next target
+          }
         }
       }
     }

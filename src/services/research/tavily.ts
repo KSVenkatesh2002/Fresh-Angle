@@ -212,35 +212,21 @@ export function extractSearchKeywords(title: string): string {
   return clean.slice(0, 4).join(" ");
 }
 
-/**
- * Evaluates whether a search result is sufficiently relevant to the topic
- * based on Tavily confidence score and at least 2 keyword hits.
- */
-export function isRelevantSource(
-  r: TavilySearchResult,
-  keywords: string,
-  minScore = PIPELINE_CONFIG.limits.minTavilyRelevanceScore,
-): boolean {
-  if (r.score < minScore) return false;
-  const kwList = keywords.toLowerCase().split(/\s+/).filter((k) => k.length > 2);
-  const text = (r.title + " " + r.content).toLowerCase();
-  const matches = kwList.filter((kw) => text.includes(kw));
-  const minRequiredHits = Math.min(2, kwList.length);
-  return matches.length >= minRequiredHits;
-}
+import {
+  BRAND_NAMES,
+  extractDistinctiveTopicTerms,
+  isResearchOrientedTopic,
+  verifyRelevanceWithLLM,
+  isRelevantSource,
+} from "./relevance";
 
-/**
- * Determines whether a topic is technical/research-oriented vs breaking news/industry dispatch.
- */
-export function isResearchOrientedTopic(title: string): boolean {
-  const researchKeywords = [
-    "paper", "arxiv", "research", "algorithm", "architecture", "benchmark",
-    "training", "attention", "survey", "weights", "transformer", "inference",
-    "scaling", "dataset", "reasoning", "quantization", "fine-tuning", "rlhf", "dpo"
-  ];
-  const lower = title.toLowerCase();
-  return researchKeywords.some((kw) => lower.includes(kw));
-}
+export {
+  BRAND_NAMES,
+  extractDistinctiveTopicTerms,
+  isResearchOrientedTopic,
+  verifyRelevanceWithLLM,
+  isRelevantSource,
+};
 
 /**
  * Derives a clean hostname for domain deduplication.
@@ -267,7 +253,15 @@ export async function gatherMultiSourceResearch(
   allSources: ExtractedArticleSource[];
   researchDepth: "single" | "multi";
 }> {
-  const keywords = extractSearchKeywords(topicTitle);
+  const distinctiveTerms = extractDistinctiveTopicTerms(topicTitle);
+  const keywords =
+    (distinctiveTerms.length >= 2
+      ? distinctiveTerms
+      : extractSearchKeywords(topicTitle).split(" ")
+    )
+      .slice(0, 4)
+      .join(" ");
+
   if (!keywords) {
     return {
       baselineSources: [],
@@ -315,7 +309,11 @@ export async function gatherMultiSourceResearch(
         if (baselineSources.length >= 2) break;
         const domain = getHostname(r.url);
         if (!domain || seenDomains.has(domain) || seenUrls.has(r.url)) continue;
-        if (!isRelevantSource(r, keywords)) continue;
+        const rel = await isRelevantSource(r, topicTitle);
+        if (!rel.relevant) {
+          console.log(`[Tavily] Dropped baseline candidate "${r.title}": ${rel.reason}`);
+          continue;
+        }
 
         let article = await extractArticleContent(r.url, r.title);
         if (
@@ -363,7 +361,11 @@ export async function gatherMultiSourceResearch(
         if (communitySources.length >= 2) break;
         const domain = getHostname(r.url);
         if (!domain || seenDomains.has(domain) || seenUrls.has(r.url)) continue;
-        if (!isRelevantSource(r, keywords)) continue;
+        const rel = await isRelevantSource(r, topicTitle);
+        if (!rel.relevant) {
+          console.log(`[Tavily] Dropped baseline candidate "${r.title}": ${rel.reason}`);
+          continue;
+        }
 
         let article = await extractArticleContent(r.url, r.title);
         if (

@@ -1,6 +1,11 @@
 import * as cheerio from "cheerio";
 import { fetchWithRetry } from "@/lib/utils/http";
 import { PIPELINE_CONFIG } from "@/config/pipeline";
+import {
+  extractDistinctiveTopicTerms,
+  isResearchOrientedTopic,
+  verifyRelevanceWithLLM,
+} from "./relevance";
 
 export interface ExtractedArticleSource {
   url: string;
@@ -43,15 +48,25 @@ export function stripBoilerplate(text: string): string {
   return text
     // Strip markdown images: ![alt](url)
     .replace(/!\[[^\]]*\]\([^\)]+\)/g, " ")
+    // Strip Axios newsletter/photo preamble boilerplate
+    .replace(/^.*Add Axios as your preferred source.*$/gim, " ")
+    .replace(/^.*Photo by\s+.*$/gim, " ")
+    .replace(/^.*Illustration:\s+.*$/gim, " ")
+    .replace(/^.*Get Axios.*in your inbox.*$/gim, " ")
+    // Strip Hacker News navigation and table boilerplate
+    .replace(/^.*\|\s*\*\*Hacker News\*\*.*$/gim, " ")
+    .replace(/^[\|\s\-:]+$/gm, " ")
+    .replace(/^.*\b\d+\s+points\s+by\s+\w+\s+.*$/gim, " ")
+    // Strip TechSpot / generic site navigation link bars (* [Login](/...) * [Hardware](...))
+    .replace(/(?:^|\n)\s*(?:\*\s*\[[^\]]+\]\([^\)]+\)\s*){2,}/gi, "\n")
     // Strip markdown navigation links (Login, Subscribe, Sign in, Menu, etc.)
-    .replace(/\[\s*(login|sign in|sign up|register|subscribe|home|privacy policy|terms of service|cookie policy|share|menu|navigation)\s*\]\([^\)]+\)/gi, " ")
+    .replace(/\[\s*(login|sign in|sign up|register|subscribe|home|privacy policy|terms of service|cookie policy|share|menu|navigation|community|hardware|software|industry)\s*\]\([^\)]+\)/gi, " ")
     // Strip list items with single link navigation: * [Login](/...)
     .replace(/^[\s*\-•]\s*\[[^\]]+\]\([^\)]+\)\s*$/gm, " ")
-    // Strip empty table pipe rows used for header navigation: | | | | |---|---|---|
-    .replace(/^[\|\s\-:]+$/gm, " ")
     // Strip common disclaimer/cookie banner lines
-    .replace(/^.*(cookie policy|gdpr|all rights reserved|copyright ©|subscribe to unlock).*$/gim, " ")
-    // Collapse multiple empty lines
+    .replace(/^.*(cookie policy|gdpr|all rights reserved|copyright ©|subscribe to unlock|read our privacy policy).*$/gim, " ")
+    // Collapse multiple empty lines and spaces
+    .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -206,11 +221,15 @@ export async function extractArticleContent(
         : PIPELINE_CONFIG.limits.articleTextCharLimit;
 
     const sanitizedText = stripBoilerplate(extractedText);
+    const hnCapped =
+      url.includes("news.ycombinator.com") && sanitizedText.length > 10000
+        ? `${sanitizedText.substring(0, 10000)}\n...[HACKER NEWS COMMENTS CAPPED]`
+        : sanitizedText;
 
     const cleanContent =
-      Number.isFinite(charLimit) && sanitizedText.length > charLimit
-        ? `${sanitizedText.substring(0, charLimit)}...`
-        : sanitizedText;
+      Number.isFinite(charLimit) && hnCapped.length > charLimit
+        ? `${hnCapped.substring(0, charLimit)}...`
+        : hnCapped;
 
     return {
       url,
@@ -254,12 +273,18 @@ function extractSearchKeywords(title: string): string {
 /**
  * Discovers 1-2 secondary research sources (academic papers via ArXiv or developer discussions via Hacker News)
  * to triangulate technical claims, eliminate single-source paraphrasing, and guarantee originality.
+ * Enforces non-brand distinctive term overlap and cheap LLM relevance validation.
  */
 export async function discoverSecondarySources(
   topicTitle: string,
   excludeUrl?: string,
 ): Promise<ExtractedArticleSource[]> {
-  const searchTerms = extractSearchKeywords(topicTitle);
+  const distinctiveTerms = extractDistinctiveTopicTerms(topicTitle);
+  const searchTerms =
+    distinctiveTerms.length >= 2
+      ? distinctiveTerms.slice(0, 3).join(" ")
+      : extractSearchKeywords(topicTitle);
+
   if (!searchTerms) {
     return [];
   }
@@ -269,11 +294,15 @@ export async function discoverSecondarySources(
   try {
     const excludeHost = excludeUrl ? new URL(excludeUrl).hostname.replace(/^www\./, "") : "";
 
-    // Run parallel discovery: ArXiv (academic context) + Hacker News (industry/community context)
+    // Run parallel discovery: ArXiv (academic context, ONLY if research-oriented) + Hacker News (industry context)
     const [arxivResult, hnResult] = await Promise.allSettled([
-      // 1. ArXiv Search API
+      // 1. ArXiv Search API (strict: research topics only)
       (async () => {
-        const arxivUrl = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(searchTerms)}&start=0&max_results=2`;
+        if (!isResearchOrientedTopic(topicTitle)) {
+          return [];
+        }
+
+        const arxivUrl = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(searchTerms)}&start=0&max_results=3`;
         const res = await fetchWithRetry(
           arxivUrl,
           { timeoutMs: 5000 },
@@ -284,12 +313,34 @@ export async function discoverSecondarySources(
         const $ = cheerio.load(xml, { xmlMode: true });
         const items: ExtractedArticleSource[] = [];
 
-        $("entry").each((_, entry) => {
+        for (const entry of $("entry").toArray()) {
           const entryTitle = $(entry).find("title").text().replace(/\s+/g, " ").trim();
           const entrySummary = $(entry).find("summary").text().replace(/\s+/g, " ").trim();
           const entryId = $(entry).find("id").text().trim();
 
           if (entrySummary.length > 150 && entryTitle) {
+            // Require 2+ distinctive non-brand topic keyword hits in title + summary
+            const text = (entryTitle + " " + entrySummary).toLowerCase();
+            const matched = distinctiveTerms.filter((term) => text.includes(term));
+            const minRequired = Math.min(2, distinctiveTerms.length);
+            if (matched.length < minRequired) {
+              console.log(
+                `[arXiv] Dropped candidate "${entryTitle}": matched only ${matched.length}/${minRequired} distinctive terms (${matched.join(", ") || "none"})`,
+              );
+              continue;
+            }
+
+            // Cheap LLM verification
+            const llmCheck = await verifyRelevanceWithLLM(
+              topicTitle,
+              entryTitle,
+              entrySummary.slice(0, 300),
+            );
+            if (!llmCheck.relevant) {
+              console.log(`[arXiv] Dropped candidate "${entryTitle}": LLM rejected - ${llmCheck.reason}`);
+              continue;
+            }
+
             items.push({
               url: entryId,
               title: entryTitle,
@@ -297,21 +348,22 @@ export async function discoverSecondarySources(
               content: entrySummary,
               role: "academic_baseline",
             });
+            if (items.length >= 1) break;
           }
-        });
+        }
         return items;
       })(),
 
       // 2. Hacker News Algolia Search API
       (async () => {
-        const hnUrl = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(searchTerms)}&tags=story&hitsPerPage=3`;
+        const hnUrl = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(searchTerms)}&tags=story&hitsPerPage=4`;
         const res = await fetchWithRetry(
           hnUrl,
           { timeoutMs: 5000 },
           { retries: 1, backoffMs: 500 },
         );
         if (!res.ok) return [];
-        const data = await res.json() as { hits?: Array<{ title?: string; url?: string }> };
+        const data = (await res.json()) as { hits?: Array<{ title?: string; url?: string }> };
         const hits = data.hits || [];
         const items: ExtractedArticleSource[] = [];
 
@@ -322,13 +374,43 @@ export async function discoverSecondarySources(
             if (excludeHost && hitHost.includes(excludeHost)) continue;
             if (hit.url === excludeUrl) continue;
 
+            // Check non-brand keyword match
+            const hitText = hit.title.toLowerCase();
+            const matched = distinctiveTerms.filter((term) => hitText.includes(term));
+            if (matched.length < 1 && distinctiveTerms.length > 0) continue;
+
             const extracted = await extractArticleContent(hit.url, hit.title);
-            if (extracted.content && extracted.content.length > 250 && !extracted.content.startsWith("Source article could not")) {
+            if (
+              extracted.content &&
+              extracted.content.length > 250 &&
+              !extracted.content.startsWith("Source article could not")
+            ) {
+              const fullText = (hit.title + " " + extracted.content).toLowerCase();
+              const fullMatched = distinctiveTerms.filter((term) => fullText.includes(term));
+              const minRequired = Math.min(2, distinctiveTerms.length);
+              if (fullMatched.length < minRequired) {
+                console.log(
+                  `[HackerNews] Dropped candidate "${hit.title}": matched only ${fullMatched.length}/${minRequired} terms`,
+                );
+                continue;
+              }
+
+              // Cheap LLM verification
+              const llmCheck = await verifyRelevanceWithLLM(
+                topicTitle,
+                hit.title,
+                extracted.content.slice(0, 300),
+              );
+              if (!llmCheck.relevant) {
+                console.log(`[HackerNews] Dropped candidate "${hit.title}": LLM rejected - ${llmCheck.reason}`);
+                continue;
+              }
+
               items.push({
                 ...extracted,
                 role: "community_discussion",
               });
-              if (items.length >= 1) break; // 1 external community article is plenty
+              if (items.length >= 1) break;
             }
           } catch {
             // Ignore individual fetch errors
