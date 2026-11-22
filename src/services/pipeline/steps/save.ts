@@ -10,6 +10,12 @@ import { calculateReadingTime } from "@/lib/utils/reading-time";
 import { slugify, generateTopicKey } from "@/lib/utils/slug";
 import { getImageStorage } from "@/services/storage/cloudinary";
 import { getEnv } from "@/lib/env";
+import {
+  fetchPublishedLinkTargets,
+  injectContextualInternalLinks,
+  recordPostLinks,
+} from "@/services/seo/internal-links";
+import { pingIndexNow } from "@/services/seo/indexnow";
 
 export interface SavePostParams {
   post: PostReviewOutput;
@@ -89,21 +95,46 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
   const tagRecords = await getOrCreateTags(params.post.tags);
   const tagIds = tagRecords.map((t) => t.id);
 
-  // 4. Calculate reading time and topic key
-  const readingTimeMin = calculateReadingTime(params.post.contentMd);
+  // 4. Contextual Internal Link Injection
+  let finalContentMd = params.post.contentMd;
+  let injectedLinks: Array<{ toPostId: string; targetSlug: string; anchor: string }> = [];
+
+  try {
+    const linkTargets = await fetchPublishedLinkTargets(params.post.slug);
+    if (linkTargets.length > 0) {
+      const linkResult = injectContextualInternalLinks(
+        params.post.contentMd,
+        params.post.slug,
+        linkTargets,
+        3,
+      );
+      finalContentMd = linkResult.enrichedMd;
+      injectedLinks = linkResult.injectedLinks;
+      if (injectedLinks.length > 0) {
+        console.log(
+          `🔗 [InternalLinks] Injected ${injectedLinks.length} contextual internal links into "${params.post.slug}": ${injectedLinks.map((l) => l.anchor).join(", ")}`,
+        );
+      }
+    }
+  } catch (linkErr) {
+    console.warn(`⚠️ [InternalLinks] Link injection skipped: ${(linkErr as Error).message}`);
+  }
+
+  // 5. Calculate reading time and topic key
+  const readingTimeMin = calculateReadingTime(finalContentMd);
   const topicKey = generateTopicKey(params.post.title);
   const status = params.isTest ? "draft" : (autoPublishStatus ? "published" : "draft");
   const finalTitle = params.isTest && !params.post.title.startsWith("[TEST]")
     ? `[TEST] ${params.post.title}`
     : params.post.title;
 
-  // 5. Create post with relations
+  // 6. Create post with relations
   const savedPost = await createPostWithRelations({
     post: {
       slug: params.post.slug,
       title: finalTitle,
       excerpt: params.post.excerpt,
-      contentMd: params.post.contentMd,
+      contentMd: finalContentMd,
       metaTitle: params.post.metaTitle,
       metaDescription: params.post.metaDescription,
       categoryId: category.id,
@@ -126,6 +157,25 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
       publisher: s.publisher,
     })),
   });
+
+  // 7. Persist internal links in post_links table
+  if (injectedLinks.length > 0) {
+    try {
+      const recordedCount = await recordPostLinks(savedPost.id, injectedLinks);
+      console.log(`✓ [InternalLinks] Persisted ${recordedCount} internal link relationships in post_links`);
+    } catch (recordErr) {
+      console.warn(`⚠️ [InternalLinks] Failed to persist post_links: ${(recordErr as Error).message}`);
+    }
+  }
+
+  // 8. Instant IndexNow ping for search engine indexing
+  if (status === "published") {
+    try {
+      await pingIndexNow([`/blog/${savedPost.slug}`]);
+    } catch (indexNowErr) {
+      console.warn(`⚠️ [IndexNow] Ping notification skipped: ${(indexNowErr as Error).message}`);
+    }
+  }
 
   console.log(
     `✓ [Save & Publish] Post "${savedPost.title}" saved successfully as status "${status}". ID: ${savedPost.id}`,
