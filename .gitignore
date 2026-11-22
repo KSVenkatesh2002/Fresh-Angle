@@ -30,6 +30,7 @@ yarn-error.log*
 # backups and exports
 backups/
 *.json.bak
+scripts/out/
 
 # vercel
 .vercel

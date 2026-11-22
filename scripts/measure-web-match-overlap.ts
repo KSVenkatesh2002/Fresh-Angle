@@ -219,14 +219,15 @@ async function run() {
         console.log(`   [Hit ${idx + 1}] ${hit.title} (${hit.url}) -> Could not fetch text (HTTP/Paywall/PDF)`);
         resultsTable.push({
           postSlug: p.slug,
+          postTitle: p.title,
           hitTitle: hit.title,
           hitUrl: hit.url,
           wordsFetched: 0,
-          overlap3: 0,
-          overlap4: 0,
-          overlap5: 0,
-          maxRun: 0,
-          status: "Unfetchable / Paywall",
+          overlap3: null,
+          overlap4: null,
+          overlap5: null,
+          maxRun: null,
+          status: "Not Comparable (Paywall / Blocked / Unfetchable)",
         });
         continue;
       }
@@ -248,6 +249,7 @@ async function run() {
 
       resultsTable.push({
         postSlug: p.slug,
+        postTitle: p.title,
         hitTitle: hit.title,
         hitUrl: hit.url,
         wordsFetched: hitWords.length,
@@ -260,9 +262,26 @@ async function run() {
     }
   }
 
-  console.log("\n================================================================================");
-  console.log("SUMMARY RESULTS TABLE (JSON):");
-  console.log(JSON.stringify(resultsTable, null, 2));
+  fs.mkdirSync(path.resolve("scripts/out"), { recursive: true });
+  const rawPath = path.resolve("scripts/out/web-match-overlap-raw.json");
+  fs.writeFileSync(rawPath, JSON.stringify(resultsTable, null, 2), "utf-8");
+  console.log(`Saved raw JSON output to ${rawPath}`);
+
+  let md = "# Web Match Overlap Measurement (Top 3 Third-Party Hits per Worst Post)\n\n";
+  md += "| Post Slug | Matched Third-Party Title & URL | 3-Gram | 4-Gram | 5-Gram | Max Run | Status |\n";
+  md += "| :--- | :--- | :---: | :---: | :---: | :---: | :--- |\n";
+  for (const r of resultsTable) {
+    const o3 = r.overlap3 === null ? "N/A" : `${r.overlap3.toFixed(2)}%`;
+    const o4 = r.overlap4 === null ? "N/A" : `${r.overlap4.toFixed(2)}%`;
+    const o5 = r.overlap5 === null ? "N/A" : `${r.overlap5.toFixed(2)}%`;
+    const mr = r.maxRun === null ? "N/A" : `${r.maxRun} words`;
+    const link = `[${r.hitTitle.replace(/\|/g, "\\|")}](${r.hitUrl})`;
+    md += `| \`${r.postSlug}\` | ${link} | ${o3} | ${o4} | ${o5} | ${mr} | **${r.status}** |\n`;
+  }
+  const reportPath = path.resolve("scripts/out/web-match-overlap-report.md");
+  fs.writeFileSync(reportPath, md, "utf-8");
+  console.log(`Saved markdown report to ${reportPath}\n`);
+  console.log(md);
 }
 
 run().catch((e) => {

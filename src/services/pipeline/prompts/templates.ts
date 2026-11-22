@@ -101,9 +101,10 @@ ${sourcesText}
 
 WRITING & ORIGINALITY SPECIFICATIONS:
 - TARGET LENGTH: 900 to 1,400 words. Rich technical depth, zero fluff.
-- INLINE CITATION MANDATE:
+- INLINE CITATION & QUOTE RULES:
   * Every factual claim, number, benchmark value, or quote must come from one of the provided sources and include an inline Markdown link to its URL: [Publisher/Title](url).
-  * Direct quotes: Cap at at most 2 per article, each under 15 words, with attribution. Prefer original explanatory phrasing over block quotes.
+  * URL REPETITION CAP: Link to any single source URL at most TWICE in the entire article (first mention and summary/matrix). Do NOT repeat the same link on consecutive sentences; subsequent mentions should use plain text attribution without redundant hyperlinks so prose does not look automated.
+  * DIRECT QUOTE CAP: At most 2 direct quotes per article, each strictly UNDER 15 words (maximum 14 words), with explicit attribution. Prefer original explanatory phrasing over block quotes.
   * Facts and numbers must remain strictly accurate as given in the sources.
 - STRICT ANTI-PARAPHRASING:
   * Do NOT mirror the sentence structure, paragraph order, or phrasing of the sources.

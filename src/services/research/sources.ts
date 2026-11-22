@@ -57,6 +57,47 @@ export function stripBoilerplate(text: string): string {
 }
 
 /**
+ * Caps repeated markdown links to the same destination URL.
+ * Keeps at most maxPerUrl instances as links [text](url), and strips the hyperlink
+ * from subsequent instances leaving just plain anchor text, preventing spammy appearance.
+ */
+export function capRepeatedUrlLinks(markdown: string, maxPerUrl: number = 2): string {
+  if (!markdown) return "";
+  const urlCounts = new Map<string, number>();
+  return markdown.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (match, anchorText, url) => {
+    const cleanUrl = url.trim().toLowerCase();
+    const count = urlCounts.get(cleanUrl) || 0;
+    if (count >= maxPerUrl) {
+      return anchorText;
+    }
+    urlCounts.set(cleanUrl, count + 1);
+    return match;
+  });
+}
+
+export interface CitationAnalysis {
+  distinctUrls: number;
+  totalLinks: number;
+  linksPerUrl: Record<string, number>;
+}
+
+export function analyzeCitations(markdown: string): CitationAnalysis {
+  const matches = Array.from(markdown.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g));
+  const linksPerUrl: Record<string, number> = {};
+  let totalLinks = 0;
+  for (const match of matches) {
+    const url = match[2].trim().toLowerCase();
+    linksPerUrl[url] = (linksPerUrl[url] || 0) + 1;
+    totalLinks++;
+  }
+  return {
+    distinctUrls: Object.keys(linksPerUrl).length,
+    totalLinks,
+    linksPerUrl,
+  };
+}
+
+/**
  * Fetches an article webpage and extracts the main clean text content using Cheerio.
  * Supports options.maxChars (0 or Infinity for full text) and options.extractHeadings.
  */

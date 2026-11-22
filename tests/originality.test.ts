@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { checkOriginality } from "@/services/research/originality";
+import { capRepeatedUrlLinks, analyzeCitations } from "@/services/research/sources";
 
 describe("Multi-Granularity Originality and Plagiarism Defense Gate", () => {
   const sourceText = `
@@ -82,5 +83,36 @@ Here is our completely distinct architectural overview focused on GPU cache evic
 
     const result = checkOriginality(postWithCodeAndTable, sourceText);
     expect(result.overlap5Gram).toBe(0);
+  });
+
+  it("enforces mathematical invariant: maxRun >= 3 implies 3-gram overlap > 0", () => {
+    // If consecutive word run is 3 or more words, at least one 3-gram MUST be shared
+    const postMd = `
+## Architectural Paradigm Shift
+Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel.
+`;
+    const result = checkOriginality(postMd, sourceText);
+    // There is an exact run of >= 3 words from source
+    expect(result.overlap3Gram).toBeGreaterThan(0);
+  });
+
+  it("caps repeated links to the same destination URL at max 2 occurrences", () => {
+    const textWithExcessiveLinks = `
+According to [Anthropic](https://anthropic.com/research), modern reasoning systems scale well.
+Further reported by [Anthropic Team](https://anthropic.com/research), throughput reaches high limits.
+In fact, [Anthropic Whitepaper](https://anthropic.com/research) confirms the 2.5x gain.
+Finally, [Anthropic Direct](https://anthropic.com/research) summarizes the architectural horizon.
+Another link to [Google](https://google.com) is unique.
+`;
+    const cleaned = capRepeatedUrlLinks(textWithExcessiveLinks, 2);
+    const analysis = analyzeCitations(cleaned);
+
+    expect(analysis.linksPerUrl["https://anthropic.com/research"]).toBe(2);
+    expect(analysis.linksPerUrl["https://google.com"]).toBe(1);
+    expect(cleaned).toContain("[Anthropic](https://anthropic.com/research)");
+    expect(cleaned).toContain("[Anthropic Team](https://anthropic.com/research)");
+    // 3rd and 4th occurrences should be stripped of the markdown URL link
+    expect(cleaned).not.toContain("[Anthropic Whitepaper](https://anthropic.com/research)");
+    expect(cleaned).toContain("Anthropic Whitepaper confirms the 2.5x gain.");
   });
 });
