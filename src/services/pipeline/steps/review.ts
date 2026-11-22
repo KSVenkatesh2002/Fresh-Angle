@@ -68,9 +68,16 @@ export async function stepReview(
       feedback.push(...quality.issues);
     }
     if (!originality.passed) {
-      feedback.push(
-        `Originality overlap too high (${(originality.overlapScore * 100).toFixed(1)}% > 15%). Rephrase in completely fresh original language: ${originality.matchedExcerpts.slice(0, 3).join(", ")}`,
-      );
+      feedback.push(...originality.reasons);
+      if (originality.flaggedSentences.length > 0) {
+        feedback.push(
+          `Sentences mirroring source text that MUST be rewritten in fresh, original phrasing:\n` +
+            originality.flaggedSentences
+              .slice(0, 3)
+              .map((s) => `  * "${s.postSentence}"`)
+              .join("\n"),
+        );
+      }
     }
 
     console.warn(

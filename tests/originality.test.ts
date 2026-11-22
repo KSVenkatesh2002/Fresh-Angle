@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { checkOriginality } from "@/services/research/originality";
 
-describe("Originality and Source Plagiarism Gate", () => {
+describe("Multi-Granularity Originality and Plagiarism Defense Gate", () => {
   const sourceText = `
 [Source 1: Research Paper]
 Title: Speculative Decoding with Draft Verification in Multi-GPU Clusters
@@ -29,7 +29,9 @@ In modern distributed LLM serving systems, memory bandwidth represents the prima
 
     expect(result.passed).toBe(true);
     expect(result.originalityScore).toBeGreaterThanOrEqual(85);
-    expect(result.overlapScore).toBeLessThan(0.15);
+    expect(result.overlap3Gram).toBeLessThan(0.12);
+    expect(result.overlap5Gram).toBeLessThan(0.05);
+    expect(result.flaggedSentences.length).toBe(0);
   });
 
   it("fails drafts that copy source phrasing verbatim", () => {
@@ -39,12 +41,46 @@ In modern distributed LLM serving systems, memory bandwidth represents the prima
 Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel by the target model. This paradigm achieves a 2.5x speedup without degrading target model perplexity or sampling distribution fidelity under rigorous multi-GPU benchmarks across standard inference workloads.
 `;
 
-    const result = checkOriginality(copiedPostMd, sourceText, 0.15);
+    const result = checkOriginality(copiedPostMd, sourceText, 0.05);
 
     expect(result.passed).toBe(false);
     expect(result.originalityScore).toBeLessThan(80);
-    expect(result.overlapScore).toBeGreaterThan(0.15);
+    expect(result.overlap5Gram).toBeGreaterThan(0.05);
     expect(result.matchedExcerpts.length).toBeGreaterThan(0);
+    expect(result.flaggedSentences.length).toBeGreaterThan(0);
+  });
+
+  it("detects and flags sentence-level semantic similarity above 50%", () => {
+    // Paraphrased sentence that substitutes a couple of words but retains 70%+ identical tokens
+    const paraphrasedMd = `
+## System Review
+
+Speculative decoding speeds up autoregressive generation by employing an efficient draft model to produce candidate tokens which are confirmed in parallel by the target model. Furthermore, memory architectures require careful pipeline scheduling.
+`;
+
+    const result = checkOriginality(paraphrasedMd, sourceText, {
+      maxSentenceSimilarity: 0.50,
+    });
+
+    expect(result.flaggedSentences.length).toBeGreaterThan(0);
+    expect(result.flaggedSentences[0].similarity).toBeGreaterThanOrEqual(0.50);
+    expect(result.reasons.some((r) => r.includes("similarity"))).toBe(true);
+  });
+
+  it("ignores code blocks, markdown tables, and headers during shingle analysis", () => {
+    const postWithCodeAndTable = `
+# Deep Systems Analysis
+
+\`\`\`python
+# This code block might contain source words like speculative decoding autoregressive
+def test():
+    return "Speculative decoding accelerates autoregressive generation by using an efficient draft model"
+\`\`\`
+
+Here is our completely distinct architectural overview focused on GPU cache eviction policies and kernel fusing.
+`;
+
+    const result = checkOriginality(postWithCodeAndTable, sourceText);
+    expect(result.overlap5Gram).toBe(0);
   });
 });
-
