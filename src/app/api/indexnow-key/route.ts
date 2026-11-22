@@ -1,7 +1,9 @@
+import { siteConfig } from "@/config/site";
+
 export async function GET(req: Request): Promise<Response> {
   const { searchParams } = new URL(req.url);
   const requestedKey = searchParams.get("key");
-  const configuredKey = process.env.INDEXNOW_KEY;
+  const configuredKey = process.env.INDEXNOW_KEY || siteConfig.indexNowKey;
 
   if (!configuredKey || (requestedKey && requestedKey !== configuredKey)) {
     return new Response("Not found", { status: 404 });

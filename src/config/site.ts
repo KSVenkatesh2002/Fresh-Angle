@@ -38,6 +38,7 @@ export interface SiteConfig {
     readonly rss: string;
   };
   readonly postsPerPage: number;
+  readonly indexNowKey: string;
 }
 
 export const siteConfig: SiteConfig = {
@@ -46,6 +47,8 @@ export const siteConfig: SiteConfig = {
   description:
     "Fresh Angle delivers rigorous, unbiased, and deeply researched daily analysis on artificial intelligence, frontier models, machine learning breakthroughs, and technological innovation.",
   url: process.env.SITE_URL || "https://freshangle.vercel.app",
+  indexNowKey:
+    process.env.INDEXNOW_KEY || "c7e2b19f4a8d0e3b5a6c7f8e1d2c3b4a",
   language: "en-US",
   timezone: process.env.DEFAULT_TIMEZONE || "Asia/Kolkata",
   niche: "AI & technology news",

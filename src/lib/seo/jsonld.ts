@@ -50,6 +50,10 @@ export function generateArticleJsonLd(post: {
   coverImageUrl?: string | null;
   categoryName?: string;
   authorName?: string;
+  wordCount?: number;
+  keywords?: string[];
+  dependencies?: string[];
+  proficiencyLevel?: string;
 }): Record<string, unknown> {
   const postUrl = `${siteConfig.url}/blog/${post.slug}`;
   const imageUrl = getAbsoluteCoverImageUrl(
@@ -66,7 +70,7 @@ export function generateArticleJsonLd(post: {
 
   return {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
+    "@type": ["TechArticle", "BlogPosting"],
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": postUrl,
@@ -76,6 +80,15 @@ export function generateArticleJsonLd(post: {
     image: [imageUrl],
     datePublished: pubDate,
     dateModified: modDate,
+    inLanguage: "en-US",
+    proficiencyLevel: post.proficiencyLevel || "Expert",
+    ...(post.wordCount ? { wordCount: post.wordCount } : {}),
+    ...(post.keywords && post.keywords.length > 0
+      ? { keywords: post.keywords.join(", ") }
+      : {}),
+    ...(post.dependencies && post.dependencies.length > 0
+      ? { dependencies: post.dependencies.join(", ") }
+      : {}),
     author: {
       "@type": "Person",
       name: post.authorName || siteConfig.author.name,

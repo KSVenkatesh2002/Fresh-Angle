@@ -112,6 +112,11 @@ export default async function BlogPostPage({
 
   const relatedPosts = await getRelatedPosts(post.id, post.categoryId, 3);
 
+  const wordCount = post.contentMd
+    ? post.contentMd.split(/\s+/).filter(Boolean).length
+    : undefined;
+  const tagKeywords = post.tags?.map((t) => t.name).filter(Boolean) || [];
+
   const articleJsonLd = generateArticleJsonLd({
     title: post.title,
     description: post.excerpt,
@@ -121,6 +126,9 @@ export default async function BlogPostPage({
     coverImageId: post.coverImageId,
     coverImageUrl: post.coverImageUrl,
     categoryName: post.category?.name,
+    wordCount,
+    keywords: tagKeywords,
+    proficiencyLevel: "Expert",
   });
 
   const faqJsonLd = generateFaqJsonLd(faqs);

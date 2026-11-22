@@ -7,7 +7,7 @@ export interface IndexNowResult {
 }
 
 export async function pingIndexNow(urls: string[]): Promise<IndexNowResult> {
-  const key = process.env.INDEXNOW_KEY;
+  const key = process.env.INDEXNOW_KEY || siteConfig.indexNowKey;
   if (!key) {
     return {
       success: false,
