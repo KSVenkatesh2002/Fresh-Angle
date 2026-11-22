@@ -107,7 +107,7 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
         params.post.contentMd,
         params.post.slug,
         linkTargets,
-        3,
+        4, // Inject 3 to 5 contextual links
       );
       finalContentMd = linkResult.enrichedMd;
       injectedLinks = linkResult.injectedLinks;

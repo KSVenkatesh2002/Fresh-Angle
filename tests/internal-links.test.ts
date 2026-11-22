@@ -110,5 +110,24 @@ Developers leveraging Anthropic Claude models often report substantial cost savi
     const result = injectContextualInternalLinks(postMd, "other", targets, 1);
     expect(result.injectedLinks.length).toBe(1);
   });
+
+  it("links target only on first occurrence and skips blockquotes", () => {
+    const postMd = `
+> Quoted block mentioning speculative decoding here.
+
+First paragraph discusses speculative decoding and then mentions speculative decoding again.
+`;
+    const targets: LinkTarget[] = [
+      { id: "1", title: "SD", slug: "sd", keywords: ["speculative decoding"] },
+    ];
+
+    const result = injectContextualInternalLinks(postMd, "current", targets, 3);
+    expect(result.injectedLinks.length).toBe(1);
+    // Blockquote must not be linked
+    expect(result.enrichedMd).toContain("> Quoted block mentioning speculative decoding here.");
+    // Only first occurrence in paragraph is linked
+    expect(result.enrichedMd).toContain("[speculative decoding](/blog/sd)");
+    expect(result.enrichedMd).toContain("and then mentions speculative decoding again.");
+  });
 });
 
