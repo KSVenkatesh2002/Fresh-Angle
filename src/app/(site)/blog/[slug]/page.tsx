@@ -128,7 +128,6 @@ export default async function BlogPostPage({
     categoryName: post.category?.name,
     wordCount,
     keywords: tagKeywords,
-    proficiencyLevel: "Expert",
   });
 
   const faqJsonLd = generateFaqJsonLd(faqs);

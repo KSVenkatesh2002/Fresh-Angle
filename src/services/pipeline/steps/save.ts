@@ -124,7 +124,18 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
   // 5. Calculate reading time and topic key
   const readingTimeMin = calculateReadingTime(finalContentMd);
   const topicKey = generateTopicKey(params.post.title);
-  const status = params.isTest ? "draft" : (autoPublishStatus ? "published" : "draft");
+  const postStatusOverride = (params.post as Record<string, unknown>).status as string | undefined;
+  if (postStatusOverride === "needs_review") {
+    console.warn("⚠️ [Save & Publish] Post flagged for review. Forcing status to 'draft' (auto-publish blocked).");
+  }
+  const status: "draft" | "scheduled" | "published" | "archived" =
+    postStatusOverride === "needs_review"
+      ? "draft"
+      : (params.isTest ? "draft" : (autoPublishStatus ? "published" : "draft"));
+  const researchDepth =
+    ((params.post as Record<string, unknown>).researchDepth as "single" | "multi") ||
+    params.researchDepth ||
+    (params.sources.length > 1 ? "multi" : "single");
   const finalTitle = params.isTest && !params.post.title.startsWith("[TEST]")
     ? `[TEST] ${params.post.title}`
     : params.post.title;
@@ -150,7 +161,7 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
       aiProvider: params.aiProvider,
       aiModel: params.aiModel,
       topicKey,
-      researchDepth: params.researchDepth || (params.sources.length > 1 ? "multi" : "single"),
+      researchDepth,
     },
     tagIds,
     sources: params.sources.map((s) => ({

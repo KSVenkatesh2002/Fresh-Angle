@@ -53,7 +53,6 @@ export function generateArticleJsonLd(post: {
   wordCount?: number;
   keywords?: string[];
   dependencies?: string[];
-  proficiencyLevel?: string;
 }): Record<string, unknown> {
   const postUrl = `${siteConfig.url}/blog/${post.slug}`;
   const imageUrl = getAbsoluteCoverImageUrl(
@@ -81,7 +80,6 @@ export function generateArticleJsonLd(post: {
     datePublished: pubDate,
     dateModified: modDate,
     inLanguage: "en-US",
-    proficiencyLevel: post.proficiencyLevel || "Expert",
     ...(post.wordCount ? { wordCount: post.wordCount } : {}),
     ...(post.keywords && post.keywords.length > 0
       ? { keywords: post.keywords.join(", ") }

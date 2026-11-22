@@ -172,6 +172,16 @@ Respond ONLY with valid JSON.`;
     }
   }
 
+  // 5. Multi-Source Diversity Gate: require at least 2 distinct sources cited
+  const finalCitations = analyzeCitations(reviewedPost.contentMd);
+  if (finalCitations.distinctUrls < 2) {
+    console.warn(
+      `⚠️ [Review Citation Gate] Draft cites only ${finalCitations.distinctUrls} distinct source(s). Minimum 2 required for multi-source triangulation. Setting researchDepth to 'single' and forcing status to 'needs_review'.`,
+    );
+    (reviewedPost as Record<string, unknown>).researchDepth = "single";
+    (reviewedPost as Record<string, unknown>).status = "needs_review";
+  }
+
   console.log(
     `✓ [Review] Post approved and verified: "${reviewedPost.title}" (slug: ${reviewedPost.slug}, tokens: ${totalTokensPrompt + totalTokensCompletion})`,
   );

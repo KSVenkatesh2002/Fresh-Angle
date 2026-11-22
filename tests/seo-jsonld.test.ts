@@ -3,7 +3,7 @@ import { generateArticleJsonLd } from "@/lib/seo/jsonld";
 import { siteConfig } from "@/config/site";
 
 describe("SEO Schema.org Rich Snippets (TechArticle)", () => {
-  it("generates enriched TechArticle JSON-LD with expert proficiency, keywords, and word count", () => {
+  it("generates enriched TechArticle JSON-LD with keywords and word count", () => {
     const jsonLd = generateArticleJsonLd({
       title: "Understanding Speculative Decoding in LLMs",
       description: "A deep dive into speculative drafting algorithms and KV cache verification.",
@@ -12,14 +12,12 @@ describe("SEO Schema.org Rich Snippets (TechArticle)", () => {
       categoryName: "Machine Learning",
       wordCount: 1150,
       keywords: ["speculative decoding", "KV cache", "vLLM", "LLM inference"],
-      proficiencyLevel: "Expert",
     });
 
     expect(jsonLd["@context"]).toBe("https://schema.org");
     expect(jsonLd["@type"]).toEqual(["TechArticle", "BlogPosting"]);
     expect(jsonLd.headline).toBe("Understanding Speculative Decoding in LLMs");
     expect(jsonLd.inLanguage).toBe("en-US");
-    expect(jsonLd.proficiencyLevel).toBe("Expert");
     expect(jsonLd.wordCount).toBe(1150);
     expect(jsonLd.keywords).toBe("speculative decoding, KV cache, vLLM, LLM inference");
     expect(jsonLd.articleSection).toBe("Machine Learning");

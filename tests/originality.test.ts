@@ -167,4 +167,18 @@ Another link to [Google](https://google.com) is unique.
     expect(cleaned).not.toContain("[Anthropic Whitepaper](https://anthropic.com/research)");
     expect(cleaned).toContain("Anthropic Whitepaper confirms the 2.5x gain.");
   });
+
+  it("enforces configurable 4-gram (2%), 5-gram (1%), and max flagged sentences (3) thresholds", () => {
+    // Draft with moderate 4-gram and 5-gram overlap
+    const testDraft = `
+## Evaluation
+Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel.
+Standard autoregressive decoding is fundamentally memory bandwidth bound on modern GPU architectures like NVIDIA H100.
+    `;
+    const result = checkOriginality(testDraft, multiSourceText);
+    expect(result.overlap4Gram).toBeGreaterThan(0.02);
+    expect(result.overlap5Gram).toBeGreaterThan(0.01);
+    expect(result.reasons.some((r) => r.includes("4-gram phrase overlap"))).toBe(true);
+    expect(result.reasons.some((r) => r.includes("5-gram exact clause overlap"))).toBe(true);
+  });
 });

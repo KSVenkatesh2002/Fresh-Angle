@@ -101,11 +101,12 @@ ${sourcesText}
 
 WRITING & ORIGINALITY SPECIFICATIONS:
 - TARGET LENGTH: 900 to 1,400 words. Rich technical depth, zero fluff.
-- INLINE CITATION & QUOTE RULES:
-  * Every factual claim, number, benchmark value, or quote must come from one of the provided sources and include an inline Markdown link to its URL: [Publisher/Title](url).
-  * URL REPETITION CAP: Link to any single source URL at most TWICE in the entire article (first mention and summary/matrix). Do NOT repeat the same link on consecutive sentences; subsequent mentions should use plain text attribution without redundant hyperlinks so prose does not look automated.
-  * DIRECT QUOTE CAP: At most 2 direct quotes per article, each strictly UNDER 15 words (maximum 14 words), with explicit attribution. Prefer original explanatory phrasing over block quotes.
-  * Facts and numbers must remain strictly accurate as given in the sources.
+- CITATION & ATTRIBUTION RULES:
+  * Name the source every time an empirical fact, number, or benchmark is stated (e.g. "According to Anthropic's FlashProve technical report...", "As reported by Reuters...").
+  * LINK AT MOST 2 TIMES PER SOURCE: Include an inline Markdown link [Publisher/Context](url) at most TWICE for any single source URL across the entire article (e.g. on its first major introduction).
+  * Attribution does NOT need a link on every claim: subsequent factual points from that source should name the source in plain text without redundant hyperlinking, keeping prose natural and avoiding link-spam.
+  * DIRECT QUOTE CAP: At most 2 direct quotes per article, each strictly UNDER 15 words (maximum 14 words), with explicit attribution. Prefer original explanatory synthesis.
+  * Facts, empirical metrics, and numbers must remain 100% accurate as given in the sources.
 - STRICT ANTI-PARAPHRASING:
   * Do NOT mirror the sentence structure, paragraph order, or phrasing of the sources.
   * Explain underlying mechanics from first principles using fresh analogies and original phrasing.
@@ -131,7 +132,8 @@ Perform a rigorous editorial review and quality audit of the following technical
 
 AUDIT CRITERIA:
 1. CITATION & FACTUAL ACCURACY:
-   - Ensure every empirical metric, number, and factual claim has an inline Markdown citation link to its source.
+   - Name the source for empirical metrics, numbers, and key factual claims.
+   - Ensure each distinct source URL is linked AT MOST 2 times. Do not force inline links on every claim; verify plain text source naming for subsequent claims.
    - Verify all numbers in the Markdown table match the provided sources exactly. Do NOT alter verified figures.
    - Direct quotes: ensure no more than 2 short quotes (<15 words each), properly attributed.
 2. ORIGINALITY & ANTI-MIRRORING AUDIT:
