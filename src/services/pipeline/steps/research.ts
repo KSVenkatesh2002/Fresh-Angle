@@ -1,15 +1,16 @@
 import { TopicCandidate } from "@/services/research/topics";
 import {
   extractArticleContent,
-  discoverSecondarySources,
   ExtractedArticleSource,
 } from "@/services/research/sources";
+import { gatherMultiSourceResearch } from "@/services/research/tavily";
 
 export interface ResearchResult {
   primarySource: ExtractedArticleSource;
   secondarySources: ExtractedArticleSource[];
   sources: ExtractedArticleSource[];
   formattedSourcesText: string;
+  researchDepth: "single" | "multi";
 }
 
 export async function stepResearch(
@@ -19,21 +20,28 @@ export async function stepResearch(
     `🔬 [Step 2/8: Research] Fetching and triangulating multi-source research for: "${topic.title}"...`,
   );
 
-  // Extract the primary catalyst source
+  // 1. Extract the primary catalyst source
   const primarySource = await extractArticleContent(topic.url, topic.title);
   primarySource.role = "primary";
 
-  // Triangulate with secondary technical sources (academic baseline or developer discussions)
+  // 2. Triangulate with secondary technical sources (Tavily Search + arXiv + Hacker News)
   let secondarySources: ExtractedArticleSource[] = [];
+  let researchDepth: "single" | "multi" = "single";
+
   try {
-    secondarySources = await discoverSecondarySources(topic.title, topic.url);
+    const multiResearch = await gatherMultiSourceResearch(topic.title, topic.url);
+    secondarySources = multiResearch.allSources;
+    researchDepth = multiResearch.researchDepth;
   } catch (err) {
-    console.warn(`⚠️ [Research] Secondary source triangulation warning: ${(err as Error).message}`);
+    console.warn(
+      `⚠️ [Research] Multi-source research gathering encountered error: ${(err as Error).message}. Gracefully falling back to single-source.`,
+    );
+    researchDepth = "single";
   }
 
   const sources: ExtractedArticleSource[] = [primarySource, ...secondarySources];
 
-  // Format sources block for LLM prompts with distinct role labeling
+  // 3. Format sources block for LLM prompts with distinct role labeling
   const formattedSourcesText = sources
     .map((s, idx) => {
       let roleLabel = "PRIMARY CATALYST / ANNOUNCEMENT";
@@ -58,7 +66,7 @@ ${s.content}
     .join("\n");
 
   console.log(
-    `✓ [Research] Successfully assembled ${sources.length} source(s) (${1 + secondarySources.length} pillars, ${primarySource.content.length} primary chars) for triangulation.`,
+    `✓ [Research] Assembled ${sources.length} source(s) (Depth: ${researchDepth}, ${primarySource.content.length} primary chars) for triangulation.`,
   );
 
   return {
@@ -66,5 +74,6 @@ ${s.content}
     secondarySources,
     sources,
     formattedSourcesText,
+    researchDepth,
   };
 }

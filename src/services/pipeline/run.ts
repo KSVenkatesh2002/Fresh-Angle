@@ -152,6 +152,7 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
       post: reviewResult.post,
       cover: coverResult,
       sources: researchResult.sources,
+      researchDepth: researchResult.researchDepth,
       aiProvider: reviewResult.provider,
       aiModel: reviewResult.model,
       autoPublish,

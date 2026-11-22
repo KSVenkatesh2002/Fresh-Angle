@@ -21,6 +21,7 @@ export interface SavePostParams {
   post: PostReviewOutput;
   cover: GeneratedCoverResult;
   sources: ExtractedArticleSource[];
+  researchDepth?: "single" | "multi";
   aiProvider: string;
   aiModel: string;
   autoPublish: boolean;
@@ -149,6 +150,7 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
       aiProvider: params.aiProvider,
       aiModel: params.aiModel,
       topicKey,
+      researchDepth: params.researchDepth || (params.sources.length > 1 ? "multi" : "single"),
     },
     tagIds,
     sources: params.sources.map((s) => ({

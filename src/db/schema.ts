@@ -143,6 +143,9 @@ export const posts = pgTable(
     aiModel: text("ai_model").notNull(),
     topicKey: text("topic_key").notNull(),
     entityKey: text("entity_key"),
+    researchDepth: text("research_depth")
+      .$type<"single" | "multi">()
+      .default("single"),
     contentSimhash: text("content_simhash"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
