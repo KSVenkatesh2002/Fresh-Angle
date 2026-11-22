@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { FileQuestion, ArrowLeft, LayoutDashboard } from "lucide-react";
+import { FileQuestion, LayoutDashboard } from "lucide-react";
 
 export default function AdminNotFound(): React.JSX.Element {
   return (
@@ -33,3 +33,4 @@ export default function AdminNotFound(): React.JSX.Element {
     </div>
   );
 }
+

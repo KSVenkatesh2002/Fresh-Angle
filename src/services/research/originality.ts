@@ -1,5 +1,5 @@
 import { getWordShingles } from "./dedupe";
-import { PIPELINE_CONFIG, OriginalityConfig } from "@/config/pipeline";
+import { PIPELINE_CONFIG } from "@/config/pipeline";
 
 export interface SentenceMatch {
   postSentence: string;

@@ -60,7 +60,7 @@ export async function stepReview(
       postReviewSchema,
     );
 
-  let reviewedPost = initialReviewedPost;
+  const reviewedPost = initialReviewedPost;
   reviewedPost.slug = slugify(reviewedPost.slug || reviewedPost.title);
 
   // 1. Enforce URL repetition cap (max 2 links per URL)
@@ -86,8 +86,8 @@ export async function stepReview(
     `📊 [Review Quality Check] Score: ${quality.score}/100, Words: ${quality.wordCount}, Originality: ${originality.originalityScore}%, 3-gram: ${(originality.overlap3Gram * 100).toFixed(1)}%, Max Run: ${originality.maxConsecutiveWordsRun}w, Distinct Links: ${citations.distinctUrls}`,
   );
 
-  let totalTokensPrompt = result.usage?.promptTokens || 0;
-  let totalTokensCompletion = result.usage?.completionTokens || 0;
+  let totalTokensPrompt = result.tokensIn || 0;
+  let totalTokensCompletion = result.tokensOut || 0;
 
   // 3. Targeted Sentence Rewrite Loop (Max 2 attempts, bounded LLM cost)
   const maxRewriteAttempts = PIPELINE_CONFIG.originality.maxRewriteAttempts || 2;
@@ -113,7 +113,9 @@ REQUIREMENTS:
   "rewrites": [
     { "original": "original sentence string", "revised": "completely restructured sentence string" }
   ]
-}`;
+}
+
+Respond ONLY with valid JSON.`;
 
     try {
       const rewriteResult = await defaultAiChain.generateValidatedJson(
@@ -126,10 +128,8 @@ REQUIREMENTS:
         sentenceRewriteSchema,
       );
 
-      if (rewriteResult.result.usage) {
-        totalTokensPrompt += rewriteResult.result.usage.promptTokens || 0;
-        totalTokensCompletion += rewriteResult.result.usage.completionTokens || 0;
-      }
+      totalTokensPrompt += rewriteResult.result.tokensIn || 0;
+      totalTokensCompletion += rewriteResult.result.tokensOut || 0;
 
       for (const item of rewriteResult.data.rewrites) {
         if (item.original && item.revised && reviewedPost.contentMd.includes(item.original)) {
@@ -158,7 +158,7 @@ REQUIREMENTS:
       `⚠️ [Review Originality Gate] Post exceeded thresholds after ${rewriteAttempt} rewrite attempts. Setting status to 'needs_review'. Reasons: ${originality.reasons.join("; ")}`,
     );
     // Mark on object so save step preserves 'needs_review'
-    (reviewedPost as any).status = "needs_review";
+    (reviewedPost as Record<string, unknown>).status = "needs_review";
   }
 
   // 4. Optional Final Web-Check Gate (behind enableWebCheckGate flag, default false)
@@ -168,7 +168,7 @@ REQUIREMENTS:
     const webCheck = await checkOriginalityWebGate(reviewedPost.contentMd, sampleSentences);
     if (!webCheck.passed) {
       console.warn("⚠️ [Review Web Gate] Live web search hit matching third-party text. Marking needs_review.");
-      (reviewedPost as any).status = "needs_review";
+      (reviewedPost as Record<string, unknown>).status = "needs_review";
     }
   }
 
