@@ -73,9 +73,13 @@ export const metadata: Metadata = {
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
-    other: process.env.BING_SITE_VERIFICATION
-      ? { "msvalidate.01": [process.env.BING_SITE_VERIFICATION] }
-      : undefined,
+    other: {
+      ...(process.env.BING_SITE_VERIFICATION
+        ? { "msvalidate.01": [process.env.BING_SITE_VERIFICATION] }
+        : {}),
+      "google-adsense-account":
+        process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-5566571424106617",
+    },
   },
   robots:
     !process.env.VERCEL_ENV || process.env.VERCEL_ENV === "production"
@@ -108,6 +112,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('freshangle_theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})();`,
           }}
+        />
+        {/* Google AdSense */}
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-5566571424106617"}`}
+          crossOrigin="anonymous"
         />
         <JsonLd data={[websiteJsonLd, organizationJsonLd]} />
       </head>
