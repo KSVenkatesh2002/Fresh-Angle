@@ -2,16 +2,26 @@ import { describe, it, expect } from "vitest";
 import { checkOriginality } from "@/services/research/originality";
 import { capRepeatedUrlLinks, analyzeCitations } from "@/services/research/sources";
 
-describe("Multi-Granularity Originality and Plagiarism Defense Gate", () => {
-  const sourceText = `
-[Source 1: Research Paper]
-Title: Speculative Decoding with Draft Verification in Multi-GPU Clusters
+describe("Multi-Granularity Originality and Plagiarism Defense Gate (Phase 3)", () => {
+  const multiSourceText = `
+[SOURCE 1: Primary Paper]
+TITLE: Speculative Decoding with Draft Verification in Multi-GPU Clusters
 URL: https://arxiv.org/abs/2401.00001
-Content: Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel by the target model. This paradigm achieves a 2.5x speedup without degrading target model perplexity or sampling distribution fidelity under rigorous multi-GPU benchmarks across standard inference workloads.
+CONTENT: Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel by the target model. This paradigm achieves a 2.5x speedup without degrading target model perplexity or sampling distribution fidelity under rigorous multi-GPU benchmarks across standard inference workloads.
+
+[SOURCE 2: Baseline Benchmark Docs]
+TITLE: Distributed Serving Benchmarks
+URL: https://vllm.ai/docs/benchmarks
+CONTENT: Standard autoregressive decoding is fundamentally memory bandwidth bound on modern GPU architectures like NVIDIA H100 SXM5 with 3.35 TB/s throughput. Pipeline parallelism introduces inter-node communication latency during KV cache synchronization.
+
+[SOURCE 3: Practitioner Commentary]
+TITLE: Community Retrospective
+URL: https://news.ycombinator.com/item?id=123456
+CONTENT: Production teams report that while speculative decoding reduces time-to-first-token in synthetic benchmarks, batch size saturation in multi-tenant environments diminishes effective speedup to 1.3x due to draft model queuing overhead.
 `;
 
-  it("passes highly original synthesis with low source overlap", () => {
-    const postMd = `
+  it("passes highly original synthesis with multi-source triangulation and low overlap", () => {
+    const originalPostMd = `
 ## Architectural Paradigm Shift
 
 In modern distributed LLM serving systems, memory bandwidth represents the primary performance bottleneck rather than compute floating point operations. To alleviate this constraint, speculative drafting approaches partition token generation across heterogeneous model tiers. By delegating preliminary token sequences to a lightweight secondary neural network, high-tier target architectures can execute batched parallel verifications during a single memory load cycle.
@@ -26,73 +36,116 @@ In modern distributed LLM serving systems, memory bandwidth represents the prima
 - Preserves exact mathematical perplexity without quantization error.
 `;
 
-    const result = checkOriginality(postMd, sourceText);
+    const result = checkOriginality(originalPostMd, multiSourceText);
 
     expect(result.passed).toBe(true);
     expect(result.originalityScore).toBeGreaterThanOrEqual(85);
-    expect(result.overlap3Gram).toBeLessThan(0.12);
-    expect(result.overlap5Gram).toBeLessThan(0.05);
+    expect(result.overlap3Gram).toBeLessThan(0.05);
+    expect(result.overlap4Gram).toBeLessThan(0.02);
+    expect(result.overlap5Gram).toBeLessThan(0.01);
+    expect(result.maxConsecutiveWordsRun).toBeLessThanOrEqual(8);
     expect(result.flaggedSentences.length).toBe(0);
   });
 
-  it("fails drafts that copy source phrasing verbatim", () => {
+  it("fails drafts that copy source phrasing verbatim across multiple sources", () => {
     const copiedPostMd = `
 ## Introduction
 
 Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel by the target model. This paradigm achieves a 2.5x speedup without degrading target model perplexity or sampling distribution fidelity under rigorous multi-GPU benchmarks across standard inference workloads.
+
+Standard autoregressive decoding is fundamentally memory bandwidth bound on modern GPU architectures like NVIDIA H100 SXM5 with 3.35 TB/s throughput.
 `;
 
-    const result = checkOriginality(copiedPostMd, sourceText, 0.05);
+    const result = checkOriginality(copiedPostMd, multiSourceText);
 
     expect(result.passed).toBe(false);
     expect(result.originalityScore).toBeLessThan(80);
-    expect(result.overlap5Gram).toBeGreaterThan(0.05);
-    expect(result.matchedExcerpts.length).toBeGreaterThan(0);
+    expect(result.overlap5Gram).toBeGreaterThan(0.01);
+    expect(result.maxConsecutiveWordsRun).toBeGreaterThan(8);
     expect(result.flaggedSentences.length).toBeGreaterThan(0);
   });
 
-  it("detects and flags sentence-level semantic similarity above 50%", () => {
-    // Paraphrased sentence that substitutes a couple of words but retains 70%+ identical tokens
+  it("detects and flags sentence-level semantic similarity above 50% on long sentences", () => {
+    // Paraphrased sentence that substitutes words but retains structure and > 50% content words
     const paraphrasedMd = `
 ## System Review
 
-Speculative decoding speeds up autoregressive generation by employing an efficient draft model to produce candidate tokens which are confirmed in parallel by the target model. Furthermore, memory architectures require careful pipeline scheduling.
+Speculative decoding speeds up autoregressive generation by employing an efficient draft model to produce candidate tokens which are confirmed in parallel by the target model.
 `;
 
-    const result = checkOriginality(paraphrasedMd, sourceText, {
-      maxSentenceSimilarity: 0.50,
-    });
+    const result = checkOriginality(paraphrasedMd, multiSourceText);
 
     expect(result.flaggedSentences.length).toBeGreaterThan(0);
     expect(result.flaggedSentences[0].similarity).toBeGreaterThanOrEqual(0.50);
-    expect(result.reasons.some((r) => r.includes("similarity"))).toBe(true);
   });
 
-  it("ignores code blocks, markdown tables, and headers during shingle analysis", () => {
+  it("avoids false positives on short sentences under 8 words", () => {
+    const shortSentencesMd = `
+## Overview
+We evaluate the framework.
+This achieves high throughput.
+Memory bandwidth is constrained.
+Results confirm linear scaling.
+`;
+
+    const result = checkOriginality(shortSentencesMd, multiSourceText);
+    expect(result.flaggedSentences.length).toBe(0);
+  });
+
+  it("allows up to 2 attributed direct quotes under 15 words and exempts them from run check", () => {
+    const postWithAllowedQuote = `
+## Architectural Evaluation
+
+According to the research team, "speculative decoding accelerates autoregressive generation" through parallelized drafting stages.
+Independent evaluators noted that "batch size saturation diminishes effective speedup" in heterogeneous environments.
+`;
+
+    const result = checkOriginality(postWithAllowedQuote, multiSourceText);
+    expect(result.quoteCount).toBe(2);
+    expect(result.quotes.every((q) => q.isUnderLimit)).toBe(true);
+    // Even though the quote itself is 6 words from source, it is marked as quote and does not cause a run failure
+    expect(result.reasons.some((r) => r.includes("Longest consecutive matching words"))).toBe(false);
+  });
+
+  it("flags direct quotes that exceed 14 words", () => {
+    const postWithOverlongQuote = `
+According to the original benchmark publication, "speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel by the target model" under production workloads.
+`;
+
+    const result = checkOriginality(postWithOverlongQuote, multiSourceText);
+    expect(result.reasons.some((r) => r.includes("Direct quote exceeds length limit"))).toBe(true);
+  });
+
+  it("ignores code blocks, markdown tables, blockquotes, and headers", () => {
     const postWithCodeAndTable = `
 # Deep Systems Analysis
 
+> Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel by the target model.
+
 \`\`\`python
-# This code block might contain source words like speculative decoding autoregressive
-def test():
-    return "Speculative decoding accelerates autoregressive generation by using an efficient draft model"
+# Speculative decoding accelerates autoregressive generation by using an efficient draft model
+def run_benchmark():
+    return "Standard autoregressive decoding is fundamentally memory bandwidth bound on modern GPU architectures"
 \`\`\`
 
-Here is our completely distinct architectural overview focused on GPU cache eviction policies and kernel fusing.
+| Source Metric | Autoregressive decoding is fundamentally memory bandwidth bound |
+| :--- | :--- |
+| Peak Bandwidth | 3.35 TB/s |
+
+Here is completely genuine original technical prose analyzing GPU scheduling heuristics and memory eviction policies across independent nodes.
 `;
 
-    const result = checkOriginality(postWithCodeAndTable, sourceText);
+    const result = checkOriginality(postWithCodeAndTable, multiSourceText);
     expect(result.overlap5Gram).toBe(0);
+    expect(result.maxConsecutiveWordsRun).toBeLessThanOrEqual(8);
   });
 
   it("enforces mathematical invariant: maxRun >= 3 implies 3-gram overlap > 0", () => {
-    // If consecutive word run is 3 or more words, at least one 3-gram MUST be shared
     const postMd = `
 ## Architectural Paradigm Shift
 Speculative decoding accelerates autoregressive generation by using an efficient draft model to generate candidate tokens which are verified in parallel.
 `;
-    const result = checkOriginality(postMd, sourceText);
-    // There is an exact run of >= 3 words from source
+    const result = checkOriginality(postMd, multiSourceText);
     expect(result.overlap3Gram).toBeGreaterThan(0);
   });
 
@@ -111,7 +164,6 @@ Another link to [Google](https://google.com) is unique.
     expect(analysis.linksPerUrl["https://google.com"]).toBe(1);
     expect(cleaned).toContain("[Anthropic](https://anthropic.com/research)");
     expect(cleaned).toContain("[Anthropic Team](https://anthropic.com/research)");
-    // 3rd and 4th occurrences should be stripped of the markdown URL link
     expect(cleaned).not.toContain("[Anthropic Whitepaper](https://anthropic.com/research)");
     expect(cleaned).toContain("Anthropic Whitepaper confirms the 2.5x gain.");
   });
