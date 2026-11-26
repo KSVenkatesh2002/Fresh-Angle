@@ -1,9 +1,8 @@
-name: Daily AI Post Automation
+name: Daily AI Post Automation (Manual Dispatch Only)
 
 on:
-  schedule:
-    # Runs daily at 04:00 UTC
-    - cron: "0 4 * * *"
+  # Disabled scheduled cron here because tick.yml handles slot-based scheduling
+  # according to Automation Settings (postsPerDay). Having both caused postsPerDay + 1/day.
   workflow_dispatch:
     # Allows manual trigger anytime from GitHub Actions tab
 

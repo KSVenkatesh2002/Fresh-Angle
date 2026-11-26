@@ -504,7 +504,7 @@ export function AutomationManager({
                 <div className="flex items-center justify-between text-foreground-muted">
                   <span>Average Slot Gap:</span>
                   <strong className="text-foreground font-mono">
-                    ~{Math.round(dynamicSlots.nominalGap)}m
+                    {Math.round(dynamicSlots.nominalGap)} min
                   </strong>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-border">
