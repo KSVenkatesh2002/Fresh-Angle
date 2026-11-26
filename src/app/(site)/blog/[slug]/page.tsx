@@ -2,7 +2,10 @@ import React from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { getDb } from "@/db/client";
+import { redirects } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import {
   getPostBySlug,
   getRelatedPosts,
@@ -86,6 +89,19 @@ export default async function BlogPostPage({
   const post = await getPostBySlug(slug);
 
   if (!post) {
+    try {
+      const db = getDb();
+      const redirectRow = await db.query.redirects.findFirst({
+        where: eq(redirects.fromPath, `/blog/${slug}`),
+      });
+      if (redirectRow?.toPath) {
+        permanentRedirect(redirectRow.toPath);
+      }
+    } catch (err) {
+      if ((err as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT")) {
+        throw err;
+      }
+    }
     notFound();
   }
 
