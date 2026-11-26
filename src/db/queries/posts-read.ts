@@ -21,7 +21,44 @@ export async function getPublishedPosts(params: {
   const total = totalCount?.val ?? 0;
   const items = await db.query.posts.findMany({
     where: eq(posts.status, "published"),
-    orderBy: [desc(posts.publishedAt)],
+    orderBy: [desc(sql`COALESCE(${posts.publishedAt}, ${posts.createdAt})`)],
+    limit,
+    offset,
+    with: {
+      category: true,
+      tags: { with: { tag: true } },
+      sources: true,
+    },
+  });
+
+  return {
+    posts: items.map((p) => ({
+      ...p,
+      category: p.category,
+      tags: p.tags.map((t) => t.tag),
+      sources: p.sources,
+    })),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit) || 1,
+  };
+}
+
+export async function getAdminPosts(params: {
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedPostsResult> {
+  const page = Math.max(1, params.page || 1);
+  const limit = Math.max(1, params.limit || 50);
+  const offset = (page - 1) * limit;
+
+  const db = getDb();
+  const [totalCount] = await db.select({ val: count() }).from(posts);
+
+  const total = totalCount?.val ?? 0;
+  const items = await db.query.posts.findMany({
+    orderBy: [desc(posts.createdAt)],
     limit,
     offset,
     with: {

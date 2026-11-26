@@ -36,10 +36,15 @@ const sentenceRewriteSchema = z.object({
   ),
 });
 
+export interface ReviewOptions {
+  availableSourcesCount?: number;
+}
+
 export async function stepReview(
   topicTitle: string,
   draftMarkdown: string,
   formattedSourcesText: string,
+  options: ReviewOptions = {},
 ): Promise<ReviewResult> {
   console.log(
     "🧐 [Step 5/8: Review] Fact-checking, sharpening, and producing verified post JSON (AI call 3)...",
@@ -77,7 +82,7 @@ export async function stepReview(
     contentMd: reviewedPost.contentMd,
     metaTitle: reviewedPost.metaTitle,
     metaDescription: reviewedPost.metaDescription,
-    sourcesCount: 2,
+    sourcesCount: options.availableSourcesCount ?? 1,
   });
 
   let originality = checkOriginality(reviewedPost.contentMd, formattedSourcesText);
@@ -173,14 +178,40 @@ Respond ONLY with valid JSON.`;
     }
   }
 
-  // 5. Multi-Source Diversity Gate: require at least 2 distinct sources cited
+  // 5. Multi-Source Diversity & Integrity Gate
+  const availableSourcesCount = options.availableSourcesCount ?? 1;
   const finalCitations = analyzeCitations(reviewedPost.contentMd);
-  if (finalCitations.distinctUrls < 2) {
-    console.warn(
-      `⚠️ [Review Citation Gate] Draft cites only ${finalCitations.distinctUrls} distinct source(s). Minimum 2 required for multi-source triangulation. Setting researchDepth to 'single' and forcing status to 'needs_review'.`,
+  const isEditorialRefusal =
+    /^(why this draft fails|editorial audit|unable to generate)/i.test(reviewedPost.title.trim()) ||
+    /inability to produce a technical dispatch|referenced .* provides no concrete details/i.test(
+      reviewedPost.contentMd.slice(0, 800),
     );
-    (reviewedPost as Record<string, unknown>).researchDepth = "single";
+
+  if (isEditorialRefusal) {
+    console.warn(
+      `⚠️ [Review Integrity Gate] Detected editorial refusal / insufficient source meta-post ("${reviewedPost.title}"). Forcing status to 'needs_review'.`,
+    );
     (reviewedPost as Record<string, unknown>).status = "needs_review";
+  }
+
+  if (finalCitations.distinctUrls < 2) {
+    (reviewedPost as Record<string, unknown>).researchDepth = "single";
+
+    const mustBlockPublish =
+      finalCitations.distinctUrls === 0 ||
+      availableSourcesCount >= 2 ||
+      PIPELINE_CONFIG.originality.requireMultiSource;
+
+    if (mustBlockPublish) {
+      console.warn(
+        `⚠️ [Review Citation Gate] Draft cites ${finalCitations.distinctUrls} distinct source(s) (available: ${availableSourcesCount}). Setting researchDepth to 'single' and forcing status to 'needs_review'.`,
+      );
+      (reviewedPost as Record<string, unknown>).status = "needs_review";
+    } else {
+      console.log(
+        `ℹ️ [Review Citation Gate] Single-source topic (${finalCitations.distinctUrls} cited of ${availableSourcesCount} available). Marking researchDepth='single'; originality and number gates apply.`,
+      );
+    }
   }
 
   // 6. Strict Number Grounding Gate: verify numbers with units, %, x, or $ against sources

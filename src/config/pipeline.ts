@@ -34,6 +34,7 @@ export interface OriginalityConfig {
   readonly maxLinksPerUrl: number; // default: 2
   readonly maxRewriteAttempts: number; // default: 2
   readonly enableWebCheckGate: boolean; // default: false
+  readonly requireMultiSource: boolean; // default: false
 }
 
 function parseEnvFloat(key: string, defaultVal: number): number {
@@ -72,7 +73,7 @@ export const PIPELINE_CONFIG = {
     secondarySourceCharLimit: 3500,
     maxTotalResearchPromptChars: 18000,
     maxTavilyQueriesPerArticle: 3,
-    minTavilyRelevanceScore: 0.65,
+    minTavilyRelevanceScore: parseEnvFloat("TAVILY_MIN_RELEVANCE_SCORE", 0.55),
     maxOutlineHeadings: 6,
     maxTagsPerPost: 6,
     minTagsPerPost: 3,
@@ -99,6 +100,7 @@ export const PIPELINE_CONFIG = {
     maxLinksPerUrl: parseEnvInt("ORIGINALITY_MAX_LINKS_PER_URL", 2),
     maxRewriteAttempts: parseEnvInt("ORIGINALITY_MAX_REWRITES", 2),
     enableWebCheckGate: parseEnvBool("ORIGINALITY_ENABLE_WEB_GATE", false),
+    requireMultiSource: parseEnvBool("ORIGINALITY_REQUIRE_MULTI_SOURCE", false),
   } as OriginalityConfig,
   similarityThreshold: 0.45, // Jaccard / Levenshtein duplicate topic rejection threshold
   defaultCategory: "Artificial Intelligence",

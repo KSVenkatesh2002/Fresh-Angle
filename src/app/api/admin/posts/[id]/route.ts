@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth/session";
 import { updatePostStatus, deletePost } from "@/db/queries/posts";
 import { pingIndexNow } from "@/services/seo/indexnow";
+import { revalidatePublicSitePaths } from "@/lib/seo/revalidate";
 
 export async function PATCH(
   request: NextRequest,
@@ -22,6 +23,7 @@ export async function PATCH(
 
   try {
     const updated = await updatePostStatus(id, status);
+    revalidatePublicSitePaths({ slug: updated?.slug });
     if (status === "published" && updated?.slug) {
       pingIndexNow([`/blog/${updated.slug}`]).catch((err) => {
         console.warn(`⚠️ [IndexNow] Manual publish ping failed for ${updated.slug}:`, (err as Error).message);
@@ -49,6 +51,9 @@ export async function DELETE(
 
   try {
     const deleted = await deletePost(id);
+    if (deleted) {
+      revalidatePublicSitePaths();
+    }
     return NextResponse.json({ success: deleted });
   } catch (error) {
     return NextResponse.json(

@@ -129,6 +129,45 @@ export async function sendPostPublishedNotification(notif: {
   return adminResult;
 }
 
+export async function sendDraftSavedNotification(notif: {
+  title: string;
+  previewUrl: string;
+  category: string;
+  provider: string;
+  model: string;
+  triggerSource?: string;
+  slotTime?: string;
+  readingTimeMin?: number;
+  warnings?: string[];
+}): Promise<boolean> {
+  const settings = await getNotificationSettings();
+  if (settings.postPublished === "disabled") {
+    return true;
+  }
+
+  const triggerLabel = notif.triggerSource === "scheduled"
+    ? `⏰ Scheduled Slot${notif.slotTime ? ` (${notif.slotTime})` : ""}`
+    : notif.triggerSource === "manual"
+      ? `⚡ Manual Admin Trigger`
+      : notif.triggerSource || "Autonomous Automation";
+
+  let text =
+    `[${siteConfig.name}] 📝 <b>Draft Saved (Needs Review)</b>\n\n` +
+    `📰 <a href="${notif.previewUrl}">${notif.title}</a>\n` +
+    `🎯 <b>Trigger:</b> ${triggerLabel}\n` +
+    `📁 <b>Track:</b> ${notif.category}\n` +
+    `🤖 <b>Model:</b> ${notif.provider} (${notif.model})\n` +
+    (notif.readingTimeMin ? `⏱️ <b>Reading Time:</b> ${notif.readingTimeMin} min\n` : "") +
+    `🔒 <i>Not published to blog, sitemap, RSS, or public Telegram channel.</i>\n` +
+    `👉 Review & publish in <a href="${siteConfig.url}/admin/posts">Admin Posts</a>`;
+
+  if (notif.warnings && notif.warnings.length > 0) {
+    text += `\n\n⚠️ <b>Notes:</b>\n` + notif.warnings.map((w) => `• ${w}`).join("\n");
+  }
+
+  return sendTelegramMessage(text, { disableNotification: settings.postPublished === "silent" });
+}
+
 export async function sendPipelineFailureNotification(
   error: Error | string,
   step?: string,

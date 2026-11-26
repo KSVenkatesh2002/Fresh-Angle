@@ -63,8 +63,11 @@ export function stripBoilerplate(text: string): string {
     .replace(/\[\s*(login|sign in|sign up|register|subscribe|home|privacy policy|terms of service|cookie policy|share|menu|navigation|community|hardware|software|industry)\s*\]\([^\)]+\)/gi, " ")
     // Strip list items with single link navigation: * [Login](/...)
     .replace(/^[\s*\-•]\s*\[[^\]]+\]\([^\)]+\)\s*$/gm, " ")
-    // Strip common disclaimer/cookie banner lines
+    // Strip common disclaimer/cookie banner lines & arXivLabs footer boilerplate
     .replace(/^.*(cookie policy|gdpr|all rights reserved|copyright ©|subscribe to unlock|read our privacy policy).*$/gim, " ")
+    .replace(/^.*arXivLabs is a framework.*$/gim, " ")
+    .replace(/^.*Both individuals and organizations that work with arXivLabs.*$/gim, " ")
+    .replace(/^.*Have an idea for a project that will add value for arXiv.*$/gim, " ")
     // Collapse multiple empty lines and spaces
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
@@ -113,6 +116,111 @@ export function analyzeCitations(markdown: string): CitationAnalysis {
 }
 
 /**
+ * Extracts paper ID from an arXiv URL (e.g. abs/2611.32918 or pdf/2611.32918v1).
+ */
+export function extractArxivId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes("arxiv.org")) return null;
+    const match = parsed.pathname.match(/\/(?:abs|html|pdf)\/([0-9]{4}\.[0-9]{4,5}(?:v\d+)?|[a-z-]+\/[0-9]+)/i);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extracts paper title, authors, abstract, and (when available) full HTML body from arXiv.
+ * Prevents falling back to the 457-char arXivLabs footer on /abs/ pages.
+ */
+export async function extractArxivPaperContent(
+  url: string,
+  absHtml: string,
+  fallbackTitle?: string,
+): Promise<{ title: string; content: string; headings: string[] }> {
+  const $abs = cheerio.load(absHtml);
+  const paperId = extractArxivId(url);
+
+  const rawTitle =
+    $abs("h1.title").text().replace(/^Title:\s*/i, "").trim() ||
+    $abs('meta[name="citation_title"]').attr("content")?.trim() ||
+    fallbackTitle ||
+    "arXiv Paper";
+  const authors = $abs(".authors").text().replace(/^Authors:\s*/i, "").trim();
+  const abstractText = $abs("blockquote.abstract")
+    .text()
+    .replace(/^Abstract:\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const headings: string[] = [];
+  let htmlBodyText = "";
+
+  // Attempt full HTML version (available on newer arXiv papers)
+  if (paperId) {
+    try {
+      const htmlUrl = `https://arxiv.org/html/${paperId}`;
+      const htmlRes = await fetchWithRetry(
+        htmlUrl,
+        {
+          headers: { "User-Agent": "FreshAngleBot/1.0 (+https://freshangle.vercel.app)" },
+          timeoutMs: 8000,
+        },
+        { retries: 0, backoffMs: 500 },
+      );
+      if (htmlRes.ok) {
+        const paperHtml = await htmlRes.text();
+        const $paper = cheerio.load(paperHtml);
+        $paper("nav, header, footer, script, style, .ltx_bibliography, .ltx_page_footer").remove();
+        $paper("h2, h3").each((_, elem) => {
+          const h = $paper(elem).text().replace(/\s+/g, " ").trim();
+          if (h.length > 3 && h.length < 120) headings.push(h);
+        });
+        const paras: string[] = [];
+        $paper(".ltx_abstract p, section p, article p").each((_, elem) => {
+          const p = $paper(elem).text().replace(/\s+/g, " ").trim();
+          if (p.length > 40) paras.push(p);
+        });
+        if (paras.length > 2) {
+          htmlBodyText = paras.join("\n\n");
+        }
+      }
+    } catch {
+      // Fall back to /abs/ abstract + API query below
+    }
+  }
+
+  let resolvedAbstract = abstractText;
+  if (!resolvedAbstract && paperId) {
+    try {
+      const apiUrl = `https://export.arxiv.org/api/query?id_list=${encodeURIComponent(paperId)}`;
+      const apiRes = await fetchWithRetry(apiUrl, { timeoutMs: 6000 }, { retries: 1, backoffMs: 500 });
+      if (apiRes.ok) {
+        const xml = await apiRes.text();
+        const $xml = cheerio.load(xml, { xmlMode: true });
+        const summary = $xml("entry summary").first().text().replace(/\s+/g, " ").trim();
+        if (summary) resolvedAbstract = summary;
+      }
+    } catch {
+      // Ignore API fallback errors
+    }
+  }
+
+  const parts: string[] = [];
+  if (authors) parts.push(`Authors: ${authors}`);
+  if (resolvedAbstract) parts.push(`Abstract:\n${resolvedAbstract}`);
+  if (htmlBodyText && htmlBodyText.length > resolvedAbstract.length + 200) {
+    parts.push(`Full Paper Content:\n${htmlBodyText}`);
+  }
+
+  return {
+    title: rawTitle,
+    content: parts.join("\n\n").trim(),
+    headings,
+  };
+}
+
+/**
  * Fetches an article webpage and extracts the main clean text content using Cheerio.
  * Supports options.maxChars (0 or Infinity for full text) and options.extractHeadings.
  */
@@ -145,6 +253,32 @@ export async function extractArticleContent(
     const html = await response.text();
     const $ = cheerio.load(html);
 
+    // Special handling for arXiv pages (avoids extracting arXivLabs footer instead of abstract/paper)
+    const arxivId = extractArxivId(url);
+    if (arxivId) {
+      const arxivPaper = await extractArxivPaperContent(url, html, fallbackTitle);
+      if (arxivPaper.content.length > 100) {
+        const charLimit =
+          options?.maxChars !== undefined
+            ? (options.maxChars === 0 ? Infinity : options.maxChars)
+            : PIPELINE_CONFIG.limits.articleTextCharLimit;
+
+        const sanitized = stripBoilerplate(arxivPaper.content);
+        const bounded =
+          Number.isFinite(charLimit) && sanitized.length > charLimit
+            ? `${sanitized.substring(0, charLimit)}...`
+            : sanitized;
+
+        return {
+          url,
+          title: arxivPaper.title,
+          publisher: "arXiv",
+          content: bounded,
+          headings: options?.extractHeadings && arxivPaper.headings.length > 0 ? arxivPaper.headings : undefined,
+        };
+      }
+    }
+
     // Extract headings before removing anything, if requested
     const headings: string[] = [];
     if (options?.extractHeadings) {
@@ -156,9 +290,9 @@ export async function extractArticleContent(
       });
     }
 
-    // Remove noise: scripts, styles, forms, navs, footers, sidebars, cookie banners
+    // Remove noise: scripts, styles, forms, navs, footers, sidebars, cookie banners, arXivLabs drawers
     $(
-      "script, style, noscript, nav, header, footer, aside, form, svg, iframe, .ads, .advertisement, #comments, .comments, .cookie-banner, .social-share",
+      "script, style, noscript, nav, header, footer, aside, form, svg, iframe, .ads, .advertisement, #comments, .comments, .cookie-banner, .social-share, #labs, .arxivlabs-toggle, .arxivlabs, [id*='arxivlabs']",
     ).remove();
 
     // Extract title

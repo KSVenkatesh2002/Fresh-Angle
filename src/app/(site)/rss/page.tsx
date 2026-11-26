@@ -127,7 +127,7 @@ export default async function RssHubPage(): Promise<React.JSX.Element> {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {categoriesList.map((cat) => {
-              const catFeedUrl = `/feed/category/${cat.slug}.xml`;
+              const catFeedUrl = `/feed/category/${cat.slug}`;
               return (
                 <div
                   key={cat.id}

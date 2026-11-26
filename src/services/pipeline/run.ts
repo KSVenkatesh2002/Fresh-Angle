@@ -125,6 +125,7 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
       topic.title,
       draftResult.draftMarkdown,
       researchResult.formattedSourcesText,
+      { availableSourcesCount: researchResult.sources.length },
     );
     recordStepTiming(
       "review",
@@ -147,9 +148,24 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
     // 7. Save to DB
     activeStepName = "save";
     start = Date.now();
-    // Safety guard: until Phase 3 (Originality Checker & Rewrite Loop) is validated,
-    // autoPublish defaults to false unless explicitly overridden by AUTO_PUBLISH=true in env.
-    const autoPublish = options.isTest ? false : process.env.AUTO_PUBLISH === "true";
+    let autoPublish = false;
+    if (!options.isTest) {
+      if (process.env.AUTO_PUBLISH === "true") {
+        autoPublish = true;
+      } else if (process.env.AUTO_PUBLISH === "false") {
+        autoPublish = false;
+      } else {
+        // Fallback to DB automation_settings.publish_mode when AUTO_PUBLISH env is unset
+        try {
+          const db = (await import("@/db/client")).getDb();
+          const { automationSettings } = await import("@/db/schema");
+          const [autoCfg] = await db.select().from(automationSettings).limit(1);
+          autoPublish = autoCfg ? autoCfg.publishMode === "auto" : true;
+        } catch {
+          autoPublish = false;
+        }
+      }
+    }
     const savedPost = await stepSave({
       post: reviewResult.post,
       cover: coverResult,
@@ -164,7 +180,7 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
       "save",
       Date.now() - start,
       true,
-      `Post ID: ${savedPost.id}${options.isTest ? " (TEST DRAFT)" : ""}`,
+      `Post ID: ${savedPost.id} (${savedPost.status})${options.isTest ? " (TEST DRAFT)" : ""}`,
     );
 
     // 8. Publish & Notify
@@ -208,12 +224,16 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
     }
 
     await recordAuditLog({
-      action: "PIPELINE_PUBLISH_SUCCESS",
+      action:
+        savedPost.status === "published"
+          ? "PIPELINE_PUBLISH_SUCCESS"
+          : "PIPELINE_DRAFT_SAVED",
       entityType: "post",
       entityId: savedPost.id,
       details: {
         title: savedPost.title,
         slug: savedPost.slug,
+        status: savedPost.status,
         provider: reviewResult.provider,
         model: reviewResult.model,
         trigger: triggerSource,
@@ -224,7 +244,7 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
 
     console.log("\n======================================================");
     console.log(
-      `✅ Pipeline executed successfully! Published: "${savedPost.title}"`,
+      `✅ Pipeline executed successfully! ${savedPost.status === "published" ? "Published" : "Saved as draft"}: "${savedPost.title}"`,
     );
     console.log("======================================================\n");
 

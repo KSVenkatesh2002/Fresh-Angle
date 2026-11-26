@@ -60,16 +60,20 @@ export async function generateMetadata({
     };
   }
 
+  const displayDate = post.publishedAt ?? post.createdAt;
+  const isPublished = post.status === "published";
+
   return constructPostMetadata({
     title: post.metaTitle || post.title,
     description: post.metaDescription || post.excerpt,
     slug: post.slug,
-    publishedAt: post.publishedAt,
+    publishedAt: displayDate,
     updatedAt: post.updatedAt,
     coverImageId: post.coverImageId,
     coverImageUrl: post.coverImageUrl,
     categoryName: post.category?.name,
     tags: post.tags?.map((t) => t.name),
+    noIndex: !isPublished,
   });
 }
 
@@ -117,11 +121,14 @@ export default async function BlogPostPage({
     : undefined;
   const tagKeywords = post.tags?.map((t) => t.name).filter(Boolean) || [];
 
+  const displayDate = post.publishedAt ?? post.createdAt;
+  const isPublished = post.status === "published";
+
   const articleJsonLd = generateArticleJsonLd({
     title: post.title,
     description: post.excerpt,
     slug: post.slug,
-    publishedAt: post.publishedAt,
+    publishedAt: displayDate,
     updatedAt: post.updatedAt,
     coverImageId: post.coverImageId,
     coverImageUrl: post.coverImageUrl,
@@ -168,6 +175,11 @@ export default async function BlogPostPage({
           {/* Header metadata */}
           <header className="space-y-4 mb-8">
             <div className="flex flex-wrap items-center gap-2">
+              {!isPublished && (
+                <Badge variant="warning" className="uppercase tracking-wider">
+                  {post.status === "draft" ? "Draft Preview" : post.status}
+                </Badge>
+              )}
               {post.category && (
                 <Link href={`/category/${post.category.slug}`}>
                   <Badge variant="primary" className="cursor-pointer">
@@ -178,14 +190,18 @@ export default async function BlogPostPage({
               <span className="text-xs text-foreground-muted">•</span>
               <time
                 dateTime={
-                  post.publishedAt
-                    ? new Date(post.publishedAt).toISOString()
+                  displayDate
+                    ? new Date(displayDate).toISOString()
                     : undefined
                 }
                 className="text-xs text-foreground-muted flex items-center gap-1"
               >
                 <Calendar className="w-3.5 h-3.5" />
-                <span>Published {formatDate(post.publishedAt)}</span>
+                <span>
+                  {isPublished && post.publishedAt
+                    ? `Published ${formatDate(post.publishedAt)}`
+                    : `Created ${formatDate(displayDate)}`}
+                </span>
               </time>
               <span className="text-xs text-foreground-muted">•</span>
               <span className="text-xs text-foreground-muted flex items-center gap-1">

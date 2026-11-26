@@ -18,6 +18,7 @@ export function PostCard({
   featured = false,
 }: PostCardProps): React.JSX.Element {
   const imageUrl = getCoverImageUrl(post);
+  const displayDate = post.publishedAt ?? post.createdAt;
 
   return (
     <Card
@@ -59,12 +60,12 @@ export function PostCard({
             <Calendar className="w-3.5 h-3.5" />
             <time
               dateTime={
-                post.publishedAt
-                  ? new Date(post.publishedAt).toISOString()
+                displayDate
+                  ? new Date(displayDate).toISOString()
                   : undefined
               }
             >
-              {formatDate(post.publishedAt)}
+              {formatDate(displayDate)}
             </time>
           </span>
           <span>•</span>

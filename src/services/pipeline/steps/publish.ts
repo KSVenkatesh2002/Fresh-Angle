@@ -1,6 +1,10 @@
-import { sendPostPublishedNotification } from "@/services/notify/telegram";
+import {
+  sendPostPublishedNotification,
+  sendDraftSavedNotification,
+} from "@/services/notify/telegram";
 import { fetchWithRetry } from "@/lib/utils/http";
 import { siteConfig } from "@/config/site";
+import { slugify } from "@/lib/utils/slug";
 import { Post } from "@/db/schema";
 
 export interface PublishParams {
@@ -41,6 +45,26 @@ export async function stepPublishAndNotify(
     return;
   }
 
+  // If saved as draft (autoPublish disabled or held by quality/citation gate):
+  // NEVER broadcast to public Telegram channel or tell Admin it is published.
+  if (params.post.status !== "published") {
+    console.log(
+      `📝 [Step 8/8: Notify] Post "${params.post.slug}" has status "${params.post.status}". Sending draft notification to admin only and skipping public broadcast & cache revalidation.`,
+    );
+    await sendDraftSavedNotification({
+      title: params.post.title,
+      previewUrl: postUrl,
+      category: params.categoryName,
+      provider: params.provider,
+      model: params.model,
+      triggerSource: params.triggerSource,
+      slotTime: params.slotTime,
+      readingTimeMin: params.post.readingTimeMin,
+      warnings: params.warnings,
+    });
+    return;
+  }
+
   // 1. Revalidate Next.js cache via internal API
   const warnings = params.warnings || [];
   const cronSecret = process.env.CRON_SECRET;
@@ -62,7 +86,10 @@ export async function stepPublishAndNotify(
             "Content-Type": "application/json",
             Authorization: `Bearer ${cronSecret}`,
           },
-          body: JSON.stringify({ slug: params.post.slug }),
+          body: JSON.stringify({
+            slug: params.post.slug,
+            categorySlug: slugify(params.categoryName),
+          }),
           timeoutMs: 10000,
         },
         { retries: 2, backoffMs: 1000 },

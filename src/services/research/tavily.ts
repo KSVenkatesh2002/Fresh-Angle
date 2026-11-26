@@ -295,12 +295,12 @@ export async function gatherMultiSourceResearch(
 
   if (client.isAvailable()) {
     try {
-      // 1. Query for Baseline / Contextual / Prior-Art Sources
+      // 1. Query for Baseline / Contextual / Prior-Art Sources (keep query concise to avoid diluting relevance score)
       const baselineResults = await client.search(
-        `${keywords} architecture overview technical documentation`,
+        `${keywords} overview documentation`,
         {
           searchDepth: "basic",
-          maxResults: 3,
+          maxResults: 4,
           excludeDomains,
         },
       );
@@ -349,10 +349,10 @@ export async function gatherMultiSourceResearch(
 
       // 2. Query for Practitioner / Community Critiques & Benchmark Discussions
       const communityResults = await client.search(
-        `${keywords} review limitations benchmarks discussion`,
+        `${keywords} benchmarks discussion`,
         {
           searchDepth: "basic",
-          maxResults: 3,
+          maxResults: 4,
           excludeDomains,
         },
       );

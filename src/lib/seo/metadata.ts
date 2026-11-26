@@ -12,6 +12,7 @@ interface PostMetadataProps {
   coverImageUrl?: string | null;
   categoryName?: string;
   tags?: string[];
+  noIndex?: boolean;
 }
 
 export function constructPostMetadata({
@@ -23,6 +24,7 @@ export function constructPostMetadata({
   coverImageId,
   coverImageUrl,
   tags = [],
+  noIndex = false,
 }: PostMetadataProps): Metadata {
   const postUrl = `${siteConfig.url}/blog/${slug}`;
   const imageUrl = getAbsoluteCoverImageUrl(
@@ -65,13 +67,18 @@ export function constructPostMetadata({
       images: [imageUrl],
       creator: "@freshangle_ai",
     },
-    robots: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
+    robots: noIndex
+      ? {
+          index: false,
+          follow: false,
+        }
+      : {
+          index: true,
+          follow: true,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
   };
 }
 

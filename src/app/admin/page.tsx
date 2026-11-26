@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { getPublishedPosts } from "@/db/queries/posts";
+import { getAdminPosts, getPublishedPosts } from "@/db/queries/posts";
 import { getRecentRuns } from "@/db/queries/runs";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils/dates";
@@ -27,17 +27,19 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
   const db = getDb();
   let runs: Awaited<ReturnType<typeof getRecentRuns>> = [];
-  let postsData: Awaited<ReturnType<typeof getPublishedPosts>>["posts"] = [];
+  let postsData: Awaited<ReturnType<typeof getAdminPosts>>["posts"] = [];
+  let publishedTotal = 0;
   let settingsRecord: typeof automationSettings.$inferSelect | null = null;
   let upcomingSlot: typeof postSlots.$inferSelect | null = null;
 
   try {
     await ensureUpcomingSlots().catch(() => {});
 
-    const [recentRunsRes, allPostsRes, settingsRes, nextSlotsRes] =
+    const [recentRunsRes, allPostsRes, pubPostsRes, settingsRes, nextSlotsRes] =
       await Promise.allSettled([
         getRecentRuns(10),
-        getPublishedPosts({ page: 1, limit: 15 }),
+        getAdminPosts({ page: 1, limit: 15 }),
+        getPublishedPosts({ page: 1, limit: 1 }),
         db.select().from(automationSettings).limit(1),
         db.query.postSlots.findMany({
           where: and(
@@ -59,6 +61,10 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
       postsData = allPostsRes.value.posts;
     } else {
       console.warn("⚠️ [Admin] Posts query failed:", allPostsRes.reason);
+    }
+
+    if (pubPostsRes.status === "fulfilled") {
+      publishedTotal = pubPostsRes.value.total;
     }
 
     if (settingsRes.status === "fulfilled") {
@@ -108,7 +114,7 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
             <FileText className="w-4 h-4 text-primary" />
           </div>
           <p className="text-2xl font-extrabold text-foreground">
-            {postsData.length}
+            {publishedTotal}
           </p>
           <p className="text-[11px] text-foreground-muted">
             Live technical dispatches
@@ -278,8 +284,14 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
             id="post-management-heading"
             className="text-lg font-bold text-foreground"
           >
-            Published Briefings
+            Recent Briefings
           </h2>
+          <Link
+            href="/admin/posts"
+            className="text-xs text-primary hover:underline underline-offset-4"
+          >
+            Manage all posts & drafts →
+          </Link>
         </div>
 
         <div className="border border-border rounded-xl bg-surface overflow-x-auto">
@@ -288,9 +300,9 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
               <tr className="border-b border-border bg-surface-muted text-xs font-semibold text-foreground-muted uppercase tracking-wider">
                 <th className="py-3 px-4">Title</th>
                 <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Published</th>
+                <th className="py-3 px-4">Date</th>
                 <th className="py-3 px-4">Read Time</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -315,8 +327,8 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
                         className="hover:text-primary transition-colors flex items-center gap-1.5"
                         target="_blank"
                       >
-                        <span>{post.title}</span>
-                        <ExternalLink className="w-3 h-3 text-foreground-muted" />
+                        <span className="truncate">{post.title}</span>
+                        <ExternalLink className="w-3 h-3 text-foreground-muted shrink-0" />
                       </Link>
                     </td>
                     <td className="py-3 px-4">
@@ -324,16 +336,26 @@ export default async function AdminDashboardPage(): Promise<React.JSX.Element> {
                         {post.category?.name || "Uncategorized"}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-xs text-foreground-muted">
-                      {formatDate(post.publishedAt)}
+                    <td className="py-3 px-4 text-xs text-foreground-muted whitespace-nowrap">
+                      {post.publishedAt
+                        ? formatDate(post.publishedAt)
+                        : `Created ${formatDate(post.createdAt)}`}
                     </td>
                     <td className="py-3 px-4 text-xs text-foreground font-mono">
                       {post.readingTimeMin} min
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <span className="text-xs text-success font-medium">
-                        Published
-                      </span>
+                      <Badge
+                        variant={
+                          post.status === "published"
+                            ? "success"
+                            : post.status === "draft"
+                              ? "warning"
+                              : "default"
+                        }
+                      >
+                        {post.status}
+                      </Badge>
                     </td>
                   </tr>
                 ))

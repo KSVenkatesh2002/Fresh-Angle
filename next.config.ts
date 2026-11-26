@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
         source: "/:key([a-zA-Z0-9_-]+).txt",
         destination: "/api/indexnow-key?key=:key",
       },
+      {
+        source: "/feed/category/:slug.xml",
+        destination: "/feed/category/:slug",
+      },
     ];
   },
   async headers() {
