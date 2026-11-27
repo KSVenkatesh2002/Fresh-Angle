@@ -69,3 +69,7 @@ jobs:
           AUTO_PUBLISH: ${{ secrets.AUTO_PUBLISH || 'true' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
+          ENABLE_X_POSTING: ${{ secrets.ENABLE_X_POSTING || 'false' }}
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_X_CHANNEL_ID: ${{ secrets.BUFFER_X_CHANNEL_ID }}
+          BUFFER_X_MODE: ${{ secrets.BUFFER_X_MODE || 'shareNow' }}

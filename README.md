@@ -171,3 +171,30 @@ Direct Tailwind palette classes (`bg-blue-500`, `text-gray-900`) and arbitrary h
 3. Configure all environment variables in **Project Settings → Environment Variables**.
 4. Configure GitHub Actions Secrets in **GitHub Settings → Secrets → Actions**.
 5. Enable GitHub Actions for `.github/workflows/tick.yml` to automate publication every 30 minutes.
+
+---
+
+## 🐦 Auto-Publish Control, Draft Privacy & Buffer X Auto-Posting
+
+### 1. Auto-Publish ON/OFF Switch & Draft Hold Reasons
+- **Admin Switch**: Toggle **Auto-publish new posts** (`ON` / `OFF`) on `/admin/automation` (saved to `automation_settings.publish_mode` in Postgres and logged to `audit_log`; `/admin/schedule` shows a read-only status indicator).
+- **Runtime Precedence**: The DB switch overrides the `AUTO_PUBLISH` env var; `AUTO_PUBLISH` is used only as a fallback when no DB row exists. Quality/originality gates still hold failing posts as drafts even when `ON`. Manually scheduled posts (`status: scheduled`) still publish on schedule even when `OFF`.
+- **Draft Privacy**: Unpublished posts (`draft`, `scheduled`, `archived`) return `404` to logged-out visitors and render uncached (`noStore()`) with a `"Draft preview, not public"` banner and `noindex, nofollow` for authenticated admins.
+
+### 2. Buffer X Auto-Posting Setup
+1. Log into X and connect your X account as a channel inside [Buffer](https://publish.buffer.com).
+2. Create a Personal Access key at `https://publish.buffer.com/settings/api` (`Personal Access` → `+ New Key`).
+3. Set these variables in **all three places** (local `.env`, **Vercel Environment Variables**, and **GitHub Actions Secrets** for `.github/workflows/tick.yml` & `generate-now.yml`):
+   - `ENABLE_X_POSTING` — set `"true"` to enable (`"false"` by default).
+   - `BUFFER_API_KEY` — personal API key from Buffer.
+   - `BUFFER_X_CHANNEL_ID` — *(optional)* Buffer X channel ID; auto-discovered & cached if omitted (pinning saves 1 GraphQL call per cold start).
+   - `BUFFER_X_MODE` — `"shareNow"` *(default, bypasses Buffer's 10-slot queue cap)* or `"addToQueue"`.
+
+### 3. Manual Test Checklist, Retry & Disable
+- **Test Connection**: Open `/admin/posts` and click **Send test post to X** (sends a harmless verification post via Buffer even before enabling auto-posting).
+- **Retry Failed/Skipped**: In `/admin/posts`, inspect the **X Status** badge (`posted`, `failed`, `skipped`, `pending`) and click **Retry X post** on any published post that has not succeeded. Already-`posted` articles are never re-posted on unpublish/republish.
+- **Emergency Disable**: Set `ENABLE_X_POSTING=false` in Vercel & GitHub Actions Secrets (blog publishing and IndexNow continue unaffected).
+
+### 4. Extra X Promotional Schedule & Tick Precision
+- Configure **Extra X posts per day**, **Monthly X cap** (default `300`, counting both blog-link posts and extras), posting window (`08:00–22:00`), and `xNoRepeatDays` (default `14`) on `/admin/automation`.
+- **Tick Precision & Timezone**: Extra X slots run from the existing scheduler tick (~15-minute cadence in active hours), using `DEFAULT_TIMEZONE` (`Asia/Kolkata`) for X windows and daily/monthly counters (while the blog post scheduler continues using UTC).
