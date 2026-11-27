@@ -62,6 +62,10 @@ const envSchema = z.object({
   INDEXNOW_KEY: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   AUTO_PUBLISH: z.string().default("true"),
+  ENABLE_X_POSTING: z.string().default("false"),
+  BUFFER_API_KEY: z.string().optional(),
+  BUFFER_X_CHANNEL_ID: z.string().optional(),
+  BUFFER_X_MODE: z.enum(["shareNow", "addToQueue"]).default("shareNow"),
 });
 
 export type Env = z.infer<typeof envSchema>;

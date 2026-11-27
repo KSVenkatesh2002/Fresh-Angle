@@ -2,6 +2,7 @@ import {
   sendPostPublishedNotification,
   sendDraftSavedNotification,
 } from "@/services/notify/telegram";
+import { postArticleToX } from "@/services/notify/buffer";
 import { fetchWithRetry } from "@/lib/utils/http";
 import { siteConfig } from "@/config/site";
 import { slugify } from "@/lib/utils/slug";
@@ -123,6 +124,9 @@ export async function stepPublishAndNotify(
     readingTimeMin: params.post.readingTimeMin,
     warnings: warnings.length > 0 ? warnings : undefined,
   });
+
+  // 3. Dispatch X Auto-Post via Buffer (non-blocking, published & non-test only)
+  await postArticleToX(params.post.id);
 
   console.log(
     "🎉 [Pipeline Complete] Daily post workflow finished successfully!",

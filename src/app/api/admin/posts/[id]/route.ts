@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { isAuthenticated } from "@/lib/auth/session";
 import { updatePostStatus, deletePost } from "@/db/queries/posts";
 import { pingIndexNow } from "@/services/seo/indexnow";
+import { postArticleToX } from "@/services/notify/buffer";
 import { revalidatePublicSitePaths } from "@/lib/seo/revalidate";
 
 export async function PATCH(
@@ -27,6 +28,9 @@ export async function PATCH(
     if (status === "published" && updated?.slug) {
       pingIndexNow([`/blog/${updated.slug}`]).catch((err) => {
         console.warn(`⚠️ [IndexNow] Manual publish ping failed for ${updated.slug}:`, (err as Error).message);
+      });
+      after(async () => {
+        await postArticleToX(updated.id);
       });
     }
     return NextResponse.json({ success: true, post: updated });

@@ -114,6 +114,13 @@ export type PostHoldReason =
   | "test"
   | "manual_draft";
 
+export type XPostStatus =
+  | "pending"
+  | "posting"
+  | "posted"
+  | "failed"
+  | "skipped";
+
 export const posts = pgTable(
   "posts",
   {
@@ -160,6 +167,10 @@ export const posts = pgTable(
     contentSimhash: text("content_simhash"),
     holdReason: text("hold_reason").$type<PostHoldReason | null>(),
     holdDetail: text("hold_detail"),
+    xPostStatus: text("x_post_status").$type<XPostStatus | null>(),
+    xPostId: text("x_post_id"),
+    xPostedAt: timestamp("x_posted_at", { withTimezone: true }),
+    xPostError: text("x_post_error"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

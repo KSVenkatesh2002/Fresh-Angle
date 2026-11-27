@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, Archive, Trash2 } from "lucide-react";
+import { CheckCircle2, Archive, Trash2, Send } from "lucide-react";
 
-import { PostHoldReason } from "@/db/schema";
+import { PostHoldReason, XPostStatus } from "@/db/schema";
 
 interface AdminPostActionsProps {
   postId: string;
@@ -13,6 +13,8 @@ interface AdminPostActionsProps {
   title: string;
   holdReason?: PostHoldReason | null;
   holdDetail?: string | null;
+  xPostStatus?: XPostStatus | null;
+  xPostError?: string | null;
 }
 
 export function AdminPostActions({
@@ -21,6 +23,8 @@ export function AdminPostActions({
   title,
   holdReason,
   holdDetail,
+  xPostStatus,
+  xPostError,
 }: AdminPostActionsProps): React.JSX.Element {
   const router = useRouter();
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -74,8 +78,48 @@ export function AdminPostActions({
     }
   };
 
+  const handleRetryXPost = async (): Promise<void> => {
+    setBusyAction("x-post");
+    try {
+      const res = await fetch(`/api/admin/posts/${postId}/x-post`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        alert(data.message || data.error || "Failed to post to X");
+      }
+      router.refresh();
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const canRetryX =
+    status === "published" &&
+    (xPostStatus === "failed" ||
+      xPostStatus === "skipped" ||
+      xPostStatus === "pending" ||
+      !xPostStatus);
+
   return (
     <div className="flex items-center justify-end gap-1.5">
+      {canRetryX && (
+        <Button
+          size="sm"
+          variant="outline"
+          isLoading={busyAction === "x-post"}
+          disabled={busyAction !== null}
+          onClick={handleRetryXPost}
+          title={xPostError ? `Retry X post (${xPostError})` : "Retry posting this article to X via Buffer"}
+        >
+          <Send className="w-3.5 h-3.5" />
+          <span>Retry X post</span>
+        </Button>
+      )}
       {status !== "published" ? (
         <Button
           size="sm"

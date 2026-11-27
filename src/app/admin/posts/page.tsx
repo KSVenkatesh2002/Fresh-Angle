@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getAdminPosts } from "@/db/queries/posts";
 import { Badge } from "@/components/ui/Badge";
 import { AdminPostActions } from "@/components/admin/AdminPostActions";
+import { AdminXTestButton } from "@/components/admin/AdminXTestButton";
 import { formatDate } from "@/lib/utils/dates";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
@@ -42,12 +43,15 @@ export default async function AdminPostsPage(): Promise<React.JSX.Element> {
             )}
           </div>
         </div>
-        <Link
-          href="/admin/posts/new"
-          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
-        >
-          Create New Dispatch
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminXTestButton />
+          <Link
+            href="/admin/posts/new"
+            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+          >
+            Create New Dispatch
+          </Link>
+        </div>
       </div>
 
       <div className="border border-border rounded-xl bg-surface overflow-x-auto">
@@ -57,6 +61,7 @@ export default async function AdminPostsPage(): Promise<React.JSX.Element> {
               <th className="py-3 px-4">Title</th>
               <th className="py-3 px-4">Category</th>
               <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4">X Status</th>
               <th className="py-3 px-4">Date</th>
               <th className="py-3 px-4">Depth</th>
               <th className="py-3 px-4 text-right">Actions</th>
@@ -66,7 +71,7 @@ export default async function AdminPostsPage(): Promise<React.JSX.Element> {
             {postsData.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="py-8 text-center text-foreground-muted"
                 >
                   No posts found in database.
@@ -120,6 +125,28 @@ export default async function AdminPostsPage(): Promise<React.JSX.Element> {
                         )}
                       </div>
                     </td>
+                    <td className="py-3 px-4">
+                      {post.status === "published" ? (
+                        <Badge
+                          variant={
+                            post.xPostStatus === "posted"
+                              ? "success"
+                              : post.xPostStatus === "failed"
+                                ? "danger"
+                                : post.xPostStatus === "posting"
+                                  ? "primary"
+                                  : post.xPostStatus === "skipped"
+                                    ? "outline"
+                                    : "warning"
+                          }
+                          title={post.xPostError || undefined}
+                        >
+                          {post.xPostStatus || "pending"}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-foreground-muted">—</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-xs text-foreground-muted whitespace-nowrap">
                       {post.publishedAt
                         ? formatDate(post.publishedAt)
@@ -135,6 +162,8 @@ export default async function AdminPostsPage(): Promise<React.JSX.Element> {
                         title={post.title}
                         holdReason={post.holdReason}
                         holdDetail={post.holdDetail}
+                        xPostStatus={post.xPostStatus}
+                        xPostError={post.xPostError}
                       />
                     </td>
                   </tr>

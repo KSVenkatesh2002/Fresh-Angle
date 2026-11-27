@@ -4,6 +4,7 @@ import { automationSettings, posts, postSlots, settings as settingsTable } from 
 import { ensurePostSlotsForDate } from "./slots";
 import { runDailyPipeline } from "@/services/pipeline/run";
 import { sendTelegramMessage } from "@/services/notify/telegram";
+import { postArticleToX } from "@/services/notify/buffer";
 import { pingIndexNow } from "@/services/seo/indexnow";
 import { siteConfig } from "@/config/site";
 import { runDailyDatabaseMaintenance } from "@/services/maintenance/database";
@@ -100,15 +101,34 @@ export async function runSchedulerTick(): Promise<{
     });
 
     let publishedCount = 0;
+    const newlyPublishedIds: string[] = [];
     for (const post of dueScheduledPosts) {
       await db
         .update(posts)
-        .set({ status: "published", publishedAt: now, updatedAt: now })
+        .set({
+          status: "published",
+          publishedAt: now,
+          holdReason: null,
+          holdDetail: null,
+          updatedAt: now,
+        })
         .where(eq(posts.id, post.id));
 
-      // Trigger IndexNow ping
+      // Trigger IndexNow ping first so X posting never delays status or indexing
       await pingIndexNow([`/blog/${post.slug}`]).catch(() => {});
+      newlyPublishedIds.push(post.id);
       publishedCount++;
+    }
+
+    // Best-effort X auto-posting with total 18s budget so tick stays well under maxDuration=60s
+    const xBudgetStart = Date.now();
+    const X_TICK_TIME_BUDGET_MS = 18_000;
+    for (const publishedId of newlyPublishedIds) {
+      if (Date.now() - xBudgetStart >= X_TICK_TIME_BUDGET_MS) {
+        console.warn("⚠️ [Tick] X posting time budget reached; deferring remaining scheduled X posts.");
+        break;
+      }
+      await postArticleToX(publishedId).catch(() => {});
     }
 
     // 3. Ensure today's post slots exist
