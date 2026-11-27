@@ -57,7 +57,7 @@ export async function getAllUsageLimits(): Promise<UsageLimit[]> {
 
 export async function updateUsageLimit(
   provider: string,
-  kind: "text" | "image" | "embedding" | "news",
+  kind: "text" | "image" | "embedding" | "news" | "social",
   data: { dailyLimit?: number; monthlyLimit?: number; softPercent?: number },
 ): Promise<void> {
   const db = getDb();

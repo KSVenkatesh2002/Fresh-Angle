@@ -10,6 +10,7 @@ import {
   getDatabaseStorageStats,
   checkDatabaseStorageAlerts,
 } from "@/services/maintenance/database";
+import { getXTelemetry } from "@/services/scheduling/x-slots";
 import {
   BarChart3,
   AlertCircle,
@@ -19,6 +20,7 @@ import {
   Database,
   Bell,
   HardDrive,
+  Share2,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminUsagePage(): Promise<React.JSX.Element> {
-  const [todayUsage, monthlyUsage, limits, cloudinaryStats, dbStats] = await Promise.all([
+  const [todayUsage, monthlyUsage, limits, cloudinaryStats, dbStats, xTelemetry] = await Promise.all([
     getTodayUsageStats(),
     getMonthlyUsageAggregates(),
     getAllUsageLimits(),
@@ -52,7 +54,24 @@ export default async function AdminUsagePage(): Promise<React.JSX.Element> {
         return null;
       }
     })(),
+    getXTelemetry().catch(() => null),
   ]);
+
+  const bufferMonthRow = monthlyUsage.find(
+    (u) => u.provider === "buffer" && u.kind === "social",
+  );
+  const bufferLimitRow = limits.find(
+    (l) => l.provider === "buffer" && l.kind === "social",
+  );
+  const bufferMonthlyLimit = bufferLimitRow?.monthlyLimit ?? 1000;
+  const bufferMonthCalls = bufferMonthRow?.totalCalls ?? 0;
+  const bufferMonthPct = Math.min(
+    100,
+    Math.round((bufferMonthCalls / bufferMonthlyLimit) * 100),
+  );
+  const xPostingEnabled = process.env.ENABLE_X_POSTING === "true";
+  const hasBufferKey = Boolean(process.env.BUFFER_API_KEY?.trim());
+  const hasBufferChannelId = Boolean(process.env.BUFFER_X_CHANNEL_ID?.trim());
 
   return (
     <div className="space-y-6">
@@ -227,6 +246,90 @@ export default async function AdminUsagePage(): Promise<React.JSX.Element> {
           </div>
         </div>
       )}
+
+      {/* Buffer X (Twitter) API Quota Card */}
+      <div className="p-6 rounded-2xl bg-surface border border-border space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <Share2 className="w-5 h-5 text-primary" />
+            <div>
+              <h2 className="text-base font-bold text-foreground">
+                Buffer X (Twitter) Publishing API
+              </h2>
+              <span className="text-xs text-foreground-muted">
+                Free Tier: 1,000 API req / 30 days per channel • 600 req / 24h • Mode:{" "}
+                {process.env.BUFFER_X_MODE === "addToQueue" ? "addToQueue" : "shareNow"}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                xPostingEnabled && hasBufferKey
+                  ? "bg-success/10 text-success border-success/20"
+                  : "bg-warning/10 text-warning border-warning/20"
+              }`}
+            >
+              {!hasBufferKey
+                ? "API Key Missing"
+                : xPostingEnabled
+                  ? "X Auto-Posting ON"
+                  : "X Auto-Posting OFF"}
+            </span>
+            <span className="text-xs text-foreground-muted">
+              {hasBufferChannelId ? "Channel Pinned" : "Channel Auto-Discover"}
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="w-full h-2.5 rounded-full bg-surface-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                bufferMonthPct >= 90
+                  ? "bg-danger"
+                  : bufferMonthPct >= 70
+                    ? "bg-warning"
+                    : "bg-success"
+              }`}
+              style={{ width: `${Math.max(2, bufferMonthPct)}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-foreground-muted">
+            <span>{bufferMonthCalls} Buffer API requests this month ({bufferMonthPct}%)</span>
+            <span>{bufferMonthlyLimit} monthly free limit</span>
+          </div>
+        </div>
+
+        {xTelemetry && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="p-3 rounded-xl bg-surface-muted border border-border">
+              <span className="text-[11px] text-foreground-muted block">Blog X Posts Today</span>
+              <span className="text-sm font-bold text-foreground font-mono">
+                {xTelemetry.blogLinksDoneToday}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-surface-muted border border-border">
+              <span className="text-[11px] text-foreground-muted block">Extra X Today (Done/Pending)</span>
+              <span className="text-sm font-bold text-foreground font-mono">
+                {xTelemetry.extrasDoneToday} / {xTelemetry.extrasPendingToday}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-surface-muted border border-border">
+              <span className="text-[11px] text-foreground-muted block">Monthly X Posts vs Cap</span>
+              <span className="text-sm font-bold text-foreground font-mono">
+                {xTelemetry.monthTotal} / {xTelemetry.monthlyXCap}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-surface-muted border border-border">
+              <span className="text-[11px] text-foreground-muted block">API Errors (Month)</span>
+              <span className="text-sm font-bold text-danger font-mono">
+                {bufferMonthRow?.totalErrors ?? 0}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Limits & Today Usage Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

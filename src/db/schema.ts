@@ -509,7 +509,7 @@ export const usageDaily = pgTable(
     date: text("date").notNull(), // YYYY-MM-DD
     provider: text("provider").notNull(),
     kind: text("kind")
-      .$type<"text" | "image" | "embedding" | "news">()
+      .$type<"text" | "image" | "embedding" | "news" | "social">()
       .notNull(),
     calls: integer("calls").notNull().default(0),
     tokensIn: integer("tokens_in").notNull().default(0),
@@ -533,7 +533,7 @@ export const usageLimits = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     provider: text("provider").notNull(),
     kind: text("kind")
-      .$type<"text" | "image" | "embedding" | "news">()
+      .$type<"text" | "image" | "embedding" | "news" | "social">()
       .notNull(),
     dailyLimit: integer("daily_limit").notNull().default(100),
     monthlyLimit: integer("monthly_limit").notNull().default(3000),

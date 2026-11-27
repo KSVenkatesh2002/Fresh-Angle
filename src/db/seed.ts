@@ -212,6 +212,12 @@ export async function seed(): Promise<void> {
       dailyLimit: 200,
       monthlyLimit: 5000,
     },
+    {
+      provider: "buffer",
+      kind: "social" as const,
+      dailyLimit: 600,
+      monthlyLimit: 1000,
+    },
   ];
 
   for (const limit of defaultLimits) {

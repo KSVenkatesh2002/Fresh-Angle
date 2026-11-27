@@ -4,9 +4,11 @@ import { usageDaily, usageLimits } from "@/db/schema";
 import { sendTelegramMessage } from "@/services/notify/telegram";
 import { siteConfig } from "@/config/site";
 
+export type UsageKind = "text" | "image" | "embedding" | "news" | "social";
+
 export interface RecordUsageParams {
   provider: string;
-  kind: "text" | "image" | "embedding" | "news";
+  kind: UsageKind;
   tokensIn?: number;
   tokensOut?: number;
   images?: number;
@@ -21,6 +23,7 @@ export async function recordUsage(params: RecordUsageParams): Promise<void> {
   else if (provider.includes("openrouter")) provider = "openrouter";
   else if (provider.includes("cloudflare")) provider = "cloudflare";
   else if (provider.includes("pexels")) provider = "pexels";
+  else if (provider.includes("buffer")) provider = "buffer";
 
   const callsDelta = params.isError ? 0 : 1;
   const errorsDelta = params.isError ? 1 : 0;
@@ -64,7 +67,7 @@ export async function recordUsage(params: RecordUsageParams): Promise<void> {
 
 async function verifyUsageThreshold(
   provider: string,
-  kind: "text" | "image" | "embedding" | "news",
+  kind: UsageKind,
   today: string,
 ): Promise<void> {
   const db = getDb();

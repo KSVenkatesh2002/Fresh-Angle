@@ -43,6 +43,13 @@
       "when": 1795800000005,
       "tag": "0005_x_slots",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795800000006,
+      "tag": "0006_buffer_usage_limit",
+      "breakpoints": true
     }
   ]
 }

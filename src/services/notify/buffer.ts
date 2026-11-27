@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import { categories, posts, XPostStatus } from "@/db/schema";
 import { siteConfig } from "@/config/site";
 import { fetchWithTimeout, TimeoutError } from "@/lib/utils/http";
+import { recordUsage } from "@/services/usage/tracker";
 
 const BUFFER_GRAPHQL_ENDPOINT = "https://api.buffer.com";
 const X_MAX_POST_LENGTH = 280;
@@ -181,29 +182,42 @@ async function queryBufferGraphQL<T>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<BufferGraphQLResponse<T>> {
-  const res = await fetchWithTimeout(BUFFER_GRAPHQL_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(variables ? { query, variables } : { query }),
-    timeoutMs: 10000,
-  });
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(BUFFER_GRAPHQL_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(variables ? { query, variables } : { query }),
+      timeoutMs: 10000,
+    });
+  } catch (err) {
+    void recordUsage({ provider: "buffer", kind: "social", isError: true });
+    throw err;
+  }
 
   const rawText = await res.text();
   let parsed: BufferGraphQLResponse<T>;
   try {
     parsed = JSON.parse(rawText) as BufferGraphQLResponse<T>;
   } catch {
+    void recordUsage({ provider: "buffer", kind: "social", isError: true });
     throw new Error(`HTTP ${res.status}: ${rawText.slice(0, 160)}`);
   }
 
   if (!res.ok) {
+    void recordUsage({ provider: "buffer", kind: "social", isError: true });
     const gqlErr = parsed.errors?.[0]?.message;
     throw new Error(gqlErr || `HTTP ${res.status}: ${rawText.slice(0, 160)}`);
   }
 
+  void recordUsage({
+    provider: "buffer",
+    kind: "social",
+    isError: Boolean(parsed.errors?.length),
+  });
   return parsed;
 }
 
@@ -326,6 +340,7 @@ export async function sendBufferCreatePost(params: {
         timeoutMs: 10000,
       });
     } catch (err: unknown) {
+      void recordUsage({ provider: "buffer", kind: "social", isError: true });
       if (err instanceof TimeoutError || (err instanceof Error && err.name === "TimeoutError")) {
         // Timeout is ambiguous: Buffer may have processed createPost. Do NOT retry.
         return {
@@ -346,6 +361,7 @@ export async function sendBufferCreatePost(params: {
     }
 
     if (res.status === 429 || res.status >= 500) {
+      void recordUsage({ provider: "buffer", kind: "social", isError: true });
       const errBody = await res.text().catch(() => "");
       if (attempt < MAX_TRANSIENT_RETRIES) {
         const retryAfterRaw = res.headers.get("retry-after");
@@ -374,6 +390,7 @@ export async function sendBufferCreatePost(params: {
     try {
       parsed = JSON.parse(rawText);
     } catch {
+      void recordUsage({ provider: "buffer", kind: "social", isError: true });
       return {
         ok: false,
         error: "unknown - check X before retrying (invalid JSON response from Buffer)",
@@ -381,6 +398,7 @@ export async function sendBufferCreatePost(params: {
     }
 
     if (!res.ok) {
+      void recordUsage({ provider: "buffer", kind: "social", isError: true });
       const gqlErr = parsed.errors?.[0]?.message;
       return {
         ok: false,
@@ -389,6 +407,7 @@ export async function sendBufferCreatePost(params: {
     }
 
     if (parsed.errors?.length) {
+      void recordUsage({ provider: "buffer", kind: "social", isError: true });
       const errMsg = parsed.errors
         .map((e) => e.message)
         .filter(Boolean)
@@ -398,9 +417,11 @@ export async function sendBufferCreatePost(params: {
 
     const payload = parsed.data?.createPost;
     if (payload?.post?.id) {
+      void recordUsage({ provider: "buffer", kind: "social" });
       return { ok: true, xPostId: payload.post.id };
     }
 
+    void recordUsage({ provider: "buffer", kind: "social", isError: true });
     if (payload?.message) {
       return { ok: false, error: payload.message };
     }
