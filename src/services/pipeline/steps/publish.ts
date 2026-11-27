@@ -48,12 +48,13 @@ export async function stepPublishAndNotify(
   // If saved as draft (autoPublish disabled or held by quality/citation gate):
   // NEVER broadcast to public Telegram channel or tell Admin it is published.
   if (params.post.status !== "published") {
+    const adminPreviewUrl = `${siteConfig.url}/admin/preview/${params.post.slug}`;
     console.log(
       `📝 [Step 8/8: Notify] Post "${params.post.slug}" has status "${params.post.status}". Sending draft notification to admin only and skipping public broadcast & cache revalidation.`,
     );
     await sendDraftSavedNotification({
       title: params.post.title,
-      previewUrl: postUrl,
+      previewUrl: adminPreviewUrl,
       category: params.categoryName,
       provider: params.provider,
       model: params.model,

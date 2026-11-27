@@ -6,6 +6,7 @@ import { Container } from "@/components/layout/Container";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Lock, ShieldAlert } from "lucide-react";
+import { sanitizeRedirectPath } from "@/lib/auth/redirect";
 
 export default function AdminLoginPage(): React.JSX.Element {
   const router = useRouter();
@@ -31,7 +32,12 @@ export default function AdminLoginPage(): React.JSX.Element {
         throw new Error(data.error || "Authentication failed");
       }
 
-      router.push("/admin");
+      const params =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : null;
+      const nextPath = sanitizeRedirectPath(params?.get("from"), "/admin");
+      router.push(nextPath);
       router.refresh();
     } catch (err: unknown) {
       setError((err as Error).message);

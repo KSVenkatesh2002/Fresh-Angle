@@ -1,8 +1,10 @@
 import React from "react";
 import type { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth/session";
 import { getDb } from "@/db/client";
 import { redirects } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -66,6 +68,17 @@ export async function generateMetadata({
   const displayDate = post.publishedAt ?? post.createdAt;
   const isPublished = post.status === "published";
 
+  if (!isPublished) {
+    noStore();
+    const authed = await isAuthenticated();
+    if (!authed) {
+      return {
+        title: "Post Not Found",
+        robots: { index: false, follow: false },
+      };
+    }
+  }
+
   return constructPostMetadata({
     title: post.metaTitle || post.title,
     description: post.metaDescription || post.excerpt,
@@ -105,6 +118,15 @@ export default async function BlogPostPage({
     notFound();
   }
 
+  const isPublished = post.status === "published";
+  if (!isPublished) {
+    noStore();
+    const authed = await isAuthenticated();
+    if (!authed) {
+      notFound();
+    }
+  }
+
   const postUrl = `${siteConfig.url}/blog/${post.slug}`;
   const tocItems = extractTableOfContents(post.contentMd);
 
@@ -138,7 +160,6 @@ export default async function BlogPostPage({
   const tagKeywords = post.tags?.map((t) => t.name).filter(Boolean) || [];
 
   const displayDate = post.publishedAt ?? post.createdAt;
-  const isPublished = post.status === "published";
 
   const articleJsonLd = generateArticleJsonLd({
     title: post.title,
@@ -170,6 +191,20 @@ export default async function BlogPostPage({
       <JsonLd data={faqJsonLd ? [articleJsonLd, faqJsonLd] : articleJsonLd} />
 
       <Container size="wide">
+        {!isPublished && (
+          <div
+            role="status"
+            className="mb-6 px-4 py-3 rounded-xl border border-warning/40 bg-warning/10 text-warning text-xs sm:text-sm font-semibold flex flex-wrap items-center justify-between gap-2"
+          >
+            <span>Draft preview, not public (Status: {post.status})</span>
+            <Link
+              href="/admin/posts"
+              className="underline hover:opacity-80 font-medium"
+            >
+              Manage in Admin Posts
+            </Link>
+          </div>
+        )}
         <Breadcrumbs
           items={[
             { name: "Blog", url: "/blog" },

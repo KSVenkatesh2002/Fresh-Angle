@@ -24,9 +24,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const token = request.cookies.get(COOKIE_NAME)?.value;
   const sessionSecret = process.env.SESSION_SECRET;
 
+  const requestedTarget = `${pathname}${request.nextUrl.search}`;
+
   if (!token || !sessionSecret) {
     const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
+    loginUrl.searchParams.set("from", requestedTarget);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -36,12 +38,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
     if (payload.role !== "admin") {
       const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("from", requestedTarget);
       return NextResponse.redirect(loginUrl);
     }
 
     return response;
   } catch {
     const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("from", requestedTarget);
     return NextResponse.redirect(loginUrl);
   }
 }
