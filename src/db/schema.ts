@@ -370,6 +370,41 @@ export const postSlots = pgTable(
   ],
 );
 
+export type XSlotStatus =
+  | "planned"
+  | "posting"
+  | "posted"
+  | "failed"
+  | "skipped"
+  | "cancelled";
+
+// Extra X Promotional Slots table
+export const xSlots = pgTable(
+  "x_slots",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    plannedAt: timestamp("planned_at", { withTimezone: true }).notNull(),
+    status: text("status")
+      .$type<XSlotStatus>()
+      .notNull()
+      .default("planned"),
+    postId: uuid("post_id").references(() => posts.id, {
+      onDelete: "set null",
+    }),
+    xPostId: text("x_post_id"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(0),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("x_slots_planned_at_status_idx").on(table.plannedAt, table.status),
+  ],
+);
+
 // Topic Queue table
 export const topicQueue = pgTable(
   "topic_queue",
@@ -804,6 +839,13 @@ export const postSlotsRelations = relations(postSlots, ({ one }) => ({
   }),
 }));
 
+export const xSlotsRelations = relations(xSlots, ({ one }) => ({
+  post: one(posts, {
+    fields: [xSlots.postId],
+    references: [posts.id],
+  }),
+}));
+
 export const topicQueueRelations = relations(topicQueue, ({ one }) => ({
   category: one(categories, {
     fields: [topicQueue.categoryId],
@@ -851,6 +893,8 @@ export type DateOverride = typeof dateOverrides.$inferSelect;
 export type NewDateOverride = typeof dateOverrides.$inferInsert;
 export type PostSlot = typeof postSlots.$inferSelect;
 export type NewPostSlot = typeof postSlots.$inferInsert;
+export type XSlot = typeof xSlots.$inferSelect;
+export type NewXSlot = typeof xSlots.$inferInsert;
 export type SlotEvent = typeof slotEvents.$inferSelect;
 export type NewSlotEvent = typeof slotEvents.$inferInsert;
 export type TopicQueueItem = typeof topicQueue.$inferSelect;

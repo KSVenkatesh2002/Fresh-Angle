@@ -5,6 +5,7 @@ import { ensurePostSlotsForDate } from "./slots";
 import { runDailyPipeline } from "@/services/pipeline/run";
 import { sendTelegramMessage } from "@/services/notify/telegram";
 import { postArticleToX } from "@/services/notify/buffer";
+import { runExtraXTick } from "@/services/scheduling/x-slots";
 import { pingIndexNow } from "@/services/seo/indexnow";
 import { siteConfig } from "@/config/site";
 import { runDailyDatabaseMaintenance } from "@/services/maintenance/database";
@@ -130,6 +131,11 @@ export async function runSchedulerTick(): Promise<{
       }
       await postArticleToX(publishedId).catch(() => {});
     }
+
+    // 2.5 Execute due Extra X promotional slots (independent schedule, ~15m tick precision)
+    await runExtraXTick({ timeBudgetMs: 12_000 }).catch((err) => {
+      console.warn("⚠️ [Tick] Extra X tick skipped due to error:", (err as Error).message);
+    });
 
     // 3. Ensure today's post slots exist
     const todayStr = now.toISOString().split("T")[0];

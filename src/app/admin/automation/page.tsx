@@ -5,6 +5,8 @@ import { automationSettings } from "@/db/schema";
 import { calculateDaySlotTimes } from "@/services/scheduling/slots";
 import { formatDualTime } from "@/lib/utils/time";
 import { AutomationManager } from "@/components/admin/AutomationManager";
+import { ExtraXScheduleManager } from "@/components/admin/ExtraXScheduleManager";
+import { getXScheduleSettings, getXTelemetry } from "@/services/scheduling/x-slots";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,11 @@ export default async function AdminAutomationPage(): Promise<React.JSX.Element> 
     tomorrowOverride || undefined,
   );
 
+  const [xScheduleSettings, xTelemetry] = await Promise.all([
+    getXScheduleSettings(),
+    getXTelemetry(),
+  ]);
+
   const formatSlot = (d: Date) => formatDualTime(d);
 
   return (
@@ -66,6 +73,12 @@ export default async function AdminAutomationPage(): Promise<React.JSX.Element> 
         initialSettings={settings}
         todaySlots={todayDates.map(formatSlot)}
         tomorrowSlots={tomorrowDates.map(formatSlot)}
+      />
+
+      <ExtraXScheduleManager
+        initialSettings={xScheduleSettings}
+        initialTelemetry={xTelemetry}
+        blogPostsPerDay={settings.postsPerDay}
       />
     </div>
   );
