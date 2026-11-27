@@ -83,6 +83,8 @@ export async function POST(req: Request): Promise<NextResponse> {
           metaDescription: (prompt || title).slice(0, 150),
           status: isScheduled ? "scheduled" : "draft",
           scheduledFor: isScheduled ? new Date(scheduledAt) : null,
+          holdReason: isScheduled ? null : "manual_draft",
+          holdDetail: isScheduled ? null : "Saved as draft in Admin",
           categoryId: categoryId || null,
           origin: "manual",
           readingTimeMin: 3,

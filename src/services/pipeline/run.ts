@@ -10,6 +10,7 @@ import { stepReview } from "./steps/review";
 import { stepCover } from "./steps/cover";
 import { stepSave } from "./steps/save";
 import { stepPublishAndNotify } from "./steps/publish";
+import { resolveAutoPublish } from "./auto-publish";
 
 export interface RunDailyPipelineOptions {
   triggerSource?: "scheduled" | "manual" | "queue" | string;
@@ -148,24 +149,7 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
     // 7. Save to DB
     activeStepName = "save";
     start = Date.now();
-    let autoPublish = false;
-    if (!options.isTest) {
-      if (process.env.AUTO_PUBLISH === "true") {
-        autoPublish = true;
-      } else if (process.env.AUTO_PUBLISH === "false") {
-        autoPublish = false;
-      } else {
-        // Fallback to DB automation_settings.publish_mode when AUTO_PUBLISH env is unset
-        try {
-          const db = (await import("@/db/client")).getDb();
-          const { automationSettings } = await import("@/db/schema");
-          const [autoCfg] = await db.select().from(automationSettings).limit(1);
-          autoPublish = autoCfg ? autoCfg.publishMode === "auto" : true;
-        } catch {
-          autoPublish = false;
-        }
-      }
-    }
+    const autoPublish = await resolveAutoPublish({ isTest: options.isTest });
     const savedPost = await stepSave({
       post: reviewResult.post,
       cover: coverResult,
@@ -175,12 +159,15 @@ export async function runDailyPipeline(options: RunDailyPipelineOptions = {}): P
       aiModel: reviewResult.model,
       autoPublish,
       isTest: options.isTest,
+      origin: options.isTest ? "test" : (fromQueue ? "queue" : "auto"),
+      holdReason: reviewResult.holdReason,
+      holdDetail: reviewResult.holdDetail,
     });
     recordStepTiming(
       "save",
       Date.now() - start,
       true,
-      `Post ID: ${savedPost.id} (${savedPost.status})${options.isTest ? " (TEST DRAFT)" : ""}`,
+      `Post ID: ${savedPost.id} (${savedPost.status}${savedPost.holdReason ? `, hold: ${savedPost.holdReason}` : ""})${options.isTest ? " (TEST DRAFT)" : ""}`,
     );
 
     // 8. Publish & Notify

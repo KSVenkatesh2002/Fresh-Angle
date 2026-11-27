@@ -15,6 +15,20 @@
       "when": 1793647671002,
       "tag": "0001_steep_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794200000000,
+      "tag": "0002_scheduling_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795800000003,
+      "tag": "0003_hold_reason_columns",
+      "breakpoints": true
     }
   ]
 }

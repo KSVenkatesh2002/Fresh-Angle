@@ -1,5 +1,5 @@
 import { getDb } from "@/db/client";
-import { postImages, Post } from "@/db/schema";
+import { postImages, Post, PostHoldReason } from "@/db/schema";
 import { upsertCategory } from "@/db/queries/categories";
 import { getOrCreateTags } from "@/db/queries/tags";
 import { createPostWithRelations } from "@/db/queries/posts";
@@ -26,6 +26,9 @@ export interface SavePostParams {
   aiModel: string;
   autoPublish: boolean;
   isTest?: boolean;
+  origin?: "auto" | "manual" | "queue" | "test";
+  holdReason?: PostHoldReason | null;
+  holdDetail?: string | null;
 }
 
 export async function stepSave(params: SavePostParams): Promise<Post> {
@@ -36,6 +39,7 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
   let coverImageId: string | null = null;
   let coverImageUrl: string | null = null;
   let autoPublishStatus = params.autoPublish;
+  let imageFallbackDetail: string | null = null;
 
   // 1. Upload cover image directly to Cloudinary via ImageStorage (never writes bytea to DB)
   try {
@@ -77,6 +81,7 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
     if (fallbackMode === "draft") {
       console.warn("⚠️ [Save & Publish] IMAGE_FALLBACK=draft: Demoting post status to draft due to missing cover image.");
       autoPublishStatus = false;
+      imageFallbackDetail = `Cover upload failed (${errorMsg})`;
       coverImageUrl = null;
     } else {
       console.warn("⚠️ [Save & Publish] IMAGE_FALLBACK=default_image: Using branded static fallback cover.");
@@ -132,6 +137,30 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
     postStatusOverride === "needs_review"
       ? "draft"
       : (params.isTest ? "draft" : (autoPublishStatus ? "published" : "draft"));
+
+  let holdReason: PostHoldReason | null = null;
+  let holdDetail: string | null = null;
+  if (status === "draft") {
+    if (params.isTest) {
+      holdReason = "test";
+      holdDetail = "Test slot execution";
+    } else if (params.holdReason) {
+      holdReason = params.holdReason;
+      holdDetail = params.holdDetail ?? null;
+    } else if (postStatusOverride === "needs_review") {
+      holdReason = "needs_review";
+      holdDetail = params.holdDetail ?? "Flagged for review by editorial checks";
+    } else if (imageFallbackDetail) {
+      holdReason = "image_fallback";
+      holdDetail = imageFallbackDetail;
+    } else if (!params.autoPublish) {
+      holdReason = "auto_publish_off";
+      holdDetail = "Auto-publish is turned OFF in automation settings";
+    } else {
+      holdReason = "needs_review";
+    }
+  }
+
   const researchDepth =
     ((params.post as Record<string, unknown>).researchDepth as "single" | "multi") ||
     params.researchDepth ||
@@ -151,7 +180,9 @@ export async function stepSave(params: SavePostParams): Promise<Post> {
       metaDescription: params.post.metaDescription,
       categoryId: category.id,
       status,
-      origin: params.isTest ? "test" : "auto",
+      origin: params.isTest ? "test" : (params.origin ?? "auto"),
+      holdReason,
+      holdDetail,
       coverImageId,
       coverImageUrl,
       coverAlt: params.cover.alt,

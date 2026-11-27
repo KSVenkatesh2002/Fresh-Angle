@@ -104,7 +104,21 @@ export default async function AdminPostsPage(): Promise<React.JSX.Element> {
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant={statusVariant}>{post.status}</Badge>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant={statusVariant}>{post.status}</Badge>
+                        {post.status === "draft" && post.holdReason && (
+                          <Badge
+                            variant={
+                              post.holdReason === "originality_gate"
+                                ? "danger"
+                                : "outline"
+                            }
+                            title={post.holdDetail || undefined}
+                          >
+                            {post.holdReason}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-xs text-foreground-muted whitespace-nowrap">
                       {post.publishedAt
@@ -119,6 +133,8 @@ export default async function AdminPostsPage(): Promise<React.JSX.Element> {
                         postId={post.id}
                         status={post.status}
                         title={post.title}
+                        holdReason={post.holdReason}
+                        holdDetail={post.holdDetail}
                       />
                     </td>
                   </tr>

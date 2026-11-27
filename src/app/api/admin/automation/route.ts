@@ -6,6 +6,7 @@ import { runSchedulerTick } from "@/services/scheduling/runner";
 import { runDailyPipeline } from "@/services/pipeline/run";
 import { syncPostSlotsForDate } from "@/services/scheduling/slots";
 import { recordAuditLog } from "@/services/audit/logger";
+import { isAuthenticated } from "@/lib/auth/session";
 
 const updateSettingsSchema = z.object({
   enabled: z.boolean().optional(),
@@ -25,6 +26,11 @@ const updateSettingsSchema = z.object({
 });
 
 export async function POST(req: Request): Promise<NextResponse> {
+  const authed = await isAuthenticated();
+  if (!authed) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const json = await req.json();
     const action = json.action;
@@ -144,10 +150,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     await recordAuditLog({
       action: "UPDATE_AUTOMATION_SETTINGS",
       entityType: "automation_settings",
-      details: parsed.data,
+      details: {
+        ...parsed.data,
+        previousPublishMode: current?.publishMode ?? null,
+      },
     });
-
-    return NextResponse.json({ success: true });
 
     return NextResponse.json({ success: true });
   } catch (err) {

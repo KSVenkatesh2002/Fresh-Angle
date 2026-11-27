@@ -63,6 +63,18 @@ export async function updatePostStatus(
     .set({
       status,
       publishedAt: status === "published" ? new Date() : undefined,
+      holdReason:
+        status === "published"
+          ? null
+          : status === "draft"
+            ? "manual_draft"
+            : undefined,
+      holdDetail:
+        status === "published"
+          ? null
+          : status === "draft"
+            ? "Moved to draft in Admin"
+            : undefined,
       updatedAt: new Date(),
     })
     .where(eq(posts.id, id))

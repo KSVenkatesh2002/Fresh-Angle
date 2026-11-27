@@ -366,6 +366,84 @@ export function AutomationManager({
               />
             </div>
 
+            <div className="sm:col-span-2 p-4 rounded-xl bg-surface-muted/60 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground">
+                    Auto-publish new posts
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      publishMode === "auto"
+                        ? "bg-success/15 text-success border border-success/30"
+                        : "bg-warning/15 text-warning border border-warning/30"
+                    }`}
+                  >
+                    {publishMode === "auto" ? "ON" : "OFF"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-foreground-muted leading-relaxed">
+                  <strong>ON</strong> = posts publish automatically if they pass quality checks;{" "}
+                  <strong>OFF</strong> = every generated post is saved as a draft for me to approve.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={publishMode === "auto"}
+                aria-label="Auto-publish new posts"
+                disabled={saving}
+                onClick={async () => {
+                  const nextMode: "auto" | "review" =
+                    publishMode === "auto" ? "review" : "auto";
+                  const prevMode = publishMode;
+                  setPublishMode(nextMode);
+                  setSaving(true);
+                  setStatusMsg(null);
+                  try {
+                    const res = await fetch("/api/admin/automation", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "update_settings",
+                        settings: { publishMode: nextMode },
+                      }),
+                    });
+                    if (!res.ok) {
+                      const errJson = await res.json().catch(() => ({}));
+                      throw new Error(errJson.error || "Failed to update auto-publish switch");
+                    }
+                    setStatusMsg({
+                      type: "success",
+                      text:
+                        nextMode === "auto"
+                          ? "Auto-publish turned ON (passing posts publish immediately)."
+                          : "Auto-publish turned OFF (all new posts save as drafts).",
+                    });
+                    router.refresh();
+                  } catch (err) {
+                    setPublishMode(prevMode);
+                    setStatusMsg({ type: "error", text: (err as Error).message });
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors cursor-pointer disabled:opacity-50 ${
+                  publishMode === "auto"
+                    ? "bg-success/20 border-success/50"
+                    : "bg-surface border-border"
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
+                    publishMode === "auto"
+                      ? "translate-x-6 bg-success"
+                      : "translate-x-1 bg-foreground-muted"
+                  }`}
+                />
+              </button>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-foreground-muted mb-1.5">
                 Window Start Time
@@ -404,21 +482,7 @@ export function AutomationManager({
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-foreground-muted mb-1.5">
-                Publishing Mode
-              </label>
-              <select
-                value={publishMode}
-                onChange={(e) =>
-                  setPublishMode(e.target.value as "auto" | "review")
-                }
-                className="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                <option value="auto">Auto-Publish Immediately</option>
-                <option value="review">Review Queue (Save as Draft)</option>
-              </select>
-            </div>
+
 
             <div>
               <label className="block text-xs font-medium text-foreground-muted mb-1.5">

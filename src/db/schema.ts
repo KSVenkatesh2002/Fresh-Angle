@@ -103,6 +103,17 @@ export const tags = pgTable(
 );
 
 // Posts table
+export type PostHoldReason =
+  | "auto_publish_off"
+  | "needs_review"
+  | "originality_gate"
+  | "citation_gate"
+  | "number_gate"
+  | "refusal"
+  | "image_fallback"
+  | "test"
+  | "manual_draft";
+
 export const posts = pgTable(
   "posts",
   {
@@ -147,6 +158,8 @@ export const posts = pgTable(
       .$type<"single" | "multi">()
       .default("single"),
     contentSimhash: text("content_simhash"),
+    holdReason: text("hold_reason").$type<PostHoldReason | null>(),
+    holdDetail: text("hold_detail"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

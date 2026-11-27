@@ -1,8 +1,6 @@
 import { defaultAiChain } from "@/services/ai/fallback";
-import {
-  postReviewSchema,
-  PostReviewOutput,
-} from "@/services/pipeline/schemas";
+import { postReviewSchema, PostReviewOutput } from "@/services/pipeline/schemas";
+import { PostHoldReason } from "@/db/schema";
 import {
   SYSTEM_EDITORIAL_PERSONA,
   buildReviewPrompt,
@@ -25,6 +23,8 @@ export interface ReviewResult {
   model: string;
   tokensUsed?: { prompt: number; completion: number; total: number };
   originality: OriginalityCheckResult;
+  holdReason?: PostHoldReason | null;
+  holdDetail?: string | null;
 }
 
 const sentenceRewriteSchema = z.object({
@@ -158,13 +158,20 @@ Respond ONLY with valid JSON.`;
     }
   }
 
+  // 4. Track hold reasons if any review gate blocks auto-publish
+  let holdReason: PostHoldReason | null = null;
+  const holdDetails: string[] = [];
+
   // If still failing after max attempts, mark post as needs_review
   if (!originality.passed) {
     console.warn(
       `⚠️ [Review Originality Gate] Post exceeded thresholds after ${rewriteAttempt} rewrite attempts. Setting status to 'needs_review'. Reasons: ${originality.reasons.join("; ")}`,
     );
-    // Mark on object so save step preserves 'needs_review'
     (reviewedPost as Record<string, unknown>).status = "needs_review";
+    holdReason = "originality_gate";
+    holdDetails.push(
+      `Originality gate (${originality.originalityScore}%): ${originality.reasons.join("; ")}`,
+    );
   }
 
   // 4. Optional Final Web-Check Gate (behind enableWebCheckGate flag, default false)
@@ -175,6 +182,8 @@ Respond ONLY with valid JSON.`;
     if (!webCheck.passed) {
       console.warn("⚠️ [Review Web Gate] Live web search hit matching third-party text. Marking needs_review.");
       (reviewedPost as Record<string, unknown>).status = "needs_review";
+      if (!holdReason) holdReason = "originality_gate";
+      holdDetails.push("Live web check matched existing published phrasing");
     }
   }
 
@@ -192,6 +201,8 @@ Respond ONLY with valid JSON.`;
       `⚠️ [Review Integrity Gate] Detected editorial refusal / insufficient source meta-post ("${reviewedPost.title}"). Forcing status to 'needs_review'.`,
     );
     (reviewedPost as Record<string, unknown>).status = "needs_review";
+    holdReason = "refusal";
+    holdDetails.push("Detected refusal or insufficient-source meta-post");
   }
 
   if (finalCitations.distinctUrls < 2) {
@@ -207,6 +218,10 @@ Respond ONLY with valid JSON.`;
         `⚠️ [Review Citation Gate] Draft cites ${finalCitations.distinctUrls} distinct source(s) (available: ${availableSourcesCount}). Setting researchDepth to 'single' and forcing status to 'needs_review'.`,
       );
       (reviewedPost as Record<string, unknown>).status = "needs_review";
+      if (!holdReason) holdReason = "citation_gate";
+      holdDetails.push(
+        `Cited ${finalCitations.distinctUrls} distinct URL(s) from ${availableSourcesCount} available source(s)`,
+      );
     } else {
       console.log(
         `ℹ️ [Review Citation Gate] Single-source topic (${finalCitations.distinctUrls} cited of ${availableSourcesCount} available). Marking researchDepth='single'; originality and number gates apply.`,
@@ -278,6 +293,8 @@ Respond ONLY with valid JSON.`;
           `⚠️ [Review Number Gate] ${unsupportedNumbers.length} unsupported numbers remained after rewrite: ${unsupportedNumbers.join(", ")}. Forcing status to 'needs_review'.`,
         );
         (reviewedPost as Record<string, unknown>).status = "needs_review";
+        if (!holdReason) holdReason = "number_gate";
+        holdDetails.push(`Unsupported numbers: ${unsupportedNumbers.join(", ")}`);
       } else {
         console.log(
           `✓ [Review Number Gate] All numbers successfully grounded after targeted rewrite.`,
@@ -288,6 +305,8 @@ Respond ONLY with valid JSON.`;
         `⚠️ [Review Number Gate] Rewrite failed: ${(rewriteErr as Error).message}. Marking needs_review.`,
       );
       (reviewedPost as Record<string, unknown>).status = "needs_review";
+      if (!holdReason) holdReason = "number_gate";
+      holdDetails.push(`Number gate rewrite failed: ${(rewriteErr as Error).message}`);
     }
   }
 
@@ -305,5 +324,7 @@ Respond ONLY with valid JSON.`;
       total: totalTokensPrompt + totalTokensCompletion,
     },
     originality,
+    holdReason,
+    holdDetail: holdDetails.length > 0 ? holdDetails.join(" | ") : null,
   };
 }

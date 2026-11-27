@@ -5,16 +5,22 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, Archive, Trash2 } from "lucide-react";
 
+import { PostHoldReason } from "@/db/schema";
+
 interface AdminPostActionsProps {
   postId: string;
   status: "draft" | "scheduled" | "published" | "archived";
   title: string;
+  holdReason?: PostHoldReason | null;
+  holdDetail?: string | null;
 }
 
 export function AdminPostActions({
   postId,
   status,
   title,
+  holdReason,
+  holdDetail,
 }: AdminPostActionsProps): React.JSX.Element {
   const router = useRouter();
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -22,6 +28,14 @@ export function AdminPostActions({
   const handleStatusChange = async (
     nextStatus: "draft" | "published",
   ): Promise<void> => {
+    if (nextStatus === "published" && holdReason === "originality_gate") {
+      const detailLine = holdDetail ? `\n\nReason: ${holdDetail}` : "";
+      const confirmed = confirm(
+        `Warning: "${title}" failed the originality check and was held as a draft.${detailLine}\n\nAre you sure you want to approve and publish it anyway?`,
+      );
+      if (!confirmed) return;
+    }
+
     setBusyAction(nextStatus);
     try {
       const res = await fetch(`/api/admin/posts/${postId}`, {
